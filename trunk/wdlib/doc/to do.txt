@@ -1,0 +1,24 @@
+资源字符串，及其应用 OK
+流类体系 OK
+字符串列表 OK
+命令行解析 OK
+XML实用函数 OK
+文件名操作函数 OK 	
+字符串操作函数 OK	
+	字符串与其他类型的转换函数
+Ini封装 ok
+时间操作函数
+Format系列函数
+
+注册表
+MD5码生成
+Zip类
+Base64解码
+
+
+库：
+基础算法与数据结构：	STL  OK
+XML: 					xerces-c OK
+界面： 					WTL OK
+COM： 					ATL
+网络：					ACE
