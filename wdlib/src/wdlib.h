@@ -24,6 +24,7 @@ namespace wdlib
 #include <string>
 #include <vector>
 #include <list>
+#include <map>
 using namespace std;
 
 // wdlib
@@ -42,6 +43,7 @@ using namespace std;
 #include "StrUtils.h"
 #include "WndUtils.h"
 #include "Threads.h"
+#include "propobj.h"
 
 
 #ifdef WDLIB_NAMESPACE

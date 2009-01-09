@@ -323,6 +323,8 @@ public:
 	// ȡͼƬ�ߴ�
 	BOOL GetImageSize(int* pnWidth, int* pnHeight)
 	{
+		#define HIMETRIC_INCH   2540
+
 		if (!m_spPicture)
 			return FALSE;
 		

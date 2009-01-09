@@ -2,11 +2,33 @@
 //
 
 #include "stdafx.h"
+#include <iostream>
+using namespace std;
+
+void EnumPropFunc(LPARAM lParam, LPCWSTR strProp, void* pData)
+{
+	cout<<strProp<<endl;
+}
+
+void TestPropObj()
+{
+	CPropObj PropObj;
+
+	PropObj.SetProp(L"a", (void*)1);
+	PropObj.SetProp(L"b", (void*)2);
+	PropObj.SetProp(L"c", (void*)3);
+
+	PropObj.RemoveProp(L"b");
+
+	int data = (int)PropObj.GetProp(L"b");
+	
+	cout<<data<<endl;
+
+	PropObj.EnumProp(EnumPropFunc, NULL);
+}
 
 int main(int argc, char* argv[])
 {
-	CreateFontW(L"ËÎÌו", 12, fs_Bold | fs_Italic);
-	RECT rc;
-	FillGradient(0, rc, RGB(0, 0, 0), RGB(0, 0, 0), gd_LeftToRight);
+	TestPropObj();
 	return 0;
 }
