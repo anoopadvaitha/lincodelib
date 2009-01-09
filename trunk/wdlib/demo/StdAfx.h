@@ -10,6 +10,7 @@
 #pragma once
 #endif // _MSC_VER > 1000
 
+#include <atlbase.h>
 #include <objbase.h>
 
 #include "..\src\wdlib.h"

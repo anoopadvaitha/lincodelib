@@ -144,6 +144,10 @@ SOURCE=..\src\OleUtils.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\src\propobj.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\src\streams.h
 # End Source File
 # Begin Source File
