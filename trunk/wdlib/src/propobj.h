@@ -15,7 +15,28 @@ class CPropObj
 protected:
 	typedef map<wstring, void*> PropMap;
 	PropMap m_mapProp;
+	PropMap::iterator m_curItr;
+protected:
+	void ResetItr()
+	{
+		m_curItr = m_mapProp.begin();
+	}
 public:
+	struct PropItem
+	{
+		wstring strProp;
+		void*	pData;
+	};
+public:
+	CPropObj()
+	{
+		ResetItr();
+	}
+
+	virtual ~CPropObj()
+	{
+	}
+
 	bool SetProp(LPCWSTR strProp, void* pData)
 	{
 		if (GetProp(strProp))
@@ -34,15 +55,29 @@ public:
 		return itr->second;
 	}
 	
-	typedef void (*ENUMPROPFUNC)(LPARAM lParam, LPCWSTR strProp, void* pData);
-
-	void EnumProp(ENUMPROPFUNC pfnEnumProp, LPARAM lParam)
+	bool FirstProp(PropItem& item)
 	{
-		ATLASSERT(pfnEnumProp);
+		m_curItr = m_mapProp.begin();
+		if (m_curItr == m_mapProp.end())
+			return false;
 
-		PropMap::iterator itr = m_mapProp.begin();
-		for (; itr != m_mapProp.end(); ++itr)
-			pfnEnumProp(lParam, itr->first.c_str(), itr->second);
+		item.strProp = m_curItr->first;
+		item.pData = m_curItr->second;
+		return true;
+	}
+
+	bool NextProp(PropItem& item)
+	{
+		if (m_curItr == m_mapProp.end())
+			return false;
+
+		++m_curItr;
+		if (m_curItr == m_mapProp.end())
+			return false;
+		
+		item.strProp = m_curItr->first;
+		item.pData = m_curItr->second;
+		return true;
 	}
 
 	int GetPropCount()
@@ -52,9 +87,12 @@ public:
 
 	void* RemoveProp(LPCWSTR strProp)
 	{	
-		PropMap::const_iterator itr = m_mapProp.find((wstring)strProp);
+		PropMap::iterator itr = m_mapProp.find((wstring)strProp);
 		if (itr == m_mapProp.end())
 			return NULL;
+
+		if (m_curItr == itr)
+			++m_curItr;
 
 		void* pv = itr->second;
 		m_mapProp.erase((wstring)strProp);
