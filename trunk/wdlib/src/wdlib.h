@@ -44,6 +44,8 @@ using namespace std;
 #include "WndUtils.h"
 #include "Threads.h"
 #include "propobj.h"
+#include "internalwnd.h"
+#include "threadeventinvoker.h"
 
 
 #ifdef WDLIB_NAMESPACE

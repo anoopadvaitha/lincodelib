@@ -13,6 +13,10 @@
 #include <atlbase.h>
 #include <objbase.h>
 
+extern CComModule _Module;
+
+#include <atlwin.h>
+
 #include "..\src\wdlib.h"
 
 

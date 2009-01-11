@@ -140,6 +140,10 @@ SOURCE=..\src\Initcpp.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\src\internalwnd.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\src\OleUtils.h
 # End Source File
 # Begin Source File
@@ -157,6 +161,10 @@ SOURCE=..\src\StringList.h
 # Begin Source File
 
 SOURCE=..\src\StrUtils.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\threadeventinvoker.h
 # End Source File
 # Begin Source File
 
