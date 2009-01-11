@@ -10,6 +10,12 @@
 	一个类想带有可扩展的属性表，可从此类继承
 */
 
+#ifdef WDLIB_NAMESPACE
+namespace wdlib
+{
+#endif
+
+
 class CPropObj
 {
 protected:
@@ -99,5 +105,9 @@ public:
 		return pv;		
 	}
 };
+
+#ifdef WDLIB_NAMESPACE
+} //wdlib
+#endif
 
 #endif // propobj_h__

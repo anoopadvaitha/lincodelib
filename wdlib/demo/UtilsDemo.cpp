@@ -5,10 +5,7 @@
 #include <iostream>
 using namespace std;
 
-void EnumPropFunc(LPARAM lParam, LPCWSTR strProp, void* pData, bool* bStop)
-{
-	cout<<strProp<<endl;
-}
+CComModule _Module;
 
 void TestPropObj()
 {
