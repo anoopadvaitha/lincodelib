@@ -11,15 +11,15 @@ void TestPropObj()
 {
 	CPropObj PropObj;
 
-	PropObj.SetProp(L"a", (void*)1);
-	PropObj.SetProp(L"b", (void*)2);
-	PropObj.SetProp(L"c", (void*)3);
-	PropObj.SetProp(L"d", (void*)4);
+	PropObj.SetProp(10, (void*)1);
+	PropObj.SetProp(11, (void*)2);
+	PropObj.SetProp(12, (void*)3);
+	PropObj.SetProp(13, (void*)4);
 
 
-	PropObj.RemoveProp(L"b");
+	PropObj.RemoveProp(11);
 
-	int data = (int)PropObj.GetProp(L"b");
+	int data = (int)PropObj.GetProp(11);
 	cout<<data<<endl;
 
 	CPropObj::PropItem item;
@@ -27,7 +27,7 @@ void TestPropObj()
 	while (bSucc)
 	{
 		cout<<item.pData<<endl;
-		PropObj.RemoveProp(L"a");
+		PropObj.RemoveProp(10);
 		bSucc = PropObj.NextProp(item);
 	}
 }
