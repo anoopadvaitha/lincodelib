@@ -19,7 +19,7 @@ namespace wdlib
 class CPropObj
 {
 protected:
-	typedef map<wstring, void*> PropMap;
+	typedef map<UINT, void*> PropMap;
 	PropMap m_mapProp;
 	PropMap::iterator m_curItr;
 protected:
@@ -30,7 +30,7 @@ protected:
 public:
 	struct PropItem
 	{
-		wstring strProp;
+		UINT	uPropId;
 		void*	pData;
 	};
 public:
@@ -43,18 +43,18 @@ public:
 	{
 	}
 
-	bool SetProp(LPCWSTR strProp, void* pData)
+	bool SetProp(UINT uPropId, void* pData)
 	{
-		if (GetProp(strProp))
+		if (GetProp(uPropId))
 			return false;
 
-		m_mapProp.insert(make_pair((wstring)strProp, pData));
+		m_mapProp.insert(make_pair(uPropId, pData));
 		return true;
 	}
 
-	void* GetProp(LPCWSTR strProp)
+	void* GetProp(UINT uPropId)
 	{
-		PropMap::const_iterator itr = m_mapProp.find((wstring)strProp);
+		PropMap::const_iterator itr = m_mapProp.find(uPropId);
 		if (itr == m_mapProp.end())
 			return NULL;
 		
@@ -67,7 +67,7 @@ public:
 		if (m_curItr == m_mapProp.end())
 			return false;
 
-		item.strProp = m_curItr->first;
+		item.uPropId = m_curItr->first;
 		item.pData = m_curItr->second;
 		return true;
 	}
@@ -81,7 +81,7 @@ public:
 		if (m_curItr == m_mapProp.end())
 			return false;
 		
-		item.strProp = m_curItr->first;
+		item.uPropId = m_curItr->first;
 		item.pData = m_curItr->second;
 		return true;
 	}
@@ -91,9 +91,9 @@ public:
 		return m_mapProp.size();
 	}
 
-	void* RemoveProp(LPCWSTR strProp)
+	void* RemoveProp(UINT uPropId)
 	{	
-		PropMap::iterator itr = m_mapProp.find((wstring)strProp);
+		PropMap::iterator itr = m_mapProp.find(uPropId);
 		if (itr == m_mapProp.end())
 			return NULL;
 
@@ -101,7 +101,7 @@ public:
 			++m_curItr;
 
 		void* pv = itr->second;
-		m_mapProp.erase((wstring)strProp);
+		m_mapProp.erase(uPropId);
 		return pv;		
 	}
 };
