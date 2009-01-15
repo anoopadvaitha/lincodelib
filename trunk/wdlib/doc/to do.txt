@@ -2,4 +2,4 @@ GDIUtils.h里的CPicture要重新设计，支持多种图像类型
 threadeventinvoker未经过测试
 
 ziputils
-debugutils->log
+debugutils->log		OK
