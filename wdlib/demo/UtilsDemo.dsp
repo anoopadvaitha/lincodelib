@@ -116,10 +116,6 @@ SOURCE=..\src\DebugUtils.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\src\Error.h
-# End Source File
-# Begin Source File
-
 SOURCE=..\src\ErrorUtils.h
 # End Source File
 # Begin Source File
