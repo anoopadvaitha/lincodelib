@@ -10,6 +10,17 @@ namespace wdlib
 {
 #endif	
 
+//////////////////////////////////////////////////////////////////////////
+// 确保代码只在DEBUG状态下才执行
+#ifdef _DEBUG
+	#define DEBUG_RUN(code)	code
+#else
+	#define DEBUG_RUN(code)
+#endif
+//////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////
 // 类实例计数
 class CCounteChecker
 {
@@ -63,6 +74,148 @@ public:
 	} m_Checker;												
 #endif
 
+//////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////
+//------------------------------------------------------------------------------
+// 简单日志调试，用法如下：
+// 1、开始时调用InitLogDebug
+// 2、调用LogString, LogFormat, LogInteger输出日志
+// 3、结束时调用UnInitLogDebug
+//------------------------------------------------------------------------------
+// 日志输出到哪里
+typedef UINT WHERE_LOG_OUT;
+#define wloToDebugger		1	// 调试器
+#define wloToFile			2	// 文件
+#define wloToConsole		4	// 控制台
+#define wloAll				7	// 全部
+
+// 几个全局变量
+inline wstring& GetLogFilePath()
+{
+	static wstring stLogFilePath;
+	return stLogFilePath;
+}
+inline HANDLE& GetLogFileHandle()
+{
+	static HANDLE stLogFileHandle = INVALID_HANDLE_VALUE;
+	return stLogFileHandle;
+}
+inline HANDLE& GetConsoleHandle()
+{
+	static HANDLE stConsoleHandle = INVALID_HANDLE_VALUE;
+	return stConsoleHandle;
+}
+inline bool& IsAllocConsole()
+{
+	static bool stIsAllock = false;
+	return stIsAllock;
+}
+#define gLogFilePath GetLogFilePath()
+#define gConsoleHandle GetConsoleHandle()
+#define gLogFileHandle GetLogFileHandle()
+#define gIsAllockConsole IsAllocConsole()
+
+
+// 初始化文件句柄
+inline HANDLE InitialLogFile(LPCWSTR strPath)
+{
+	return CreateFileW(strPath, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ, 
+		NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+}
+
+// 初始化控制台
+inline HANDLE InitialConsole()
+{
+	HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+	if (hConsole == INVALID_HANDLE_VALUE)
+	{
+		if (AllocConsole())
+		{
+			hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+			gIsAllockConsole = true;
+		}
+	}
+	return hConsole;
+}
+
+// 初始化日志调试
+inline void InitLogDebug(LPCWSTR strLogFilePath)
+{
+	gLogFilePath = strLogFilePath;
+}
+
+// 结束日志调试
+inline void UnInitLogDebug()
+{
+	if (INVALID_HANDLE_VALUE != gLogFileHandle)
+		CloseHandle(gLogFileHandle);
+	if (gIsAllockConsole && (INVALID_HANDLE_VALUE != gConsoleHandle))
+		FreeConsole();
+}
+
+// 字符串日志
+inline void LogString(WHERE_LOG_OUT logWhere, LPCWSTR strMsg)
+{
+	if (wloToDebugger & logWhere)
+	{
+		ATLTRACE(strMsg);
+	}
+	
+	DWORD nW;
+	if (wloToFile & logWhere)
+	{
+		if (INVALID_HANDLE_VALUE == gLogFileHandle)
+		{
+			gLogFileHandle = InitialLogFile(gLogFilePath.c_str());
+			if (INVALID_HANDLE_VALUE != gLogFileHandle)
+			{
+				WCHAR UNICODEBOM = 0xFEFF;
+				WriteFile(gLogFileHandle, &UNICODEBOM, 2, &nW, NULL);	
+			}
+			else
+				ATLASSERT(!_T("create log file faild"));
+		}
+		if (INVALID_HANDLE_VALUE != gLogFileHandle)
+			WriteFile(gLogFileHandle, strMsg, wcslen(strMsg)*sizeof(WCHAR), &nW, NULL);
+	}
+	
+	if (wloToConsole & logWhere)
+	{
+		if (INVALID_HANDLE_VALUE == gConsoleHandle)
+		{
+			gConsoleHandle = InitialConsole();
+		}
+		if (INVALID_HANDLE_VALUE != gConsoleHandle)
+		{
+			WriteConsoleW(gConsoleHandle, strMsg, wcslen(strMsg), &nW, NULL);
+		}
+		else
+			ATLASSERT(!_T("create console faild"));
+	}
+}
+
+// 格式日志
+inline void LogFormat(WHERE_LOG_OUT logWhere, LPCWSTR strFmt, ...)
+{
+	va_list args;
+	va_start(args, strFmt);
+	
+	int nBuf;
+	WCHAR szBuffer[512];
+	nBuf = _vsnwprintf(szBuffer, sizeof(szBuffer) / sizeof(WCHAR), strFmt, args);
+	
+	LogString(logWhere, szBuffer);
+}
+
+// 整数日志
+inline void LogInteter(WHERE_LOG_OUT logWhere, int n)
+{
+	LogFormat(logWhere, L"%d", n);			
+}	
+
+//////////////////////////////////////////////////////////////////////////
 
 #ifdef WDLIB_NAMESPACE
 } //wdlib
