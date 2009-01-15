@@ -46,6 +46,7 @@ using namespace std;
 #include "propobj.h"
 #include "internalwnd.h"
 #include "threadeventinvoker.h"
+#include "DebugUtils.h"
 
 
 #ifdef WDLIB_NAMESPACE
