@@ -7,5 +7,7 @@
 
 void TestPropObj();
 void TestIniFile();
+void TestStringList();
+void TestZip();
 
 #endif // TestMain_h__

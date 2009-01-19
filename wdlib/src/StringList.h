@@ -73,7 +73,7 @@ public:
 };
 
 // 检查文本流的字符集
-StreamCharSet DetectCharacterSet(CStream* pStream)
+inline StreamCharSet DetectCharacterSet(CStream* pStream)
 {
 	WCHAR cByteOrderMark = 0;
 	char UTF8BOM[4] = "\xEF\xBB\xBF";
