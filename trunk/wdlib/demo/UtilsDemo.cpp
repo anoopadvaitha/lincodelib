@@ -8,8 +8,12 @@ CComModule _Module;
 
 int main(int argc, char* argv[])
 {
-	DEBUG_RUN(InitLogDebug(L"wdlib.log"));
-	TestPropObj();
-	DEBUG_RUN(UnInitLogDebug());
+	wstring strPath = GetAppPathW() + L"wdlib.log";
+	InitLogDebug(wloToDebugger | wloToFile, strPath.c_str());
+	
+	//TestPropObj();
+	TestIniFile();
+	
+	UnInitLogDebug();
 	return 0;
 }

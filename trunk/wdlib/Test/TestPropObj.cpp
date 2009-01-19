@@ -7,7 +7,7 @@ void PrintPropObj(CPropObj& propobj)
 	bool bSucc = propobj.FirstProp(item);
 	while (bSucc)
 	{
-		DEBUG_RUN(LogFormat(wloAll, L"%d: %d\r\n", item.uPropId, item.pData));
+		DEBUG_RUN(LogFmtLn(L"%d: %d", item.uPropId, item.pData));
 		bSucc = propobj.NextProp(item);
 	}
 }
@@ -25,5 +25,5 @@ void TestPropObj()
 	PropObj.RemoveProp(11);
 	PrintPropObj(PropObj);
 
-	DEBUG_RUN(LogFormat(wloAll, L"%d\r\n", PropObj.GetProp(11)));
+	DEBUG_RUN(LogFmtLn(L"%d", PropObj.GetProp(11)));
 }

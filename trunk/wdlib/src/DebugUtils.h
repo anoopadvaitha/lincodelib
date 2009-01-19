@@ -82,7 +82,8 @@ public:
 // 简单日志调试，用法如下：
 // 1、开始时调用InitLogDebug
 // 2、调用LogString, LogFormat, LogInteger输出日志
-// 3、结束时调用UnInitLogDebug
+// 3、也可以用LogString2， LogString3等简化输出
+// 4、结束时调用UnInitLogDebug
 //------------------------------------------------------------------------------
 // 日志输出到哪里
 typedef UINT WHERE_LOG_OUT;
@@ -112,11 +113,16 @@ inline bool& IsAllocConsole()
 	static bool stIsAllock = false;
 	return stIsAllock;
 }
+inline WHERE_LOG_OUT& GetWhereLogOut()
+{
+	static WHERE_LOG_OUT stWhereLogOut = 0;
+	return stWhereLogOut;
+} 
 #define gLogFilePath GetLogFilePath()
 #define gConsoleHandle GetConsoleHandle()
 #define gLogFileHandle GetLogFileHandle()
 #define gIsAllockConsole IsAllocConsole()
-
+#define gWhereLogOut GetWhereLogOut()
 
 // 初始化文件句柄
 inline HANDLE InitialLogFile(LPCWSTR strPath)
@@ -140,31 +146,16 @@ inline HANDLE InitialConsole()
 	return hConsole;
 }
 
-// 初始化日志调试
-inline void InitLogDebug(LPCWSTR strLogFilePath)
+// 日志
+inline void _LogOut(LPCWSTR strMsg)
 {
-	gLogFilePath = strLogFilePath;
-}
-
-// 结束日志调试
-inline void UnInitLogDebug()
-{
-	if (INVALID_HANDLE_VALUE != gLogFileHandle)
-		CloseHandle(gLogFileHandle);
-	if (gIsAllockConsole && (INVALID_HANDLE_VALUE != gConsoleHandle))
-		FreeConsole();
-}
-
-// 字符串日志
-inline void LogString(WHERE_LOG_OUT logWhere, LPCWSTR strMsg)
-{
-	if (wloToDebugger & logWhere)
+	if (wloToDebugger & gWhereLogOut)
 	{
 		ATLTRACE(strMsg);
 	}
 	
 	DWORD nW;
-	if (wloToFile & logWhere)
+	if (wloToFile & gWhereLogOut)
 	{
 		if (INVALID_HANDLE_VALUE == gLogFileHandle)
 		{
@@ -181,7 +172,7 @@ inline void LogString(WHERE_LOG_OUT logWhere, LPCWSTR strMsg)
 			WriteFile(gLogFileHandle, strMsg, wcslen(strMsg)*sizeof(WCHAR), &nW, NULL);
 	}
 	
-	if (wloToConsole & logWhere)
+	if (wloToConsole & gWhereLogOut)
 	{
 		if (INVALID_HANDLE_VALUE == gConsoleHandle)
 		{
@@ -196,8 +187,27 @@ inline void LogString(WHERE_LOG_OUT logWhere, LPCWSTR strMsg)
 	}
 }
 
-// 格式日志
-inline void LogFormat(WHERE_LOG_OUT logWhere, LPCWSTR strFmt, ...)
+//------------------------------------------------------------------------------
+// 接口
+
+// 初始化日志调试
+inline void InitLogDebug(WHERE_LOG_OUT logWhere, LPCWSTR strLogFilePath)
+{
+	gLogFilePath = strLogFilePath;
+	gWhereLogOut = logWhere;
+}
+
+// 结束日志调试
+inline void UnInitLogDebug()
+{
+	if (INVALID_HANDLE_VALUE != gLogFileHandle)
+		CloseHandle(gLogFileHandle);
+	if (gIsAllockConsole && (INVALID_HANDLE_VALUE != gConsoleHandle))
+		FreeConsole();
+}
+
+// 输出格式化日志
+inline void LogFmt(LPCWSTR strFmt, ...)
 {
 	va_list args;
 	va_start(args, strFmt);
@@ -206,14 +216,46 @@ inline void LogFormat(WHERE_LOG_OUT logWhere, LPCWSTR strFmt, ...)
 	WCHAR szBuffer[512];
 	nBuf = _vsnwprintf(szBuffer, sizeof(szBuffer) / sizeof(WCHAR), strFmt, args);
 	
-	LogString(logWhere, szBuffer);
+	_LogOut(szBuffer);
 }
 
-// 整数日志
-inline void LogInteter(WHERE_LOG_OUT logWhere, int n)
+// 输出格式化日志，结尾加上回车换行符
+inline void LogFmtLn(LPCWSTR strFmt, ...)
 {
-	LogFormat(logWhere, L"%d", n);			
-}	
+	va_list args;
+	va_start(args, strFmt);
+	
+	int nBuf;
+	WCHAR szBuffer[512];
+	nBuf = _vsnwprintf(szBuffer, sizeof(szBuffer) / sizeof(WCHAR), strFmt, args);
+	
+	_LogOut(szBuffer);
+	_LogOut(L"\r\n");
+}
+
+// 输出字符串
+inline void LogStr(LPCWSTR strMsg)
+{
+	LogFmt(L"%s", strMsg);
+}
+
+// 输出字符串，结尾加上回车换行符
+inline void LogStrLn(LPCWSTR strMsg)
+{
+	LogFmt(L"%s\r\n", strMsg);
+}
+
+// 输出整数日志
+inline void LogInt(int n)
+{
+	LogFmt(L"%d", n);			
+}
+
+// 输出整数日志，结尾加上回车换行符
+inline void LogIntLn(int n)
+{
+	LogFmt(L"%d\r\n", n);
+}
 
 //////////////////////////////////////////////////////////////////////////
 

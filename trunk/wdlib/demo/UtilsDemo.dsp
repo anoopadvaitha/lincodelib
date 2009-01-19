@@ -196,6 +196,10 @@ SOURCE=.\ReadMe.txt
 # PROP Default_Filter ""
 # Begin Source File
 
+SOURCE=..\Test\testinifile.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=..\Test\TestMain.h
 # End Source File
 # Begin Source File

@@ -17,14 +17,12 @@ namespace wdlib
 class CIniFileA
 {
 private:
-	string m_FileName;
-private:
-	// 禁止默认构造函数和拷贝构造函数
-	CIniFileA() {};
-	CIniFileA(CIniFileA&) {}
-	void operator = (CIniFileA&){}	
+	string	m_FileName;
+	BOOL	m_bInited;
 public:
-	CIniFileA(LPCSTR szFileName);
+	CIniFileA();
+	// 初始化，如果文件不存在，写的时候将创建一个
+	void Init(LPCSTR szFileName);
 	// 读取一个Key的值
 	string ReadValue(LPCSTR szSection, LPCSTR szKey, LPCSTR szDef = "");
 	// 读取一个节的所有Key
@@ -41,9 +39,14 @@ public:
 	BOOL DeleteKey(LPCSTR szSection, LPCSTR szKey);
 };
 
-inline CIniFileA::CIniFileA(LPCSTR szFileName)
+inline CIniFileA::CIniFileA(): m_bInited(FALSE)
+{
+}
+
+inline void CIniFileA::Init(LPCSTR szFileName)
 {
 	m_FileName = szFileName;
+	m_bInited = TRUE;
 }
 
 inline string CIniFileA::ReadValue(LPCSTR szSection, LPCSTR szKey, LPCSTR szDef /* =  */)
@@ -119,13 +122,11 @@ class CIniFileW
 {
 private:
 	wstring m_FileName;
-private:
-	// 禁止默认构造函数和拷贝构造函数
-	CIniFileW() {};
-	CIniFileW(CIniFileW&) {}
-	void operator = (CIniFileW&){}	
+	BOOL	m_bInited;
 public:
-	CIniFileW(LPCWSTR szFileName);
+	CIniFileW();
+	// 初始化，如果文件不存在，写的时候将创建一个
+	void Init(LPCWSTR szFileName);
 	// 读取一个Key的值
 	wstring ReadValue(LPCWSTR szSection, LPCWSTR szKey, LPCWSTR szDef = L"");
 	// 读取一个节的所有Key
@@ -142,9 +143,15 @@ public:
 	BOOL DeleteKey(LPCWSTR szSection, LPCWSTR szKey);
 };
 
-inline CIniFileW::CIniFileW(LPCWSTR szFileName)
+inline CIniFileW::CIniFileW(): m_bInited(FALSE)
+{
+
+}
+
+inline void CIniFileW::Init(LPCWSTR szFileName)
 {
 	m_FileName = szFileName;
+	m_bInited = TRUE;
 }
 
 inline wstring CIniFileW::ReadValue(LPCWSTR szSection, LPCWSTR szKey, LPCWSTR szDef /* =  */)
