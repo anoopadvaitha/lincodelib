@@ -12,7 +12,9 @@ int main(int argc, char* argv[])
 	InitLogDebug(wloToDebugger | wloToFile, strPath.c_str());
 	
 	//TestPropObj();
-	TestIniFile();
+	//TestIniFile();
+	//TestStringList();
+	TestZip();
 	
 	UnInitLogDebug();
 	return 0;

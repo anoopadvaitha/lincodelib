@@ -206,6 +206,38 @@ SOURCE=..\Test\TestMain.h
 
 SOURCE=..\Test\TestPropObj.cpp
 # End Source File
+# Begin Source File
+
+SOURCE=..\Test\teststringlist.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\Test\testzip.cpp
+# End Source File
+# End Group
+# Begin Group "3rdparty"
+
+# PROP Default_Filter ""
+# Begin Group "zip"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\3rdparty\zip\unzip.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\3rdparty\zip\unzip.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\3rdparty\zip\zip.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\3rdparty\zip\zip.h
+# End Source File
+# End Group
 # End Group
 # End Target
 # End Project
