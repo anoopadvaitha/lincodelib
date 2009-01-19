@@ -243,6 +243,27 @@ inline void MakeSureDirExsitsA( string& sDir )
 	CreateDirectoryA(sDir.c_str(), NULL);
 }
 
+//------------------------------------------------------------------------------
+// 取得程序当前的路径
+//------------------------------------------------------------------------------
+inline string GetAppPathA()
+{
+	char szFile[MAX_PATH] = {0};
+	if (0 == GetModuleFileNameA(NULL, szFile, MAX_PATH))
+		return (string)"";
+
+	return ExtractFilePath((string)szFile);
+}
+inline wstring GetAppPathW()
+{
+	WCHAR szFile[MAX_PATH] = {0};
+	if (0 == GetModuleFileNameW(NULL, szFile, MAX_PATH))
+		return (wstring)L"";
+	
+	return ExtractFilePath((wstring)szFile);
+}
+
+
 #ifdef WDLIB_NAMESPACE
 } //wdlib
 #endif

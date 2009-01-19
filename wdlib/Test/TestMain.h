@@ -6,5 +6,6 @@
 #define TestMain_h__
 
 void TestPropObj();
+void TestIniFile();
 
 #endif // TestMain_h__
