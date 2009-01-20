@@ -182,6 +182,10 @@ SOURCE=..\src\wdTypes.h
 
 SOURCE=..\src\WndUtils.h
 # End Source File
+# Begin Source File
+
+SOURCE=..\src\zipper.h
+# End Source File
 # End Group
 # Begin Group "Resource Files"
 
