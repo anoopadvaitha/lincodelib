@@ -3,18 +3,6 @@ Microsoft Developer Studio Workspace File, Format Version 6.00
 
 ###############################################################################
 
-Project: "AddinZipper"="E:\svn_head\Coding\office\app\projects\tools\UnZipper(utf8)\source\AddinZipper\AddinZipper.dsp" - Package Owner=<4>
-
-Package=<5>
-{{{
-}}}
-
-Package=<4>
-{{{
-}}}
-
-###############################################################################
-
 Project: "UtilsDemo"=.\UtilsDemo.dsp - Package Owner=<4>
 
 Package=<5>

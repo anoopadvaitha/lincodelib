@@ -82,7 +82,7 @@ public:
 	}
 
 	// 压缩文件夹
-	// strFolder为要压缩的文件夹路径，结尾不能包含\
+	// strFolder为要压缩的文件夹路径，结尾不能包含"\"
 	// szZip为生成的压缩包路径
 	// bIncludeFolder是否包含根文件夹
 	// szPassword密码
@@ -141,6 +141,8 @@ public:
 				continue;
 			
 			strPath = szRoot;
+			if (!strPath.empty() && (strPath[strPath.length() - 1] != _T('\\')))
+				strPath += _T("\\");
 			strPath += ze.name;
 			UnzipItem(hz, i, strPath.c_str());
 		}
