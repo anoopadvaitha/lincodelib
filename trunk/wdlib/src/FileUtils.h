@@ -179,7 +179,7 @@ inline basic_string<ct> ExcludeTrailingPathDelimiter(const basic_string<ct>& sPa
 // sPath 文件路径
 //------------------------------------------------------------------------------
 template<class ct>
-inline basic_string<ct> SlashesToBackslashes(const basic_string<ct>& sPath)
+inline basic_string<ct> SlToBsl(const basic_string<ct>& sPath)
 {
 	basic_string<ct> sNewPath;
 	ct cSlashes = 0x2F;
@@ -201,7 +201,7 @@ inline basic_string<ct> SlashesToBackslashes(const basic_string<ct>& sPath)
 // sPath 文件路径
 //------------------------------------------------------------------------------
 template<class ct>
-inline basic_string<ct> BackslashesToSlashes(const basic_string<ct>& sPath)
+inline basic_string<ct> BslToSl(const basic_string<ct>& sPath)
 {
 	basic_string<ct> sNewPath;
 	ct cSlashes = 0x2F;
