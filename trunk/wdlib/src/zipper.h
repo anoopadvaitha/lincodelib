@@ -5,6 +5,8 @@
 #ifndef zipper_h__
 #define zipper_h__
 
+#include "FileUtils.h"
+#include "wdTypes.h"
 #include "../3rdparty/zip/zip.h"
 #include "../3rdparty/zip/unzip.h"
 
@@ -18,6 +20,56 @@ class CFileZipper
 {
 private:
 	HZIP m_hZip;
+private:
+	BOOL DirExists(LPCTSTR szFolder)
+	{
+		DWORD dwRet = GetFileAttributes(szFolder);
+		return ((dwRet != 0xFFFFFFFF) && ((FILE_ATTRIBUTE_DIRECTORY & dwRet) != 0));
+	}
+
+	void EnumFolder(LPCTSTR szFolder, LPCTSTR szBasePath)
+	{
+		if (!DirExists(szFolder))
+			return;
+
+		tstring strDir = szFolder;
+		strDir += _T("\\*");
+		
+		WIN32_FIND_DATA fd;
+		HANDLE hSearch = FindFirstFile(strDir.c_str(), &fd);
+		if(hSearch == INVALID_HANDLE_VALUE)
+			return;
+		
+		do
+		{
+			if ((_tcscmp(fd.cFileName,  _T(".")) == 0) || 
+				(_tcscmp(fd.cFileName,  _T("..")) == 0))
+				continue;
+			
+			if ((FILE_ATTRIBUTE_DIRECTORY & fd.dwFileAttributes) != 0) 
+			{
+				tstring strBaseDir = szBasePath;
+				strBaseDir += _T("\\");
+				strBaseDir += fd.cFileName;
+				tstring strFolder = szFolder;
+				strFolder += _T("\\");
+				strFolder += fd.cFileName;
+				EnumFolder(strFolder.c_str(), strBaseDir.c_str());
+			}
+			else
+			{
+				tstring strFile = szFolder;
+				strFile += _T("\\");
+				strFile += fd.cFileName;
+				tstring strName = szBasePath;
+				strName += _T("\\");
+				strName += fd.cFileName;
+				AddFile(strFile.c_str(), strName.c_str());
+			}
+		} while(FindNextFile(hSearch, &fd));
+
+		FindClose(hSearch);
+	}
 public:
 	CFileZipper(): m_hZip(NULL)
 	{
@@ -30,42 +82,47 @@ public:
 	}
 
 	// 压缩文件夹
-	// strFolder为要压缩的文件夹路径，
-	// strZip为生成的压缩包路径
+	// strFolder为要压缩的文件夹路径，结尾不能包含\
+	// szZip为生成的压缩包路径
 	// bIncludeFolder是否包含根文件夹
-	// strPassword密码
-	BOOL ZipFolder(LPCTSTR strFolder, LPCTSTR strZip, BOOL bIncludeFolder = TRUE, LPCSTR strPassword = NULL)
+	// szPassword密码
+	// TODO：怎么压缩空目录
+	BOOL ZipFolder(LPCTSTR szFolder, LPCTSTR szZip, BOOL bIncludeFolder = TRUE, LPCSTR szPassword = NULL)
 	{
-		return FALSE;
+		if (!BeginZip(szZip, szPassword))
+			return FALSE;
+
+		tstring strBaseDir;
+		if (bIncludeFolder)
+			strBaseDir = ExtractFileName((tstring)szFolder);
+		EnumFolder(szFolder, strBaseDir.c_str());
+
+		return EndZip();
 	}
 
 	// 压缩文件
-	BOOL ZipFile(LPCTSTR strFile, LPCTSTR strZip, LPCSTR strPassword = NULL)
+	BOOL ZipFile(LPCTSTR szFile, LPCTSTR szZip, LPCSTR szPassword = NULL)
 	{
-		if (!BeginZip(strZip, strPassword))
+		if (!BeginZip(szZip, szPassword))
 			return FALSE;
 
-		#ifdef UNICODE
-			wstring strName = ExtractFileName((wstring)strFile);
-		#else
-			string strName = ExtractFileName((string)strFile);	
-		#endif
-
-		BOOL bret = AddFile(strFile, strName.c_str());
+		tstring strName = ExtractFileName((tstring)szFile);
+		BOOL bret = AddFile(szFile, strName.c_str());
 		EndZip();
 		return bret;
 	}
 	
-	// 解压, strZip为压缩包路径，strRoot为解压的根目录，strPassword为解压密码
-	BOOL Unzip(LPCTSTR strZip, LPCTSTR strRoot, LPCSTR strPassword = NULL)
+	// 解压, szZip为压缩包路径，szRoot为解压的根目录，szPassword为解压密码
+	// 结尾不能包含"\"
+	BOOL Unzip(LPCTSTR szZip, LPCTSTR szRoot, LPCSTR szPassword = NULL)
 	{
 		ZIPENTRY ze;
 		ZRESULT zr;
 		int i;
 		int numitems;
-		TCHAR szPath[MAX_PATH] = {0};
+		tstring strPath;
 		
-		HZIP hz = OpenZip(strZip, strPassword);
+		HZIP hz = OpenZip(szZip, szPassword);
 		if (!hz)
 			return FALSE;
 		
@@ -83,30 +140,29 @@ public:
 			if (zr != ZR_OK)
 				continue;
 			
-			ZeroMemory(szPath, MAX_PATH * sizeof(TCHAR));
-			_tcscpy(szPath, strRoot);
-			_tcscat(szPath, ze.name);
-			UnzipItem(hz, i, szPath);
+			strPath = szRoot;
+			strPath += ze.name;
+			UnzipItem(hz, i, strPath.c_str());
 		}
 		
 		CloseZip(hz);
 		return TRUE;	
 	}
 	
-	// 开始压缩，strZip为压缩文件路径，strPassword为密码
-	BOOL BeginZip(LPCTSTR strZip, LPCSTR strPassword = NULL)
+	// 开始压缩，szZip为压缩文件路径，szPassword为密码
+	BOOL BeginZip(LPCTSTR szZip, LPCSTR szPassword = NULL)
 	{
-		m_hZip = CreateZip(strZip, strPassword);
+		m_hZip = CreateZip(szZip, szPassword);
 		return (NULL != m_hZip);
 	}
 	
-	// 把文件加入压缩包里，strFile为文件路径，strName为加入压缩包的名字
-	BOOL AddFile(LPCTSTR strFile, LPCTSTR strName)
+	// 把文件加入压缩包里，szFile为文件路径，strName为加入压缩包的名字
+	BOOL AddFile(LPCTSTR szFile, LPCTSTR szName)
 	{
 		if (!m_hZip)
 			return FALSE;
 
-		return (ZipAdd(m_hZip, strName, strFile) == ZR_OK);
+		return (ZipAdd(m_hZip, szName, szFile) == ZR_OK);
 	}
 	
 	// 结束压缩
