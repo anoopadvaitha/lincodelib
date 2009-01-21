@@ -13,6 +13,10 @@ namespace wdlib
 typedef vector<string> CStringVector;
 typedef vector<wstring> CWStringVector;
 
+typedef basic_string<TCHAR, char_traits<TCHAR>,
+allocator<TCHAR> > tstring;
+
+
 #ifdef WDLIB_NAMESPACE
 } //wdlib
 #endif
