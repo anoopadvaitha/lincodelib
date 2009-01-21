@@ -47,6 +47,7 @@ using namespace std;
 #include "internalwnd.h"
 #include "threadeventinvoker.h"
 #include "DebugUtils.h"
+#include "zipper.h"
 
 
 #ifdef WDLIB_NAMESPACE
