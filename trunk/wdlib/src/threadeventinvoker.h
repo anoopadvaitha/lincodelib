@@ -32,7 +32,7 @@ class CThreadEventInvoker: public IMsgHandler
 		UINT uParamSize;
 		/* Param */
 	};
-	typedef vector<EventInfo*> EventInfoList;
+	typedef std::vector<EventInfo*> EventInfoList;
 	#define WM_THREADSYNEVENT		WM_USER + 0x0001
 	#define WM_THREADASYNEVENT		WM_USER + 0x0002
 private:

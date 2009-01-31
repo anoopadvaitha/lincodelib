@@ -25,9 +25,9 @@ namespace wdlib
 #include <vector>
 #include <list>
 #include <map>
-using namespace std;
 
 // wdlib
+#include "gdiplusutils.h"
 #include "wdTypes.h"
 #include "ComUtils.h"
 #include "ErrorUtils.h"

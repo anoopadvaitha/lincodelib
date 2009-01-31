@@ -120,7 +120,7 @@ inline void CStringList::ParseText(char* pBuf)
 	if (!pBuf) return;
 	
 	char* pStart;
-	string sLine;
+	std::string sLine;
 	while (*pBuf)
 	{
 		pStart = pBuf;
@@ -168,7 +168,7 @@ inline void CStringList::SaveToFile(LPCSTR szFileName)
 inline void CStringList::SaveToStream(CStream* pStream)
 {
 	char cLB[3] = "\r\n";
-	string sText;
+	std::string sText;
 	CStringVector::iterator itr;
 	int nL = 0;
 	for (itr = begin(); itr != end(); ++itr, ++nL)
@@ -184,7 +184,7 @@ inline void CStringList::SaveToStream(CStream* pStream)
 inline void CStringList::LoadFromWStringList(const CWStringVector& WStrList)
 {
 	clear();
-	string sLine;
+	std::string sLine;
 	for (int i = 0; i < WStrList.size(); ++i)
 	{
 		sLine = WStringToString(WStrList[i]);
@@ -220,7 +220,7 @@ inline void CWStringList::ParseText(WCHAR* pBuf)
 	if (!pBuf) return;
 	
 	WCHAR* pStart;
-	wstring sLine;
+	std::wstring sLine;
 	while (*pBuf)
 	{
 		pStart = pBuf;
@@ -303,7 +303,7 @@ inline void CWStringList::SaveToStream_BOM(CStream* pStream, BOOL bCheckBOM)
 		pStream->WriteBuffer(&cBOM, sizeof(cBOM));
 	}
 	WCHAR cLB[3] = L"\r\n";
-	wstring sText;
+	std::wstring sText;
 	CWStringVector::iterator itr;
 	for (itr = begin(); itr != end(); ++itr)
 	{
@@ -315,7 +315,7 @@ inline void CWStringList::SaveToStream_BOM(CStream* pStream, BOOL bCheckBOM)
 inline void CWStringList::LoadFromStringList(const CStringVector& StrList)
 {
 	clear();
-	wstring sLine;
+	std::wstring sLine;
 	for (int i = 0; i < StrList.size(); ++i)
 	{
 		sLine = StringToWString(StrList[i]);

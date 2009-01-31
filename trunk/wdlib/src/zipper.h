@@ -7,8 +7,10 @@
 
 #include "FileUtils.h"
 #include "wdTypes.h"
-#include "../3rdparty/zip/zip.h"
-#include "../3rdparty/zip/unzip.h"
+// 把zip.h; zip.cpp; unzip.h; unzip.cpp加入本工程
+// 并把文件所在目录加入搜索路径
+#include "zip.h"
+#include "unzip.h"
 
 #ifdef WDLIB_NAMESPACE
 namespace wdlib

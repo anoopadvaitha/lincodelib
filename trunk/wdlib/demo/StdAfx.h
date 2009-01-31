@@ -17,10 +17,6 @@ extern CComModule _Module;
 
 #include <atlwin.h>
 
-#include <iostream>
-#include <string>
-using namespace std;
-
 
 #include "..\src\wdlib.h"
 

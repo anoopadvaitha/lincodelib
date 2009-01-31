@@ -19,7 +19,7 @@ namespace wdlib
 // hRes:	资源模块句柄，默认NULL表示Exe模块，如果资源字符串在DLL里，须传该DLL的模块句柄。
 // return:	资源字符串返回
 //------------------------------------------------------------------------------
-inline string LoadResStringA(UINT uID, HINSTANCE hRes = NULL)
+inline std::string LoadResStringA(UINT uID, HINSTANCE hRes = NULL)
 {
 // MSDN 说一个资源字符串不能大于4097个字符：http://msdn2.microsoft.com/en-us/library/aa381050.aspx
 // 但经验表明，很少会使用大于1024的资源字符串，考虑到栈空间的浪费，这里给出一个选择：
@@ -32,9 +32,9 @@ inline string LoadResStringA(UINT uID, HINSTANCE hRes = NULL)
 	
 	char buf[MAX_SIZE] = {0};
 	if ((uID <= 65535) && (LoadStringA(hRes, uID, buf, MAX_SIZE) != 0))
-		return (string)buf;
+		return (std::string)buf;
 	else
-		return (string)"";
+		return (std::string)"";
 }
 
 //------------------------------------------------------------------------------
@@ -43,7 +43,7 @@ inline string LoadResStringA(UINT uID, HINSTANCE hRes = NULL)
 // hRes:	资源模块句柄，默认NULL表示Exe模块，如果资源字符串在DLL里，须传该DLL的模块句柄。
 // return:	资源字符串返回
 //------------------------------------------------------------------------------
-inline wstring LoadResStringW(UINT uID, HINSTANCE hRes = NULL)
+inline std::wstring LoadResStringW(UINT uID, HINSTANCE hRes = NULL)
 {
 // MSDN 说一个资源字符串不能大于4097个字符：http://msdn2.microsoft.com/en-us/library/aa381050.aspx
 // 但经验表明，很少会使用大于1024的资源字符串，考虑到栈空间的浪费，这里给出一个选择：
@@ -56,9 +56,9 @@ inline wstring LoadResStringW(UINT uID, HINSTANCE hRes = NULL)
 	
 	WCHAR buf[MAX_SIZE] = {0};
 	if ((uID <= 65535) && (LoadStringW(hRes, uID, buf, MAX_SIZE) != 0))
-		return (wstring)buf;
+		return (std::wstring)buf;
 	else
-		return (wstring)L"";
+		return (std::wstring)L"";
 }
 
 //------------------------------------------------------------------------------
@@ -107,7 +107,7 @@ inline void GetCommandLinesA(CStringVector& sCmdLines)
 
 		// 解析参数
 		char* pStart = pCmd;
-		string sParam;
+		std::string sParam;
 		if (pCmd[0] == '"')
 		{
 			pCmd = CharNextA(pCmd);
@@ -153,7 +153,7 @@ inline void GetCommandLinesW(CWStringVector& sCmdLines)
 		
 		// 解析参数
 		WCHAR* pStart = pCmd;
-		wstring sParam;
+		std::wstring sParam;
 		if (pCmd[0] == '"')
 		{
 			pStart = ++pCmd;
@@ -191,13 +191,13 @@ inline void GetCommandLinesW(CWStringVector& sCmdLines)
 // bCreate如果文件夹不存在，是否强制创建，默认为False
 // 返回文件夹的路径，不包括反斜杠
 //------------------------------------------------------------------------------
-inline string GetSpecialFolderPathA(int nFolder, BOOL bCreate = FALSE)
+inline std::string GetSpecialFolderPathA(int nFolder, BOOL bCreate = FALSE)
 {
 	char szPath[MAX_PATH] = {0};
 	if (SHGetSpecialFolderPathA(NULL, szPath, nFolder, bCreate))
-		return (string)szPath;
+		return (std::string)szPath;
 	else
-		return (string)"";
+		return (std::string)"";
 }
 
 //------------------------------------------------------------------------------
@@ -206,13 +206,13 @@ inline string GetSpecialFolderPathA(int nFolder, BOOL bCreate = FALSE)
 // bCreate如果文件夹不存在，是否强制创建，默认为False
 // 返回文件夹的路径，不包括反斜杠
 //------------------------------------------------------------------------------
-inline wstring GetSpecialFolderPathW(int nFolder, BOOL bCreate = FALSE)
+inline std::wstring GetSpecialFolderPathW(int nFolder, BOOL bCreate = FALSE)
 {
 	WCHAR szPath[MAX_PATH] = {0};
 	if (SHGetSpecialFolderPathW(NULL, szPath, nFolder, bCreate))
-		return (wstring)szPath;
+		return (std::wstring)szPath;
 	else
-		return (wstring)L"";
+		return (std::wstring)L"";
 }
 
 //------------------------------------------------------------------------------
@@ -242,7 +242,7 @@ inline wstring GetSpecialFolderPathW(int nFolder, BOOL bCreate = FALSE)
 // hWnd 窗口句柄
 // str  返回的文本
 //------------------------------------------------------------------------------
-inline void GetWndTextA(HWND hWnd, string& str)
+inline void GetWndTextA(HWND hWnd, std::string& str)
 {
 	int nLen = ::SendMessageA(hWnd, WM_GETTEXTLENGTH, 0, 0);
 	char* szText = new char[nLen+1];
@@ -257,7 +257,7 @@ inline void GetWndTextA(HWND hWnd, string& str)
 // hWnd 窗口句柄
 // str  返回的文本
 //------------------------------------------------------------------------------
-inline void GetWndTextW(HWND hWnd, wstring& str)
+inline void GetWndTextW(HWND hWnd, std::wstring& str)
 {
 	int nLen = ::SendMessageW(hWnd, WM_GETTEXTLENGTH, 0, 0);
 	WCHAR* szText = new WCHAR[nLen+1];

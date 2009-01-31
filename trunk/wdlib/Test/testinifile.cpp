@@ -5,7 +5,7 @@ void TestIniFile()
 {
 	// 创建一个ini
 	CIniFileW IniFile;
-	wstring strPath = GetAppPathW() + L"1.ini";
+	std::wstring strPath = GetAppPathW() + L"1.ini";
 	IniFile.Init(strPath.c_str());
 
 	IniFile.WriteValue(L"sec1", L"key1", L"value1");
@@ -19,7 +19,7 @@ void TestIniFile()
 	IniFile.WriteValue(L"sec2", L"key3", L"value3");
 	IniFile.WriteValue(L"sec2", L"key4", L"value4");
 
-	wstring strValue = IniFile.ReadValue(L"sec1", L"key1", L"");
+	std::wstring strValue = IniFile.ReadValue(L"sec1", L"key1", L"");
 	LogStrLn(strValue.c_str());
 
 	CWStringVector strList;

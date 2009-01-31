@@ -20,7 +20,7 @@ interface IMsgHandler
 class CInternalWnd: public CWindowImpl<CInternalWnd>
 {
 	#define STR_INTERNALWND	_T("{83eaf87c-e661-4fbe-b450-c70de6f15f67}")
-	typedef vector<UINT> TimerIDList;
+	typedef std::vector<UINT> TimerIDList;
 private:
 	IMsgHandler* m_pMsgHandler;
 	TimerIDList m_TimerIDList;

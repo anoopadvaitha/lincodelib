@@ -19,7 +19,7 @@ namespace wdlib
 class CPropObj
 {
 protected:
-	typedef map<UINT, void*> PropMap;
+	typedef std::map<UINT, void*> PropMap;
 	PropMap m_mapProp;
 	PropMap::iterator m_curItr;
 protected:
@@ -48,7 +48,7 @@ public:
 		if (GetProp(uPropId))
 			return false;
 
-		m_mapProp.insert(make_pair(uPropId, pData));
+		m_mapProp.insert(std::make_pair(uPropId, pData));
 		return true;
 	}
 

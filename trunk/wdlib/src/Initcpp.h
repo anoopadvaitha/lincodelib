@@ -100,7 +100,7 @@ struct EntryPointRec
 };
 
 // 进入点结构列表
-typedef list<EntryPointRec> EntryPointList;
+typedef std::list<EntryPointRec> EntryPointList;
 inline EntryPointList& GetEntryPointList()
 {
 	static EntryPointList gs_EntryPointList;
@@ -116,7 +116,7 @@ private:
 		CurSortType() = st;
 		if (CurSortType() != st_none)
 		{
-			greater<EntryPointRec> g;
+			std::greater<EntryPointRec> g;
 			GetEntryPointList().sort(g);
 
 			EntryPointList::iterator itr;

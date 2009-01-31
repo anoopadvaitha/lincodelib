@@ -16,9 +16,9 @@ namespace wdlib
 // 将string转换为wstring
 // dwCodePage string的代码页，默认为当前线程的代码页
 //------------------------------------------------------------------------------
-inline wstring StringToWString(const string& str, UINT dwCodePage = CP_THREAD_ACP)
+inline std::wstring StringToWString(const std::string& str, UINT dwCodePage = CP_THREAD_ACP)
 {
-	wstring sDest;
+	std::wstring sDest;
 	int nSize = MultiByteToWideChar(dwCodePage, 0, str.c_str(), -1, 0, 0);
 	if(nSize > 0)
 	{
@@ -34,9 +34,9 @@ inline wstring StringToWString(const string& str, UINT dwCodePage = CP_THREAD_AC
 // 将wstring转换为string
 // dwCodePage string的代码页，默认为当前线程的代码页
 //------------------------------------------------------------------------------
-inline string WStringToString(const wstring& str, UINT dwCodePage = CP_THREAD_ACP)
+inline std::string WStringToString(const std::wstring& str, UINT dwCodePage = CP_THREAD_ACP)
 {
-	string sDest;
+	std::string sDest;
 	int nLen = WideCharToMultiByte(dwCodePage, 0, str.c_str(), -1, NULL, 0, NULL, NULL);
 	if (nLen >= 0)
 	{	
@@ -53,9 +53,9 @@ inline string WStringToString(const wstring& str, UINT dwCodePage = CP_THREAD_AC
 // 支持以basic_string为基类的字符串：wstring , string
 //------------------------------------------------------------------------------
 template <class ct>
-inline basic_string<ct> Trim(const basic_string<ct>& str, ct c = 0x20)
+inline std::basic_string<ct> Trim(const std::basic_string<ct>& str, ct c = 0x20)
 {
-	basic_string<ct> sDest = str;
+	std::basic_string<ct> sDest = str;
 	sDest.erase(0, sDest.find_first_not_of(c));
 	sDest.erase(sDest.find_last_not_of(c) + 1);
 	return sDest;
@@ -66,9 +66,9 @@ inline basic_string<ct> Trim(const basic_string<ct>& str, ct c = 0x20)
 // 支持以basic_string为基类的字符串：wstring , string	
 //------------------------------------------------------------------------------
 template <class ct>
-inline basic_string<ct> TrimLeft(const basic_string<ct>& str, ct c= 0x20)
+inline std::basic_string<ct> TrimLeft(const std::basic_string<ct>& str, ct c= 0x20)
 {
-	basic_string<ct> sDest = str;
+	std::basic_string<ct> sDest = str;
 	sDest.erase(0, sDest.find_first_not_of(c));
 	return sDest;
 }
@@ -78,9 +78,9 @@ inline basic_string<ct> TrimLeft(const basic_string<ct>& str, ct c= 0x20)
 // 支持以basic_string为基类的字符串：wstring , string	
 //------------------------------------------------------------------------------
 template <class ct>
-inline basic_string<ct> TrimRight(const basic_string<ct>& str, ct c= 0x20)
+inline std::basic_string<ct> TrimRight(const std::basic_string<ct>& str, ct c= 0x20)
 {
-	basic_string<ct> sDest = str;
+	std::basic_string<ct> sDest = str;
 	sDest.erase(sDest.find_last_not_of(c) + 1);
 	return sDest;
 }
@@ -91,10 +91,10 @@ inline basic_string<ct> TrimRight(const basic_string<ct>& str, ct c= 0x20)
 // return:  0:相等; >0:s1>s2; <0:s1<s2
 //------------------------------------------------------------------------------
 template <class ct>
-inline int Compare_NoCase(const basic_string<ct>& s1, const basic_string<ct>& s2)
+inline int Compare_NoCase(const std::basic_string<ct>& s1, const std::basic_string<ct>& s2)
 {
-	basic_string<ct>::const_iterator itr1 = s1.begin();
-	basic_string<ct>::const_iterator itr2 = s2.begin();
+	std::basic_string<ct>::const_iterator itr1 = s1.begin();
+	std::basic_string<ct>::const_iterator itr2 = s2.begin();
 	while ((itr1 != s1.end()) && (itr2 != s2.end()))
 	{
 		if (toupper(*itr1) != toupper(*itr2))
@@ -113,10 +113,10 @@ inline int Compare_NoCase(const basic_string<ct>& s1, const basic_string<ct>& s2
 // 支持以basic_string为基类的字符串：wstring , string
 //------------------------------------------------------------------------------
 template <class ct>
-inline basic_string<ct> StrUpper(const basic_string<ct>& str)
+inline std::basic_string<ct> StrUpper(const std::basic_string<ct>& str)
 {
-	basic_string<ct> strRet = str;
-	basic_string<ct>::iterator itr = strRet.begin();
+	std::basic_string<ct> strRet = str;
+	std::basic_string<ct>::iterator itr = strRet.begin();
 	while (itr != strRet.end())
 	{
 		*itr = toupper(*itr);
@@ -131,10 +131,10 @@ inline basic_string<ct> StrUpper(const basic_string<ct>& str)
 // 支持以basic_string为基类的字符串：wstring , string
 //------------------------------------------------------------------------------
 template<class ct>
-inline basic_string<ct> StrLower(const basic_string<ct>& str)
+inline std::basic_string<ct> StrLower(const std::basic_string<ct>& str)
 {
-	basic_string<ct> strRet = str;
-	basic_string<ct>::iterator itr = strRet.begin();
+	std::basic_string<ct> strRet = str;
+	std::basic_string<ct>::iterator itr = strRet.begin();
 	while (itr != strRet.end())
 	{
 		*itr = tolower(*itr);
@@ -149,7 +149,7 @@ inline basic_string<ct> StrLower(const basic_string<ct>& str)
 // 支持以basic_string<char>为基类的字符串，string
 //------------------------------------------------------------------------------
 template<class ct>
-inline int StrToIntA(const basic_string<ct>& str)
+inline int StrToIntA(const std::basic_string<ct>& str)
 {
 	return atoi(str.c_str());
 }
@@ -159,7 +159,7 @@ inline int StrToIntA(const basic_string<ct>& str)
 // 支持以basic_string<WCHAR>为基类的字符串，wstring
 //------------------------------------------------------------------------------
 template<class ct>
-inline int StrToIntW(const basic_string<ct>& str)
+inline int StrToIntW(const std::basic_string<ct>& str)
 {
 	return _wtoi(str.c_str());
 }
@@ -170,10 +170,10 @@ inline int StrToIntW(const basic_string<ct>& str)
 // nNun指定待转化的字符串，nRadix指定数字的基数，默认为十进制
 //------------------------------------------------------------------------------
 template<class ct>
-inline basic_string<ct> IntToStrA(const int n, const int nRadix = 10)
+inline std::basic_string<ct> IntToStrA(const int n, const int nRadix = 10)
 {
 	char szNum[33] = {0};
-	return (basic_string<ct>)itoa(n, szNum, nRadix);
+	return (std::basic_string<ct>)itoa(n, szNum, nRadix);
 }
 
 //------------------------------------------------------------------------------
@@ -181,37 +181,37 @@ inline basic_string<ct> IntToStrA(const int n, const int nRadix = 10)
 // nNun指定待转化的字符串，nRadix指定数字的基数，默认为十进制
 //------------------------------------------------------------------------------
 template<class ct>
-inline basic_string<ct> IntToStrW(const int n, const int nRadix = 10)
+inline std::basic_string<ct> IntToStrW(const int n, const int nRadix = 10)
 {
 	WCHAR szNum[33] = {0};
-	return (basic_string<ct>)_itow(n, szNum, nRadix);
+	return (std::basic_string<ct>)_itow(n, szNum, nRadix);
 }
 
 //------------------------------------------------------------------------------
 // 将布尔型转化为字符串
 //------------------------------------------------------------------------------
 template<class ct>
-inline basic_string<ct> BoolToStrA(const bool b)
+inline std::basic_string<ct> BoolToStrA(const bool b)
 {
-	return b ? (basic_string<ct>)"true": (basic_string<ct>)"false";
+	return b ? (std::basic_string<ct>)"true": (std::basic_string<ct>)"false";
 }
 
 //------------------------------------------------------------------------------
 // 将布尔型转化为字符串
 //------------------------------------------------------------------------------
 template<class ct>
-inline basic_string<ct> BoolToStrW(const bool b)
+inline std::basic_string<ct> BoolToStrW(const bool b)
 {
-	return b ? (basic_string<ct>)L"true": (basic_string<ct>)L"false";
+	return b ? (std::basic_string<ct>)L"true": (std::basic_string<ct>)L"false";
 }
 
 //------------------------------------------------------------------------------
 // 将字符串转化为布尔型
 //------------------------------------------------------------------------------
 template<class ct>
-inline bool StrToBoolA(const basic_string<ct>& str)
+inline bool StrToBoolA(const std::basic_string<ct>& str)
 {
-	if (Compare_NoCase(str, (basic_string<ct>)"true") == 0)
+	if (Compare_NoCase(str, (std::basic_string<ct>)"true") == 0)
 		return true;
 	else
 		return false;
@@ -221,9 +221,9 @@ inline bool StrToBoolA(const basic_string<ct>& str)
 // 将字符串转化为布尔型
 //------------------------------------------------------------------------------
 template<class ct>
-inline bool StrToBoolW(const basic_string<ct>& str)
+inline bool StrToBoolW(const std::basic_string<ct>& str)
 {
-	if (Compare_NoCase(str, (basic_string<ct>)L"true") == 0)
+	if (Compare_NoCase(str, (std::basic_string<ct>)L"true") == 0)
 		return true;
 	else
 		return false;

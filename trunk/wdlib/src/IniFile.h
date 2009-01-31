@@ -17,14 +17,14 @@ namespace wdlib
 class CIniFileA
 {
 private:
-	string	m_FileName;
+	std::string	m_FileName;
 	BOOL	m_bInited;
 public:
 	CIniFileA();
 	// 初始化，如果文件不存在，写的时候将创建一个
 	void Init(LPCSTR szFileName);
 	// 读取一个Key的值
-	string ReadValue(LPCSTR szSection, LPCSTR szKey, LPCSTR szDef = "");
+	std::string ReadValue(LPCSTR szSection, LPCSTR szKey, LPCSTR szDef = "");
 	// 读取一个节的所有Key
 	void ReadKeys(LPCSTR szSection, CStringVector& Keys);
 	// 读取一个节的所有Key对应的值
@@ -49,12 +49,12 @@ inline void CIniFileA::Init(LPCSTR szFileName)
 	m_bInited = TRUE;
 }
 
-inline string CIniFileA::ReadValue(LPCSTR szSection, LPCSTR szKey, LPCSTR szDef /* =  */)
+inline std::string CIniFileA::ReadValue(LPCSTR szSection, LPCSTR szKey, LPCSTR szDef /* =  */)
 {
 	const int cnBufSize = 1024;
 	char Buf[cnBufSize] = {0};
 	GetPrivateProfileStringA(szSection, szKey, szDef, Buf, cnBufSize, m_FileName.c_str());
-	return (string)Buf;
+	return (std::string)Buf;
 }
 
 inline BOOL CIniFileA::WriteValue(LPCSTR szSection, LPCSTR szKey, LPCSTR szVal)
@@ -73,7 +73,7 @@ inline void CIniFileA::ReadKeys(LPCSTR szSection, CStringVector& Keys)
 		p = pBuf;
 		while (*p != 0)
 		{
-			Keys.push_back((string)p);
+			Keys.push_back((std::string)p);
 			p += strlen(p) + 1;
 		}
 	}
@@ -100,7 +100,7 @@ inline void CIniFileA::ReadSections(CStringVector& Sections)
 		p = pBuf;
 		while (*p != 0)
 		{
-			Sections.push_back((string)p);
+			Sections.push_back((std::string)p);
 			p += strlen(p) + 1;
 		}
 	}
@@ -121,14 +121,14 @@ inline BOOL CIniFileA::DeleteSection(LPCSTR szSection)
 class CIniFileW
 {
 private:
-	wstring m_FileName;
+	std::wstring m_FileName;
 	BOOL	m_bInited;
 public:
 	CIniFileW();
 	// 初始化，如果文件不存在，写的时候将创建一个
 	void Init(LPCWSTR szFileName);
 	// 读取一个Key的值
-	wstring ReadValue(LPCWSTR szSection, LPCWSTR szKey, LPCWSTR szDef = L"");
+	std::wstring ReadValue(LPCWSTR szSection, LPCWSTR szKey, LPCWSTR szDef = L"");
 	// 读取一个节的所有Key
 	void ReadKeys(LPCWSTR szSection, CWStringVector& Keys);
 	// 读取一个节的所有Key对应的值
@@ -154,12 +154,12 @@ inline void CIniFileW::Init(LPCWSTR szFileName)
 	m_bInited = TRUE;
 }
 
-inline wstring CIniFileW::ReadValue(LPCWSTR szSection, LPCWSTR szKey, LPCWSTR szDef /* =  */)
+inline std::wstring CIniFileW::ReadValue(LPCWSTR szSection, LPCWSTR szKey, LPCWSTR szDef /* =  */)
 {
 	const int cnBufSize = 1024;
 	WCHAR Buf[cnBufSize] = {0};
 	GetPrivateProfileStringW(szSection, szKey, szDef, Buf, cnBufSize, m_FileName.c_str());
-	return (wstring)Buf;
+	return (std::wstring)Buf;
 }
 
 inline BOOL CIniFileW::WriteValue(LPCWSTR szSection, LPCWSTR szKey, LPCWSTR szVal)
@@ -178,7 +178,7 @@ inline void CIniFileW::ReadKeys(LPCWSTR szSection, CWStringVector& Keys)
 		p = pBuf;
 		while (*p != 0)
 		{
-			Keys.push_back((wstring)p);
+			Keys.push_back((std::wstring)p);
 			p += wcslen(p) + 1;
 		}
 	}
@@ -205,7 +205,7 @@ inline void CIniFileW::ReadSections(CWStringVector& Sections)
 		p = pBuf;
 		while (*p != 0)
 		{
-			Sections.push_back((wstring)p);
+			Sections.push_back((std::wstring)p);
 			p += wcslen(p) + 1;
 		}
 	}

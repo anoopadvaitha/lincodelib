@@ -10,11 +10,11 @@ namespace wdlib
 {
 #endif
 
-typedef vector<string> CStringVector;
-typedef vector<wstring> CWStringVector;
+typedef std::vector<std::string> CStringVector;
+typedef std::vector<std::wstring> CWStringVector;
 
-typedef basic_string<TCHAR, char_traits<TCHAR>,
-allocator<TCHAR> > tstring;
+typedef std::basic_string<TCHAR, std::char_traits<TCHAR>,
+std::allocator<TCHAR> > tstring;
 
 
 #ifdef WDLIB_NAMESPACE

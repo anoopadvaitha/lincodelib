@@ -52,7 +52,7 @@ class CEventSource
 {
 private:
 	typedef IEventSinkT<T> IEventSink;
-	typedef list< IEventSink* > SinkList;
+	typedef std::list< IEventSink* > SinkList;
 private:
 	SinkList m_SinkList;
 public:	
