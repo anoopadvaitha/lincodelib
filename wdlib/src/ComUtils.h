@@ -68,7 +68,7 @@ STDMETHODIMP_(ULONG) Release()											\
 //------------------------------------------------------------------------------
 // GUID×ª×Ö·û´®
 //------------------------------------------------------------------------------
-inline HRESULT GUIDToString(IN REFGUID ID, OUT wstring& str)
+inline HRESULT GUIDToString(IN REFGUID ID, OUT std::wstring& str)
 {
 	LPOLESTR szGUID;
 	HRESULT hr = StringFromCLSID(ID, &szGUID);

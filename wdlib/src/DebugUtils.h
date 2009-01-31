@@ -93,9 +93,9 @@ typedef UINT WHERE_LOG_OUT;
 #define wloAll				7	// 全部
 
 // 几个全局变量
-inline wstring& GetLogFilePath()
+inline std::wstring& GetLogFilePath()
 {
-	static wstring stLogFilePath;
+	static std::wstring stLogFilePath;
 	return stLogFilePath;
 }
 inline HANDLE& GetLogFileHandle()

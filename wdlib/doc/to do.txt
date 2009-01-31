@@ -1,6 +1,6 @@
 threadeventinvokerÎ´¾­¹ı²âÊÔ
 ziputils		OK
-xmlutils
-httputils
-imageutils
 debugutils		OK
+httputils
+GDI imageutils
+encode/decode

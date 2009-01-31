@@ -6,16 +6,23 @@
 
 CComModule _Module;
 
-int main(int argc, char* argv[])
+int WINAPI _tWinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPTSTR lpstrCmdLine, int nCmdShow)
 {
-	wstring strPath = GetAppPathW() + L"wdlib.log";
+	_Module.Init(NULL, hInstance);
+	InitGdiplus();
+
+	std::wstring strPath = GetAppPathW() + L"wdlib.log";
 	InitLogDebug(wloToDebugger | wloToFile, strPath.c_str());
 	
-	//TestPropObj();
-	//TestIniFile();
-	//TestStringList();
-	TestZip();
+	// TestPropObj();
+	// TestIniFile();
+	// TestStringList();
+	// TestZip();
+	TestImage();
 	
 	UnInitLogDebug();
+
+	TermGdiplus();
+	_Module.Term();
 	return 0;
 }

@@ -9,5 +9,6 @@ void TestPropObj();
 void TestIniFile();
 void TestStringList();
 void TestZip();
+void TestImage();
 
 #endif // TestMain_h__

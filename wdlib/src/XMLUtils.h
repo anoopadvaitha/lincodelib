@@ -67,7 +67,7 @@ enum DOMParserFlags
 };
 
 // 创建一个解析器，内部使用。
-AbstractDOMParser* _CreateDOMParser(int flags,
+inline AbstractDOMParser* _CreateDOMParser(int flags,
 									LPCWSTR schemaLocation,
 									LPCWSTR noNamespaceSchemaLocation)
 {

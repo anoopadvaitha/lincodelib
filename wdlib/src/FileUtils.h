@@ -55,9 +55,9 @@ inline BOOL DirExistsW( LPCWSTR szDir )
 // sFullPath: 传入文件全路径名
 //------------------------------------------------------------------------------
 template<class ct>
-inline basic_string<ct> ExtractFilePath(const basic_string<ct>& sFullPath)
+inline std::basic_string<ct> ExtractFilePath(const std::basic_string<ct>& sFullPath)
 {	
-	basic_string<ct> sPath;
+	std::basic_string<ct> sPath;
 	ct cBL = 0x5C;
 	int nPos = sFullPath.rfind(cBL);
 	if (nPos != -1)
@@ -71,9 +71,9 @@ inline basic_string<ct> ExtractFilePath(const basic_string<ct>& sFullPath)
 // sFullPath: 传入的文件全路径名
 //------------------------------------------------------------------------------
 template<class ct>
-inline basic_string<ct> ExtractFileDir(const basic_string<ct>& sFullPath)
+inline std::basic_string<ct> ExtractFileDir(const std::basic_string<ct>& sFullPath)
 {
-	basic_string<ct> sDir;
+	std::basic_string<ct> sDir;
 	ct cBL = 0x5C;
 	int nPos = sFullPath.rfind(cBL);
 	if (nPos != -1)
@@ -92,9 +92,9 @@ inline basic_string<ct> ExtractFileDir(const basic_string<ct>& sFullPath)
 // sFullPath: 传入文件全路径名
 //------------------------------------------------------------------------------
 template<class ct>
-inline basic_string<ct> ExtractFileName(const basic_string<ct>& sFullPath)
+inline std::basic_string<ct> ExtractFileName(const std::basic_string<ct>& sFullPath)
 {
-	basic_string<ct> sFileName;
+	std::basic_string<ct> sFileName;
 	ct cBL = 0x5C;
 	int nPos = sFullPath.rfind(cBL);
 	if (nPos != -1)
@@ -108,9 +108,9 @@ inline basic_string<ct> ExtractFileName(const basic_string<ct>& sFullPath)
 // sFileName: 传入文件名
 //------------------------------------------------------------------------------
 template<class ct>
-inline basic_string<ct> ExtractFileExt(const basic_string<ct>& sFileName)
+inline std::basic_string<ct> ExtractFileExt(const std::basic_string<ct>& sFileName)
 {
-	basic_string<ct> sFileExt;
+	std::basic_string<ct> sFileExt;
 	ct cPoint = 0x2E;
 	int nPos = sFileName.rfind(cPoint);
 	if (nPos != -1)
@@ -125,9 +125,9 @@ inline basic_string<ct> ExtractFileExt(const basic_string<ct>& sFileName)
 // sFileExt: 传入新的扩展名
 //------------------------------------------------------------------------------
 template<class ct>
-inline basic_string<ct> ChangeFileExt(const basic_string<ct>& sFileName, const basic_string<ct>& sFileExt)
+inline std::basic_string<ct> ChangeFileExt(const std::basic_string<ct>& sFileName, const std::basic_string<ct>& sFileExt)
 {
-	basic_string<ct> sNewFileName;
+	std::basic_string<ct> sNewFileName;
 	ct sPoint = 0x2E;
 	int nPos = sFileName.rfind(sPoint);
 	if (nPos != -1)
@@ -144,9 +144,9 @@ inline basic_string<ct> ChangeFileExt(const basic_string<ct>& sFileName, const b
 // sPath 文件路径
 //------------------------------------------------------------------------------
 template<class ct>
-inline basic_string<ct> IncludeTrailingPathDelimiter(const basic_string<ct>& sPath)
+inline std::basic_string<ct> IncludeTrailingPathDelimiter(const std::basic_string<ct>& sPath)
 {
-	basic_string<ct> sNewPath;
+	std::basic_string<ct> sNewPath;
 	ct cSlashes = 0x5C;
 	int nLastChar = sPath.size() - 1;
 	if (sPath[nLastChar] != cSlashes)	
@@ -162,9 +162,9 @@ inline basic_string<ct> IncludeTrailingPathDelimiter(const basic_string<ct>& sPa
 // sPath 文件路径
 //------------------------------------------------------------------------------
 template<class ct>
-inline basic_string<ct> ExcludeTrailingPathDelimiter(const basic_string<ct>& sPath)
+inline std::basic_string<ct> ExcludeTrailingPathDelimiter(const std::basic_string<ct>& sPath)
 {
-	basic_string<ct> sNewPath;
+	std::basic_string<ct> sNewPath;
 	ct cSlashes = 0x5C;
 	int nLastChar = sPath.size() - 1;
 	sNewPath = sPath;
@@ -179,9 +179,9 @@ inline basic_string<ct> ExcludeTrailingPathDelimiter(const basic_string<ct>& sPa
 // sPath 文件路径
 //------------------------------------------------------------------------------
 template<class ct>
-inline basic_string<ct> SlToBsl(const basic_string<ct>& sPath)
+inline std::basic_string<ct> SlToBsl(const std::basic_string<ct>& sPath)
 {
-	basic_string<ct> sNewPath;
+	std::basic_string<ct> sNewPath;
 	ct cSlashes = 0x2F;
 	ct cBL = 0x5C;
 	int nPos = 0;
@@ -201,9 +201,9 @@ inline basic_string<ct> SlToBsl(const basic_string<ct>& sPath)
 // sPath 文件路径
 //------------------------------------------------------------------------------
 template<class ct>
-inline basic_string<ct> BslToSl(const basic_string<ct>& sPath)
+inline std::basic_string<ct> BslToSl(const std::basic_string<ct>& sPath)
 {
-	basic_string<ct> sNewPath;
+	std::basic_string<ct> sNewPath;
 	ct cSlashes = 0x2F;
 	ct cBL = 0x5C;
 	size_t nPos = 0;
@@ -220,7 +220,7 @@ inline basic_string<ct> BslToSl(const basic_string<ct>& sPath)
 //------------------------------------------------------------------------------
 // 确保目录存在
 //------------------------------------------------------------------------------
-inline void MakeSureDirExsitsW( wstring& sDir )
+inline void MakeSureDirExsitsW( std::wstring& sDir )
 {
 	if (DirExistsW(sDir.c_str()))
 		return;
@@ -233,7 +233,7 @@ inline void MakeSureDirExsitsW( wstring& sDir )
 //------------------------------------------------------------------------------
 // 确保目录存在
 //------------------------------------------------------------------------------
-inline void MakeSureDirExsitsA( string& sDir )
+inline void MakeSureDirExsitsA( std::string& sDir )
 {
 	if (DirExistsA(sDir.c_str()))
 		return;
@@ -246,21 +246,21 @@ inline void MakeSureDirExsitsA( string& sDir )
 //------------------------------------------------------------------------------
 // 取得程序当前的路径
 //------------------------------------------------------------------------------
-inline string GetAppPathA()
+inline std::string GetAppPathA()
 {
 	char szFile[MAX_PATH] = {0};
 	if (0 == GetModuleFileNameA(NULL, szFile, MAX_PATH))
-		return (string)"";
+		return (std::string)"";
 
-	return ExtractFilePath((string)szFile);
+	return ExtractFilePath((std::string)szFile);
 }
-inline wstring GetAppPathW()
+inline std::wstring GetAppPathW()
 {
 	WCHAR szFile[MAX_PATH] = {0};
 	if (0 == GetModuleFileNameW(NULL, szFile, MAX_PATH))
-		return (wstring)L"";
+		return (std::wstring)L"";
 	
-	return ExtractFilePath((wstring)szFile);
+	return ExtractFilePath((std::wstring)szFile);
 }
 
 
