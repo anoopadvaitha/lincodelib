@@ -36,61 +36,61 @@ class CStream
 {
 public:
 	// 读缓冲区
-	virtual long Read(void* pBuf, long nCount) = 0;
+	virtual DWORD Read(void* pBuf, DWORD nCount) = 0;
 	// 写缓冲区
-	virtual long Write(const void* pBuf, long nCount) = 0;
+	virtual DWORD Write(const void* pBuf, DWORD nCount) = 0;
 	// 带异常的读缓冲区
-	void ReadBuffer(void* pBuf, long nCount);
+	void ReadBuffer(void* pBuf, DWORD nCount);
 	// 带异常的写缓冲区
-	void WriteBuffer(const void* pBuf, long nCount);
+	void WriteBuffer(const void* pBuf, DWORD nCount);
 	// 流当前指针定位
-	virtual INT64 Seek(const INT64 nOffset, SeekOrigin soOrigin) = 0;
+	virtual DWORD Seek(const DWORD nOffset, SeekOrigin soOrigin) = 0;
 	// 取流的尺寸
-	virtual INT64 GetSize();
+	virtual DWORD GetSize();
 	// 设流的尺寸
-	virtual void SetSize(const INT64 nNewSize) = 0;
+	virtual void SetSize(const DWORD nNewSize) = 0;
 	// 取流当前指针的位置
-	INT64 GetPos();
+	DWORD GetPos();
 	// 设流当前指针的位置
-	void SetPos(INT64 nPos);
+	void SetPos(DWORD nPos);
 	// 从其他流拷贝数据, nCount如果为0则拷贝整个流
-	INT64 CopyFrom(CStream* pSource, INT64 nCount);
+	DWORD CopyFrom(CStream* pSource, DWORD nCount);
 	virtual ~CStream() {}
  };
 
-inline INT64 CStream::GetPos()
+inline DWORD CStream::GetPos()
 {
 	return Seek(0, soCurrent);
 }
 
-inline void CStream::SetPos(INT64 nPos)
+inline void CStream::SetPos(DWORD nPos)
 {
 	Seek(nPos, soBeginning);
 }
 
-inline INT64 CStream::GetSize()
+inline DWORD CStream::GetSize()
 {
-	INT64 nRet;
-	INT64 nPos = Seek(0, soCurrent);
+	DWORD nRet;
+	DWORD nPos = Seek(0, soCurrent);
 	nRet = Seek(0, soEnd);
 	Seek(nPos, soBeginning);
 	
 	return nRet;	
 }
 
-inline void CStream::ReadBuffer(void* pBuf, long nCount)
+inline void CStream::ReadBuffer(void* pBuf, DWORD nCount)
 {
 	if ((nCount != 0) && (Read(pBuf, nCount) != nCount))
 		throw EStreamError(EINFO_READERROR);
 }
 
-inline void CStream::WriteBuffer(const void* pBuf, long nCount)
+inline void CStream::WriteBuffer(const void* pBuf, DWORD nCount)
 {
 	if ((nCount != 0) && (Write(pBuf, nCount) != nCount))
 		throw EStreamError(EINFO_WRITEERROR);
 }
 
-inline INT64 CStream::CopyFrom(CStream* pSource, INT64 nCount)
+inline DWORD CStream::CopyFrom(CStream* pSource, DWORD nCount)
 {
 	const int MaxBufSize = 0xF000;
 
@@ -100,7 +100,7 @@ inline INT64 CStream::CopyFrom(CStream* pSource, INT64 nCount)
 		pSource->SetPos(0);
 		nCount = pSource->GetSize();
 	}
-	INT64 nRet = nCount;
+	DWORD nRet = nCount;
 	int nBufSize, nNum;
 	char* pBuf;
 	(nCount > MaxBufSize) ? (nBufSize = MaxBufSize) : (nBufSize = nCount);
@@ -126,16 +126,16 @@ protected:
 protected:
 	HANDLE m_Handle;
 public:
-	virtual long Read(void* pBuf, long nCount);
-	virtual long Write(const void* pBuf, long nCount);
-	virtual INT64 Seek(const INT64 nOffset, SeekOrigin soOrigin);
-	virtual void SetSize(const INT64 nNewSize);
+	virtual DWORD Read(void* pBuf, DWORD nCount);
+	virtual DWORD Write(const void* pBuf, DWORD nCount);
+	virtual DWORD Seek(const DWORD nOffset, SeekOrigin soOrigin);
+	virtual void SetSize(const DWORD nNewSize);
 	HANDLE GetHandle();
 	CHandleStream(): m_Handle(NULL) {}
 	virtual ~CHandleStream() {}
 };
 
-inline long CHandleStream::Read(void* pBuf, long nCount)
+inline DWORD CHandleStream::Read(void* pBuf, DWORD nCount)
 {
 	DWORD dwRet;
 	if (!ReadFile(m_Handle, pBuf, nCount, &dwRet, NULL))
@@ -144,7 +144,7 @@ inline long CHandleStream::Read(void* pBuf, long nCount)
 		return dwRet;
 }
 
-inline long CHandleStream::Write(const void* pBuf, long nCount)
+inline DWORD CHandleStream::Write(const void* pBuf, DWORD nCount)
 {
 	DWORD dwRet;
 	if (!WriteFile(m_Handle, pBuf, nCount, &dwRet, NULL))
@@ -153,20 +153,17 @@ inline long CHandleStream::Write(const void* pBuf, long nCount)
 		return dwRet;
 }
 
-// INT64辅助宏
+// long辅助宏
 #define INT64_LOW(n) ((long)n)
 #define INT64_HIGH(n) (long)(n >> 32)
 #define MAKE_INT64(l, h) (((INT64)h << 32) + l)
 
-inline INT64 CHandleStream::Seek(const INT64 nOffset, SeekOrigin soOrigin)
+inline DWORD CHandleStream::Seek(const DWORD nOffset, SeekOrigin soOrigin)
 {
-	long lLow = INT64_LOW(nOffset);
-	long lHigh = INT64_HIGH(nOffset);
-	lLow = SetFilePointer(m_Handle, lLow, &lHigh, soOrigin);
-	return MAKE_INT64(lLow, lHigh);
+	return SetFilePointer(m_Handle, nOffset, NULL, soOrigin);
 }
 
-inline void CHandleStream::SetSize(const INT64 nNewSize)
+inline void CHandleStream::SetSize(const DWORD nNewSize)
 {
 	Seek(nNewSize, soBeginning);
 	SetEndOfFile(m_Handle);
@@ -226,7 +223,7 @@ inline BOOL CFileStreamA::Create(LPCSTR szFileName, DWORD dwDesiredAccess, DWORD
 
 inline CFileStreamA::~CFileStreamA()
 {
-	if ((long)m_Handle > 0) 
+	if ((DWORD)m_Handle > 0) 
 		CloseHandle(m_Handle);
 }
 
@@ -279,7 +276,7 @@ inline BOOL CFileStreamW::Create(LPCWSTR szFileName, DWORD dwDesiredAccess, DWOR
 
 inline CFileStreamW::~CFileStreamW()
 {
-	if ((long)m_Handle > 0) 
+	if ((DWORD)m_Handle > 0) 
 		CloseHandle(m_Handle);
 }
 
@@ -292,21 +289,21 @@ private:
 	void operator = (const CMemoryStream& Stream) {}
 private:
 	char* m_Memory;
-    long m_Size;
-	long m_Pos;
-	long m_Capacity;
+    DWORD m_Size;
+	DWORD m_Pos;
+	DWORD m_Capacity;
 private:
-	void SetCapacity(long nNewCap);
+	void SetCapacity(DWORD nNewCap);
 protected:
-	virtual void* Realloc(long& nNewCap);
-	void SetPointer(void* p, long nSize);
+	virtual void* Realloc(DWORD& nNewCap);
+	void SetPointer(void* p, DWORD nSize);
 public:
 	CMemoryStream(): m_Memory(NULL), m_Size(0), m_Pos(0), m_Capacity(0) {}
 	virtual ~CMemoryStream() { Clear(); }
-	virtual long Read(void* pBuf, long nCount);
-	virtual long Write(const void* pBuf, long nCount);
-	virtual INT64 Seek(const INT64 nOffset, SeekOrigin soOrigin);
-	virtual void SetSize(const INT64 nNewSize);	
+	virtual DWORD Read(void* pBuf, DWORD nCount);
+	virtual DWORD Write(const void* pBuf, DWORD nCount);
+	virtual DWORD Seek(const DWORD nOffset, SeekOrigin soOrigin);
+	virtual void SetSize(const DWORD nNewSize);	
 	void Clear();
 	void SaveToStream(CStream* pStream);
 	void LoadFromStream(CStream* pStream);
@@ -329,11 +326,11 @@ inline void CMemoryStream::Clear()
 	m_Pos = 0;	
 }
 
-inline long CMemoryStream::Read(void* pBuf, long nCount)
+inline DWORD CMemoryStream::Read(void* pBuf, DWORD nCount)
 {
 	if ((m_Pos >= 0) && (nCount >= 0))
 	{
-		long dwRet = m_Size - m_Pos;
+		DWORD dwRet = m_Size - m_Pos;
 		if (dwRet > 0)
 		{
 			if (dwRet > nCount)
@@ -346,13 +343,13 @@ inline long CMemoryStream::Read(void* pBuf, long nCount)
 	return 0;
 }
 
-inline void CMemoryStream::SetPointer(void* p, long nSize)
+inline void CMemoryStream::SetPointer(void* p, DWORD nSize)
 {
 	m_Memory = (char*)p;
 	m_Size = nSize;
 }
 
-inline void* CMemoryStream::Realloc(long& nNewCap)
+inline void* CMemoryStream::Realloc(DWORD& nNewCap)
 {
 	const MemoryDelta = 0x2000;  /* Must be a power of 2 */
 
@@ -387,17 +384,17 @@ inline void* CMemoryStream::Realloc(long& nNewCap)
 	return pRet;
 }
 
-inline void CMemoryStream::SetCapacity(long nNewCap)
+inline void CMemoryStream::SetCapacity(DWORD nNewCap)
 {
 	SetPointer(Realloc(nNewCap), m_Size);
 	m_Capacity = nNewCap;
 }
 
-inline long CMemoryStream::Write(const void* pBuf, long nCount)
+inline DWORD CMemoryStream::Write(const void* pBuf, DWORD nCount)
 {
 	if ((m_Pos >= 0) && (nCount >= 0))
 	{
-		long nPos = m_Pos + nCount;
+		DWORD nPos = m_Pos + nCount;
 		if (nPos > 0)
 		{
 			if (nPos > m_Size)
@@ -414,7 +411,7 @@ inline long CMemoryStream::Write(const void* pBuf, long nCount)
 	return 0;
 }
 
-inline INT64 CMemoryStream::Seek(const INT64 nOffset, SeekOrigin soOrigin)
+inline DWORD CMemoryStream::Seek(const DWORD nOffset, SeekOrigin soOrigin)
 {
 	switch(soOrigin)
 	{
@@ -431,9 +428,9 @@ inline INT64 CMemoryStream::Seek(const INT64 nOffset, SeekOrigin soOrigin)
 	return m_Pos;
 }
 
-inline void CMemoryStream::SetSize(const INT64 nNewSize)
+inline void CMemoryStream::SetSize(const DWORD nNewSize)
 {
-	long nOldPos = m_Pos;
+	DWORD nOldPos = m_Pos;
 	SetCapacity(nNewSize);
 	m_Size = nNewSize;
 	if (nOldPos > nNewSize)
@@ -456,7 +453,7 @@ inline void CMemoryStream::SaveToFileA(LPCSTR szFileName)
 inline void CMemoryStream::LoadFromStream(CStream* pStream)
 {
 	pStream->SetPos(0);
-	long nCount = pStream->GetSize();
+	DWORD nCount = pStream->GetSize();
 	SetSize(nCount);
 	if (nCount > 0)
 		pStream->ReadBuffer(m_Memory, nCount);

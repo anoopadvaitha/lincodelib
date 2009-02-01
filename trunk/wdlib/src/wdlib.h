@@ -27,6 +27,7 @@ namespace wdlib
 #include <map>
 
 // wdlib
+#include "encodeutils.h"
 #include "gdiplusutils.h"
 #include "wdTypes.h"
 #include "ComUtils.h"

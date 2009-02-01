@@ -5,6 +5,11 @@
 #ifndef gdiplusutils_h__
 #define gdiplusutils_h__
 
+#ifdef WDLIB_NAMESPACE
+namespace wdlib
+{
+#endif
+
 // 注意：
 // 把gdiplus.lib和gdiplus.h所在的目录加到搜索路径
 // 如果是XP以下的系统，将gdiplus.dll放到工程目录下
@@ -296,5 +301,9 @@ public:
 		return (m_pImage != NULL);	
 	}
 };
+
+#ifdef WDLIB_NAMESPACE
+} //wdlib
+#endif
 
 #endif // gdiplusutils_h__

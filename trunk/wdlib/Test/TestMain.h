@@ -10,5 +10,6 @@ void TestIniFile();
 void TestStringList();
 void TestZip();
 void TestImage();
+void TestEncode();
 
 #endif // TestMain_h__
