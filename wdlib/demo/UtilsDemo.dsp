@@ -66,7 +66,7 @@ LINK32=link.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_windows" /D "_MBCS" /Yu"stdafx.h" /FD /GZ /c
-# ADD CPP /nologo /MDd /W3 /Gm /GX /ZI /Od /I "../3rdparty/gdiplus/include" /I "../3rdparty/zip" /D "WIN32" /D "_DEBUG" /FR /Yu"stdafx.h" /FD /GZ /c
+# ADD CPP /nologo /MDd /W3 /Gm /GX /ZI /Od /I "../3rdparty/gdiplus/include" /I "../3rdparty/zip" /I "../3rdparty/encode" /D "WIN32" /D "_DEBUG" /FR /Yu"stdafx.h" /FD /GZ /c
 # ADD BASE RSC /l 0x804 /d "_DEBUG"
 # ADD RSC /l 0x804 /d "_DEBUG"
 BSC32=bscmake.exe
@@ -93,6 +93,10 @@ SOURCE=.\ReadMe.txt
 # Begin Group "Test"
 
 # PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\Test\testencode.cpp
+# End Source File
 # Begin Source File
 
 SOURCE=..\Test\testimage.cpp
@@ -156,6 +160,10 @@ SOURCE=..\src\ComUtils.h
 # Begin Source File
 
 SOURCE=..\src\DebugUtils.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\encodeutils.h
 # End Source File
 # Begin Source File
 

@@ -1,6 +1,11 @@
 threadeventinvokerÎ´¾­¹ı²âÊÔ
+stream²âÊÔ
 ziputils		OK
 debugutils		OK
-httputils
-GDI imageutils
+GDI imageutils		OK
 encode/decode
+	md5		OK
+	crc32		
+	base64
+	url
+httputils

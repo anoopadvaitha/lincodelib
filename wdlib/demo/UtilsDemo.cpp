@@ -10,7 +10,6 @@ int WINAPI _tWinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPTSTR lp
 {
 	_Module.Init(NULL, hInstance);
 	InitGdiplus();
-
 	std::wstring strPath = GetAppPathW() + L"wdlib.log";
 	InitLogDebug(wloToDebugger | wloToFile, strPath.c_str());
 	
@@ -18,10 +17,10 @@ int WINAPI _tWinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPTSTR lp
 	// TestIniFile();
 	// TestStringList();
 	// TestZip();
-	TestImage();
+	// TestImage();
+	TestEncode();
 	
 	UnInitLogDebug();
-
 	TermGdiplus();
 	_Module.Term();
 	return 0;
