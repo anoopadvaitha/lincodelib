@@ -16,7 +16,7 @@ namespace wdlib
 // 将string转换为wstring
 // dwCodePage string的代码页，默认为当前线程的代码页
 //------------------------------------------------------------------------------
-inline std::wstring StringToWString(const std::string& str, UINT dwCodePage = CP_THREAD_ACP)
+inline std::wstring StrToWStr(const std::string& str, UINT dwCodePage = CP_THREAD_ACP)
 {
 	std::wstring sDest;
 	int nSize = MultiByteToWideChar(dwCodePage, 0, str.c_str(), -1, 0, 0);
@@ -34,7 +34,7 @@ inline std::wstring StringToWString(const std::string& str, UINT dwCodePage = CP
 // 将wstring转换为string
 // dwCodePage string的代码页，默认为当前线程的代码页
 //------------------------------------------------------------------------------
-inline std::string WStringToString(const std::wstring& str, UINT dwCodePage = CP_THREAD_ACP)
+inline std::string WStrToStr(const std::wstring& str, UINT dwCodePage = CP_THREAD_ACP)
 {
 	std::string sDest;
 	int nLen = WideCharToMultiByte(dwCodePage, 0, str.c_str(), -1, NULL, 0, NULL, NULL);

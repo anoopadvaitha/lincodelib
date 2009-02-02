@@ -187,7 +187,7 @@ inline void CStringList::LoadFromWStringList(const CWStringVector& WStrList)
 	std::string sLine;
 	for (int i = 0; i < WStrList.size(); ++i)
 	{
-		sLine = WStringToString(WStrList[i]);
+		sLine = WStrToStr(WStrList[i]);
 		push_back(sLine);
 	}
 }
@@ -318,7 +318,7 @@ inline void CWStringList::LoadFromStringList(const CStringVector& StrList)
 	std::wstring sLine;
 	for (int i = 0; i < StrList.size(); ++i)
 	{
-		sLine = StringToWString(StrList[i]);
+		sLine = StrToWStr(StrList[i]);
 		push_back(sLine);
 	}
 }
