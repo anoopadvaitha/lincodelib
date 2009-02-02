@@ -20,6 +20,7 @@ namespace wdlib
 #include "Streams.h"
 #include "FileUtils.h"
 #include "md5.h"
+#include "crc32.h"
 
 // 生成MD5码
 // pData为原始数据
@@ -78,6 +79,60 @@ inline bool MakeMD5(LPCWSTR szFile, byte md5[16])
 	}
 
 	return false;
+} 
+
+//------------------------------------------------------------------------------
+// crc32使用指南：
+// 	1、把CRC32.h所在目录加入搜索路径
+// 	2、在某个CPP文件里包含CRC32.C
+// 	3、调用MakeCRC32生成校验码
+//------------------------------------------------------------------------------
+
+inline DWORD MakeCRC32(void* pData, int nLen)
+{
+	return CRC32((unsigned char*)pData, nLen);
+}
+
+inline DWORD MakeCRC32(CStream* pStm)
+{
+	if (!pStm)
+		return false;
+	
+	DWORD dwCrc = 0;
+	const int nLen = 1024;
+	md5_byte_t szBuf[nLen] = {0};
+	DWORD nSize = pStm->GetSize();
+	pStm->SetPos(0);
+	
+	while (true)
+	{
+		if (nLen >= nSize)
+		{
+			pStm->Read(szBuf, nSize);
+			dwCrc = CRC32(dwCrc, szBuf, nSize);
+			break;
+		}
+		else
+		{
+			pStm->Read(szBuf, nLen);
+			dwCrc = CRC32(dwCrc, szBuf, nLen);
+			nSize -= nLen;
+		}
+	}
+	
+	return dwCrc;
+}
+
+inline DWORD MakeCRC32(LPCWSTR szFile)
+{
+	if (FileExistsW(szFile))
+	{
+		CFileStreamW fs;
+		fs.Open(szFile);
+		return MakeCRC32(&fs);
+	}
+	
+	return 0;
 }
 
 #ifdef WDLIB_NAMESPACE
