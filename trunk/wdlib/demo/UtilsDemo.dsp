@@ -89,6 +89,10 @@ LINK32=link.exe
 
 SOURCE=.\ReadMe.txt
 # End Source File
+# Begin Source File
+
+SOURCE=.\test.png
+# End Source File
 # End Group
 # Begin Group "Test"
 
@@ -263,9 +267,5 @@ SOURCE=.\StdAfx.h
 SOURCE=.\UtilsDemo.cpp
 # End Source File
 # End Group
-# Begin Source File
-
-SOURCE=.\test.png
-# End Source File
 # End Target
 # End Project
