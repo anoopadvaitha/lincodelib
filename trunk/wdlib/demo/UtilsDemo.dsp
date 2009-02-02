@@ -149,6 +149,26 @@ SOURCE=..\3rdparty\zip\zip.cpp
 SOURCE=..\3rdparty\zip\zip.h
 # End Source File
 # End Group
+# Begin Group "encode"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\3rdparty\encode\CyoDecode.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\3rdparty\encode\CyoDecode.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\3rdparty\encode\CyoEncode.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\3rdparty\encode\CyoEncode.h
+# End Source File
+# End Group
 # End Group
 # Begin Group "wdlib"
 
