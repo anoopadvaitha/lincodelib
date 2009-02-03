@@ -21,8 +21,6 @@ namespace wdlib
 #include "FileUtils.h"
 #include "md5.h"
 #include "crc32.h"
-#include "CyoEncode.h"
-#include "CyoDecode.h"
 
 // 生成MD5码
 // pData为原始数据
@@ -135,76 +133,6 @@ inline DWORD MakeCRC32(LPCWSTR szFile)
 	}
 	
 	return 0;
-}
-
-//------------------------------------------------------------------------------
-// Base64使用指南: TODO
-// 	1、将CyoEncode.h等文件加入工程
-//  2、将CyoEncode.h等文件所在的目录加入搜索路径
-// 	2、调用 Base64Encode 进行base64编码，调用 进行base64解码
-//------------------------------------------------------------------------------
-
-inline bool Base64Encode(void* pData, int nLen, std::string& strBase64)
-{
-// 	int nDestLen = Base64EncodeGetLength(nLen);
-// 	char* szBase64 = new char[nDestLen + 1];
-// 	
-// 	int nOutLen = base64_encode_alloc((const char*)pData, nLen, &szBase64);
-// 	if ((NULL == szBase64) || (nOutLen == 0))
-// 		return false;
-// 
-// 	strBase64 = szBase64;
-// 	free(szBase64);
-	return true;
-}
-
-inline bool Base64Encode(CStream* pStm, std::string& strBase64)
-{
-// 	if (!pStm)
-// 		return false;
-// 	
-// 	DWORD dwCrc = 0;
-// 	const int nLen = 4096;
-// 	char szBuf[nLen] = {0};
-// 	DWORD nSize = pStm->GetSize();
-// 	pStm->SetPos(0);
-// 	
-// 	while (true)
-// 	{
-// 		char* szBase64;
-// 		int nOutLen;
-// 		if (nLen >= nSize)
-// 		{
-// 			pStm->Read(szBuf, nSize);
-// 			nOutLen = base64_encode_alloc(szBuf, nSize, &szBase64);
-// 			strBase64 += szBase64;
-// 			free(szBase64);
-// 			break;
-// 		}
-// 		else
-// 		{
-// 			pStm->Read(szBuf, nLen);
-// 			nOutLen = base64_encode_alloc(szBuf, nLen, &szBase64);
-// 			strBase64 += szBase64;
-// 			nSize -= nLen;
-// 			free(szBase64);
-// 		}
-// 	}
-	
-	return true;
-}
-
-inline bool Base64Encode(LPCWSTR szFile, std::string& strBase64)
-{
-// 	if (FileExistsW(szFile))
-// 	{
-// 		CFileStreamW fs;
-// 		fs.Open(szFile);
-// 		Base64Encode(&fs, strBase64);
-// 		return true;
-// 	}
-	
-	return false;
 }
 
 //------------------------------------------------------------------------------
