@@ -212,7 +212,7 @@ inline void LogFmt(LPCWSTR strFmt, ...)
 	va_start(args, strFmt);
 	
 	int nBuf;
-	WCHAR szBuffer[512];
+	WCHAR szBuffer[1024];
 	nBuf = _vsnwprintf(szBuffer, sizeof(szBuffer) / sizeof(WCHAR), strFmt, args);
 	
 	_LogOut(szBuffer);

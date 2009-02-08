@@ -2,7 +2,9 @@
 //
 
 #include "stdafx.h"
-#include "..\Test\TestMain.h"
+#include "Test\TestMain.h"
+#include "testutils.h"
+#include "testlogs.h"
 
 CComModule _Module;
 
@@ -18,7 +20,13 @@ int WINAPI _tWinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPTSTR lp
 	// TestStringList();
 	// TestZip();
 	// TestImage();
-	TestEncode();
+	// TestEncode();
+	
+	WINX_TEST_APP(CXmlLog, "", "");
+	//WINX_TEST_APP(std::FileLog, "", "");
+	log.open("C:\\1.xml");
+	WINX_TEST_CLASS(TestStream);
+	log.close();
 	
 	UnInitLogDebug();
 	TermGdiplus();
