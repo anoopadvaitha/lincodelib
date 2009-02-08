@@ -1,6 +1,6 @@
 #include "StdAfx.h"
 #include "TestMain.h"
-#include "../demo/resource.h"
+#include "../resource.h"
 
 class CImageDlg: public CDialogImpl<CImageDlg>
 {

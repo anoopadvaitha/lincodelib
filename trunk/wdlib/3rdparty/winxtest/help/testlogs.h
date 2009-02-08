@@ -7,36 +7,6 @@
 
 #include "../stdext/Basic.h"
 
-// 将string转换为wstring
-inline std::wstring StrToWStr(const std::string& str, UINT dwCodePage = CP_ACP)
-{
-	std::wstring sDest;
-	int nSize = MultiByteToWideChar(dwCodePage, 0, str.c_str(), -1, 0, 0);
-	if(nSize > 0)
-	{
-		WCHAR* pwszDst = new WCHAR[nSize];		
-		MultiByteToWideChar(dwCodePage, 0, str.c_str(), -1, pwszDst, nSize);
-		sDest = pwszDst;
-		delete [] pwszDst;
-	}
-	return sDest;
-}
-
-// 将wstring转换为string
-inline std::string WStrToStr(const std::wstring& str, UINT dwCodePage = CP_ACP)
-{
-	std::string sDest;
-	int nLen = WideCharToMultiByte(dwCodePage, 0, str.c_str(), -1, NULL, 0, NULL, NULL);
-	if (nLen >= 0)
-	{	
-		char* pszDst = new char[nLen];
-		WideCharToMultiByte(dwCodePage, 0, str.c_str(), -1, pszDst, nLen, NULL, NULL);
-		sDest = pszDst;
-		delete [] pszDst;
-	}
-	return sDest;
-}
-
 // Ansi转Utf8
 #define AnsiToUtf8(ansi) WStrToStr(StrToWStr((std::string)ansi), CP_UTF8)
 
@@ -45,6 +15,35 @@ class CXmlLog
 protected:
 	FILE* m_fp;
 protected:
+	// 将string转换为wstring
+	inline std::wstring StrToWStr(const std::string& str, UINT dwCodePage = CP_ACP)
+	{
+		std::wstring sDest;
+		int nSize = MultiByteToWideChar(dwCodePage, 0, str.c_str(), -1, 0, 0);
+		if(nSize > 0)
+		{
+			WCHAR* pwszDst = new WCHAR[nSize];		
+			MultiByteToWideChar(dwCodePage, 0, str.c_str(), -1, pwszDst, nSize);
+			sDest = pwszDst;
+			delete [] pwszDst;
+		}
+		return sDest;
+	}
+	
+	// 将wstring转换为string
+	inline std::string WStrToStr(const std::wstring& str, UINT dwCodePage = CP_ACP)
+	{
+		std::string sDest;
+		int nLen = WideCharToMultiByte(dwCodePage, 0, str.c_str(), -1, NULL, 0, NULL, NULL);
+		if (nLen >= 0)
+		{	
+			char* pszDst = new char[nLen];
+			WideCharToMultiByte(dwCodePage, 0, str.c_str(), -1, pszDst, nLen, NULL, NULL);
+			sDest = pszDst;
+			delete [] pszDst;
+		}
+		return sDest;
+	}
 	// 去除转义符
 	void winx_call HandleESQ(std::string& strSrc)
 	{

@@ -32,7 +32,6 @@ namespace wdlib
 #include "wdTypes.h"
 #include "ComUtils.h"
 #include "ErrorUtils.h"
-#include "CheckUtils.h"
 #include "EventUtils.h"
 #include "FileUtils.h"
 #include "GDIUtils.h"
