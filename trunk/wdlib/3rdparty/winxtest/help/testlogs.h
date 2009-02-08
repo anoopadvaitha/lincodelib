@@ -7,9 +7,6 @@
 
 #include "../stdext/Basic.h"
 
-// AnsiתUtf8
-#define AnsiToUtf8(ansi) WStrToStr(StrToWStr((std::string)ansi), CP_UTF8)
-
 class CXmlLog
 {
 protected:
@@ -113,6 +110,9 @@ public:
 		const char* msg,
 		const char* file, int line)
 	{
+		// AnsiתUtf8
+		#define AnsiToUtf8(ansi) WStrToStr(StrToWStr((std::string)ansi), CP_UTF8)
+
 		std::string strMsg = msg;
 		HandleESQ(strMsg);
 
