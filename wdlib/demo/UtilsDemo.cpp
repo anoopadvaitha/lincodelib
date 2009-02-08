@@ -23,7 +23,8 @@ int WINAPI _tWinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPTSTR lp
 	// TestEncode();
 	
 	WINX_TEST_APP(CXmlLog, "", "");
-	log.open("C:\\1.xml");
+	std::string strPath = GetAppPathA() + "build\result.xml";
+	log.open(strPath.c_str());
 	WINX_TEST_CLASS(TestStream);
 	log.close();
 	
