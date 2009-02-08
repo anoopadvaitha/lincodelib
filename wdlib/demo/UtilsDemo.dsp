@@ -127,6 +127,10 @@ SOURCE=.\test\teststream.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\test\teststrformat.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\test\teststringlist.cpp
 # End Source File
 # Begin Source File
@@ -220,6 +224,10 @@ SOURCE=..\src\propobj.h
 # Begin Source File
 
 SOURCE=..\src\streams.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\strformat.h
 # End Source File
 # Begin Source File
 
