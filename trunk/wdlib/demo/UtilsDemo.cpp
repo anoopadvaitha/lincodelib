@@ -7,6 +7,7 @@
 
 #include "Test\TestMain.h"
 #include "Test\teststream.h"
+#include "Test\teststrformat.h"
 
 CComModule _Module;
 
@@ -28,6 +29,7 @@ int WINAPI _tWinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPTSTR lp
 	std::string logPath = GetAppPathA() + "result.xml";
 	log.open(logPath.c_str());
 	WINX_TEST_CLASS(TestStream);
+	WINX_TEST_CLASS(TestStrFormat);
 	log.close();
 	
 	UnInitLogDebug();
