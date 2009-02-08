@@ -4,7 +4,7 @@
 	<html>
 		<body>
 			<xsl:for-each select="TestResult/TestCase">
-				<font face="Calibri">
+				<font face="Consolas">
 				<table width="100%" border="1" cellpadding="0" cellspacing="0">
 					<tr>
 						<td height="25" bgcolor="525D76">

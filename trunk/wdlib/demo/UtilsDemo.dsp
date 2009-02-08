@@ -91,6 +91,10 @@ SOURCE=.\ReadMe.txt
 # End Source File
 # Begin Source File
 
+SOURCE=.\resource.rc
+# End Source File
+# Begin Source File
+
 SOURCE=.\test.png
 # End Source File
 # End Group
@@ -253,10 +257,6 @@ SOURCE=..\src\zipper.h
 # Begin Group "demo"
 
 # PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=.\resource.rc
-# End Source File
 # Begin Source File
 
 SOURCE=.\StdAfx.cpp

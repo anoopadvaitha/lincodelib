@@ -5,8 +5,6 @@
 #ifndef TestMain_h__
 #define TestMain_h__
 
-#include "teststream.h"
-
 void TestPropObj();
 void TestIniFile();
 void TestStringList();
