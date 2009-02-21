@@ -24,13 +24,14 @@ int WINAPI _tWinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPTSTR lp
 	// TestZip();
 	// TestImage();
 	// TestEncode();
+	TestExcept();
 	
-	WINX_TEST_APP(CXmlLog, "", "");
-	std::string logPath = GetAppPathA() + "result.xml";
-	log.open(logPath.c_str());
-	WINX_TEST_CLASS(TestStream);
-	WINX_TEST_CLASS(TestStrFormat);
-	log.close();
+// 	WINX_TEST_APP(CXmlLog, "", "");
+// 	std::string logPath = GetAppPathA() + "result.xml";
+// 	log.open(logPath.c_str());
+// 	WINX_TEST_CLASS(TestStream);
+// 	WINX_TEST_CLASS(TestStrFormat);
+// 	log.close();
 	
 	UnInitLogDebug();
 	TermGdiplus();

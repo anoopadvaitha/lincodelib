@@ -5,6 +5,11 @@
 #ifndef strformat_h__
 #define strformat_h__
 
+#ifdef WDLIB_NAMESPACE
+namespace wdlib
+{
+#endif
+
 // 格式化字符串，暂时只支持1024个字节的长度，后续再修改之
 inline std::string FormatA(LPCSTR szFmt, ...)
 {
@@ -17,7 +22,7 @@ inline std::string FormatA(LPCSTR szFmt, ...)
 	return (std::string)szBuf;
 }
 
-// 格式化字符串，暂时只支持512个字节的长度，后续再修改之
+// 格式化字符串，暂时只支持1024个字节的长度，后续再修改之
 inline std::wstring FormatW(LPCWSTR szFmt, ...)
 {
 	va_list argList;
@@ -28,5 +33,9 @@ inline std::wstring FormatW(LPCWSTR szFmt, ...)
 	
 	return (std::wstring)szBuf;
 }
+
+#ifdef WDLIB_NAMESPACE
+} //wdlib
+#endif
 
 #endif // strformat_h__

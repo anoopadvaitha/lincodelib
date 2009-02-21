@@ -42,7 +42,7 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /Yu"stdafx.h" /FD /c
-# ADD CPP /nologo /MD /W3 /GX /Zi /O2 /I "../3rdparty/gdiplus/include" /I "../3rdparty/zip" /D "WIN32" /D "NDEBUG" /D "_MBCS" /Yu"stdafx.h" /FD /c
+# ADD CPP /nologo /MD /W3 /GX /Zi /O2 /I "../3rdparty/gdiplus/include" /I "../3rdparty/zip" /I "../3rdparty/encode" /I "../3rdparty/winxtest/help" /D "WIN32" /D "NDEBUG" /D "_MBCS" /Yu"stdafx.h" /FD /c
 # ADD BASE RSC /l 0x804 /d "NDEBUG"
 # ADD RSC /l 0x804 /d "NDEBUG"
 BSC32=bscmake.exe
@@ -101,6 +101,10 @@ SOURCE=.\test.png
 # Begin Group "Test"
 
 # PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=.\test\test_except.cpp
+# End Source File
 # Begin Source File
 
 SOURCE=.\test\testencode.cpp
@@ -188,6 +192,10 @@ SOURCE=..\src\ErrorUtils.h
 # Begin Source File
 
 SOURCE=..\src\EventUtils.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\except_handle.h
 # End Source File
 # Begin Source File
 
