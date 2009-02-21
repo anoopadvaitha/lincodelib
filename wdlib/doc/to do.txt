@@ -2,11 +2,12 @@ threadeventinvokerÎ´¾­¹ı²âÊÔ
 stream²âÊÔ		OK
 ziputils		OK
 debugutils		OK
-GDI imageutils		OK
+GDI imageutils	OK
 UnitTest		OK
 encode/decode
-	md5		OK
+	md5			OK
 	crc32		OK
-	url		OK
+	url			OK
 strformat		OK
 httputils
+excepthandle

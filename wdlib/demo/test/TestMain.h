@@ -11,5 +11,6 @@ void TestStringList();
 void TestZip();
 void TestImage();
 void TestEncode();
+void TestExcept();
 
 #endif // TestMain_h__
