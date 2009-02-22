@@ -9,5 +9,5 @@ encode/decode
 	crc32		OK
 	url			OK
 strformat		OK
+excepthandle	OK
 httputils
-excepthandle
