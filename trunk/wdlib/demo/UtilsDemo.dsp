@@ -171,10 +171,6 @@ SOURCE=..\3rdparty\zip\zip.h
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE=..\src\CheckUtils.h
-# End Source File
-# Begin Source File
-
 SOURCE=..\src\ComUtils.h
 # End Source File
 # Begin Source File
