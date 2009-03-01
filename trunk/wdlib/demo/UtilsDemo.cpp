@@ -14,6 +14,7 @@ CComModule _Module;
 int WINAPI _tWinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPTSTR lpstrCmdLine, int nCmdShow)
 {
 	_Module.Init(NULL, hInstance);
+	AtlAxWinInit();
 	InitGdiplus();
 	std::wstring strPath = GetAppPathW() + L"wdlib.log";
 	InitLogDebug(wloToDebugger | wloToFile, strPath.c_str());
@@ -24,7 +25,8 @@ int WINAPI _tWinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPTSTR lp
 	// TestZip();
 	// TestImage();
 	// TestEncode();
-	TestExcept();
+	// TestExcept();
+	TestIEControl();
 	
 // 	WINX_TEST_APP(CXmlLog, "", "");
 // 	std::string logPath = GetAppPathA() + "result.xml";

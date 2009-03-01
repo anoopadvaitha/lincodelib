@@ -15,8 +15,9 @@
 
 extern CComModule _Module;
 
+#include <atlcom.h>
+#include <atlhost.h>
 #include <atlwin.h>
-
 
 #include "..\src\wdlib.h"
 
