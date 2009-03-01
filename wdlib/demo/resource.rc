@@ -70,6 +70,15 @@ BEGIN
     PUSHBUTTON      "œ‘ æ◊ ‘¥Õº∆¨",IDC_BTNRESIMAGE,203,78,67,14
 END
 
+IDD_DLGIECONTROL DIALOG DISCARDABLE  0, 0, 411, 238
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Dialog"
+FONT 8, "Tahoma"
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,299,217,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,354,217,50,14
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -85,6 +94,14 @@ BEGIN
         RIGHTMARGIN, 270
         TOPMARGIN, 7
         BOTTOMMARGIN, 108
+    END
+
+    IDD_DLGIECONTROL, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 404
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 231
     END
 END
 #endif    // APSTUDIO_INVOKED

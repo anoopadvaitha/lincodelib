@@ -12,5 +12,6 @@ void TestZip();
 void TestImage();
 void TestEncode();
 void TestExcept();
+void TestIEControl();
 
 #endif // TestMain_h__
