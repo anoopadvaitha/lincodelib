@@ -11,3 +11,4 @@ encode/decode
 strformat		OK
 excepthandle	OK
 httputils
+IEControl		OK
