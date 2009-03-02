@@ -347,6 +347,49 @@ private:
 	CComPtr<IPicture> m_spPicture;
 };
 
+// 根据位图得到不规则区域，可用于实现不规则窗口
+// hdc 设备描述表，比如要实现不规则窗口的设备描述表
+// hbmp 模板位图
+// clrTrans 透明色
+inline HRGN RgnFromBitmap(HDC hdc, HBITMAP hbmp, COLORREF clrTrans)
+{
+	HDC		hMemDC = NULL;
+	BITMAP	bmp;
+	
+	if (!hbmp) return NULL;	
+	::GetObject(hbmp, sizeof(BITMAP), &bmp);
+	
+	hMemDC = ::CreateCompatibleDC(hdc);
+	if (NULL == hMemDC)
+	{
+		::DeleteDC(hMemDC);
+		return NULL;
+	}
+	::SelectObject(hMemDC, hbmp);
+	
+	HRGN hRgn = NULL;
+	hRgn = ::CreateRectRgn(0, 0, bmp.bmWidth, bmp.bmHeight);
+	if (!hRgn) return NULL;
+	
+	HRGN hRgnP = NULL;
+	int i = 0, j = 0;
+	for (i = 0; i < bmp.bmWidth; i++)
+	{
+		// GetPixel的效率太低了，应该用扫描行来判断：TODO
+		for (j = 0; j < bmp.bmHeight; j++)
+		{
+			if (::GetPixel(hMemDC, i, j) == clrTrans)
+			{
+				hRgnP = ::CreateRectRgn(i, j, i+1, j+1);
+				::CombineRgn(hRgn, hRgn, hRgnP, RGN_DIFF);
+				DeleteObject(hRgnP);
+			}
+		}
+	}	
+	
+	return hRgn;
+}
+
 
 #ifdef WDLIB_NAMESPACE
 } //wdlib
