@@ -87,6 +87,10 @@ LINK32=link.exe
 # PROP Default_Filter "ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe"
 # Begin Source File
 
+SOURCE=.\bitmap1.bmp
+# End Source File
+# Begin Source File
+
 SOURCE=.\ReadMe.txt
 # End Source File
 # Begin Source File
@@ -97,6 +101,14 @@ SOURCE=.\resource.rc
 
 SOURCE=.\test.png
 # End Source File
+# Begin Source File
+
+SOURCE="C:\Documents and Settings\linzhenqun\×ÀÃæ\Î´ÃüÃû.bmp"
+# End Source File
+# Begin Source File
+
+SOURCE=".\Î´ÃüÃû.bmp"
+# End Source File
 # End Group
 # Begin Group "Test"
 
@@ -104,6 +116,10 @@ SOURCE=.\test.png
 # Begin Source File
 
 SOURCE=.\test\test_except.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\test\test_gdiutils.cpp
 # End Source File
 # Begin Source File
 

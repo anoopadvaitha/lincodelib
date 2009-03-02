@@ -13,5 +13,6 @@ void TestImage();
 void TestEncode();
 void TestExcept();
 void TestIEControl();
+void TestGDIUtils();
 
 #endif // TestMain_h__

@@ -79,6 +79,13 @@ BEGIN
     PUSHBUTTON      "Cancel",IDCANCEL,354,217,50,14
 END
 
+IDD_DLGBMP DIALOG DISCARDABLE  0, 0, 163, 274
+STYLE WS_POPUP
+FONT 10, "System"
+BEGIN
+    CONTROL         105,IDC_STATIC,"Static",SS_BITMAP,0,0,163,274
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -106,6 +113,13 @@ BEGIN
 END
 #endif    // APSTUDIO_INVOKED
 
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Bitmap
+//
+
+IDB_QQ                  BITMAP  DISCARDABLE     "Î´ÃüÃû.bmp"
 #endif    // Chinese (P.R.C.) resources
 /////////////////////////////////////////////////////////////////////////////
 
