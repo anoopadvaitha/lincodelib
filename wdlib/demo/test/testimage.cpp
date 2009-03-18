@@ -2,6 +2,9 @@
 #include "TestMain.h"
 #include "../resource.h"
 
+#include "gdiplus.h"
+using namespace Gdiplus;
+
 class CImageDlg: public CDialogImpl<CImageDlg>
 {
 public:
@@ -12,12 +15,45 @@ public:
 		COMMAND_ID_HANDLER(IDC_BTNRESIMAGE, OnBtnResImage)
 		COMMAND_ID_HANDLER(IDC_BTNFILEIMAGE, OnBtnFileImage)
 		COMMAND_ID_HANDLER(IDCANCEL, OnClose)
+		COMMAND_ID_HANDLER(IDC_BTNDRAW, OnBtnDraw)
 	END_MSG_MAP()
 
 
 	LRESULT OnInitDialog(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
 	{
 		CenterWindow();
+		return 0;
+	}
+
+	LRESULT OnBtnDraw(WORD wNotifyCode, WORD wID, HWND hWndCtl, BOOL& bHandled)
+	{
+		Graphics gp(m_hWnd);
+		gp.SetSmoothingMode(SmoothingModeAntiAlias);
+
+		// »­Ïß
+		Pen pen(Color(255, 0, 255),2);
+// 		pen.SetEndCap(LineCapArrowAnchor);
+// 		gp.DrawLine(&pen, Point(10, 10), Point(100, 100));
+// 
+// 		pen.SetLineJoin(LineJoinRound);
+// 		gp.DrawRectangle(&pen, 100, 100, 50, 50);
+// 
+// 		GraphicsPath path;
+// 		path.AddString(L"hello world", 12, &FontFamily(L"ËÎÌå"), 0, 24, PointF(0, 0), &StringFormat());
+// 		gp.DrawPath(&pen, &path);
+
+		gp.RotateTransform(30, MatrixOrderAppend);
+		gp.DrawRectangle(&pen, 0, 0, 50, 50);
+
+		// ½¥±ä
+// 		LinearGradientBrush linGrBrush(
+// 			Point(0, 0),
+// 			Point(0, 100),
+// 			Color(128, 255, 0, 0),   // red
+// 			Color(128, 0, 0, 255));  // blue
+// 		
+// 		gp.FillRectangle(&linGrBrush, 0, 0, 200, 100);
+
 		return 0;
 	}
 
