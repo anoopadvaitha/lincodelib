@@ -42,7 +42,7 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /Yu"stdafx.h" /FD /c
-# ADD CPP /nologo /MD /W3 /GX /Zi /O2 /I "../3rdparty/gdiplus/include" /I "../3rdparty/zip" /I "../3rdparty/encode" /I "../3rdparty/winxtest/help" /I "../3rdparty/debug" /I "../3rdparty/wtl/include" /D "WIN32" /D "NDEBUG" /D "_MBCS" /Yu"stdafx.h" /FD /c
+# ADD CPP /nologo /MD /W3 /GX /Zi /O2 /I "../../3rdparty/gdiplus/include" /I "../../3rdparty/zip" /I "../../3rdparty/encode" /I "../../3rdparty/winxtest/help" /I "../../3rdparty/debug" /I "../../3rdparty/wtl/include" /D "WIN32" /D "NDEBUG" /D "_MBCS" /Yu"stdafx.h" /FD /c
 # ADD BASE RSC /l 0x804 /d "NDEBUG"
 # ADD RSC /l 0x804 /d "NDEBUG"
 BSC32=bscmake.exe
@@ -50,7 +50,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /machine:I386
-# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib msimg32.lib /nologo /subsystem:windows /debug /machine:I386 /out:"build/UtilsDemo.exe" /pdbtype:sept /libpath:"../3rdparty/gdiplus/lib"
+# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib msimg32.lib /nologo /subsystem:windows /debug /machine:I386 /out:"build/UtilsDemo.exe" /pdbtype:sept /libpath:"../../3rdparty/gdiplus/lib"
 
 !ELSEIF  "$(CFG)" == "UtilsDemo - Win32 Debug"
 
@@ -66,7 +66,7 @@ LINK32=link.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_windows" /D "_MBCS" /Yu"stdafx.h" /FD /GZ /c
-# ADD CPP /nologo /MDd /W3 /Gm /GX /ZI /Od /I "../3rdparty/gdiplus/include" /I "../3rdparty/zip" /I "../3rdparty/encode" /I "../3rdparty/winxtest/help" /I "../3rdparty/debug" /I "../3rdparty/wtl/include" /D "WIN32" /D "_DEBUG" /FR /Yu"stdafx.h" /FD /GZ /c
+# ADD CPP /nologo /MDd /W3 /Gm /GX /ZI /Od /I "../../3rdparty/gdiplus/include" /I "../../3rdparty/zip" /I "../../3rdparty/encode" /I "../../3rdparty/winxtest/help" /I "../../3rdparty/debug" /I "../../3rdparty/wtl/include" /D "WIN32" /D "_DEBUG" /FR /Yu"stdafx.h" /FD /GZ /c
 # ADD BASE RSC /l 0x804 /d "_DEBUG"
 # ADD RSC /l 0x804 /d "_DEBUG"
 BSC32=bscmake.exe
@@ -74,7 +74,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /debug /machine:I386 /out:"build/UtilsDemo.exe" /pdbtype:sept /libpath:"../3rdparty/gdiplus/lib"
+# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /debug /machine:I386 /out:"build/UtilsDemo.exe" /pdbtype:sept /libpath:"../../3rdparty/gdiplus/lib"
 
 !ENDIF 
 
@@ -170,19 +170,19 @@ SOURCE=.\test\testzip.cpp
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE=..\3rdparty\zip\unzip.cpp
+SOURCE=..\..\3rdparty\zip\unzip.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\3rdparty\zip\unzip.h
+SOURCE=..\..\3rdparty\zip\unzip.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\3rdparty\zip\zip.cpp
+SOURCE=..\..\3rdparty\zip\zip.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\3rdparty\zip\zip.h
+SOURCE=..\..\3rdparty\zip\zip.h
 # End Source File
 # End Group
 # End Group

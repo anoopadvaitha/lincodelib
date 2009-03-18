@@ -23,11 +23,11 @@ int WINAPI _tWinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPTSTR lp
 	// TestIniFile();
 	// TestStringList();
 	// TestZip();
-	// TestImage();
+	TestImage();
 	// TestEncode();
 	// TestExcept();
 	// TestIEControl();
-	TestGDIUtils();
+	// TestGDIUtils();
 	
 // 	WINX_TEST_APP(CXmlLog, "", "");
 // 	std::string logPath = GetAppPathA() + "result.xml";
