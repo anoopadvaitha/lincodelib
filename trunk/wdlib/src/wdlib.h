@@ -51,6 +51,7 @@ namespace wdlib
 #include "threadeventinvoker.h"
 #include "DebugUtils.h"
 #include "zipper.h"
+#include "httpdownload.h"
 
 
 #ifdef WDLIB_NAMESPACE

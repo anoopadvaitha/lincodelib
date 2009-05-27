@@ -40,7 +40,9 @@ STDMETHODIMP QueryInterface(REFIID riid, void** ppvObject)				\
 	return S_OK;														\
 }
 
-#define COUNTREF(ref)													\
+
+// 引用计数实现，线程安全
+#define COUNTREF_S(ref)													\
 STDMETHODIMP_(ULONG) AddRef()											\
 {																		\
 	return InterlockedIncrement(&ref);									\
@@ -55,6 +57,24 @@ STDMETHODIMP_(ULONG) Release()											\
 	return ref;															\
 }																		
 
+
+// 引用计数实现，非线程安全
+#define COUNTREF(ref)													\
+STDMETHODIMP_(ULONG) AddRef()											\
+{																		\
+	return ++ref;									\
+}																		\
+STDMETHODIMP_(ULONG) Release()											\
+{																		\
+	if (--ref == 0)								\
+	{																	\
+		delete this;													\
+		return 0;														\
+	}																	\
+	return ref;															\
+}																		
+
+// 引用计数实现，无引用计数
 #define NOCOUNTREF()													\
 STDMETHODIMP_(ULONG) AddRef()											\
 {																		\
