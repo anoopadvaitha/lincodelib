@@ -127,6 +127,10 @@ SOURCE=.\test\testencode.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\test\TestHttpDownload.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\test\testiectrl.cpp
 # End Source File
 # Begin Source File
@@ -156,6 +160,10 @@ SOURCE=.\test\teststrformat.h
 # Begin Source File
 
 SOURCE=.\test\teststringlist.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\test\TestWininetHelper.h
 # End Source File
 # Begin Source File
 
@@ -227,6 +235,10 @@ SOURCE=..\src\GDIUtils.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\src\httpdownload.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\src\iecontrol.h
 # End Source File
 # Begin Source File
@@ -280,6 +292,10 @@ SOURCE=..\src\wdlib.h
 # Begin Source File
 
 SOURCE=..\src\wdTypes.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\WininetHelper.h
 # End Source File
 # Begin Source File
 
