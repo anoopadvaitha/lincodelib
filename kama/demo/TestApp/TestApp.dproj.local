@@ -1,0 +1,8 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<BorlandProject>
+	<Transactions>
+    <Transaction>2009-07-05 16:27:57.187.dproj,C:\Documents and Settings\linzhenqun\My Documents\RAD Studio\Projects\Project2.dproj=E:\CodeLib\lincodelib\kama\demo\TestApp\TestApp.dproj</Transaction>
+    <Transaction>2009-07-05 23:19:32.359.pas,E:\CodeLib\lincodelib\kama\demo\TestApp\Unit1.pas=E:\CodeLib\lincodelib\kama\source\WndClasses.pas</Transaction>
+    <Transaction>2009-07-05 23:20:16.375.pas,E:\CodeLib\lincodelib\kama\source\WndClasses.pas=E:\CodeLib\lincodelib\kama\source\KmWndClasses.pas</Transaction>
+  </Transactions>
+</BorlandProject>
