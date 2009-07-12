@@ -20,6 +20,8 @@
 			<Base>true</Base>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Base)'!=''">
+			<DCC_DebugDCUs>true</DCC_DebugDCUs>
+			<DCC_Optimize>false</DCC_Optimize>
 			<DCC_DcuOutput>..\..\dcu\</DCC_DcuOutput>
 			<DCC_UsePackage>vclx;vcl;rtl;vclactnband;vclie</DCC_UsePackage>
 			<DCC_UnitAlias>WinTypes=Windows;WinProcs=Windows;DbiTypes=BDE;DbiProcs=BDE;DbiErrs=BDE;$(DCC_UnitAlias)</DCC_UnitAlias>
@@ -41,6 +43,8 @@
 				<MainSource>MainSource</MainSource>
 			</DelphiCompile>
 			<DCCReference Include="..\..\source\KmWndClasses.pas"/>
+			<DCCReference Include="..\..\source\Test\TestMessageLoop.pas"/>
+			<DCCReference Include="..\..\source\Test\TestWindow.pas"/>
 			<BuildConfiguration Include="Base">
 				<Key>Base</Key>
 			</BuildConfiguration>
