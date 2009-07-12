@@ -16,7 +16,6 @@ const
   cWndClassName         = 'Kama.TWindow';     // 窗口类名
 
   KMWM_BASE             = $A000;              // 消息基值
-  KMWM_RELEASE          = KMWM_BASE + $1;     // 释放窗口
 
 
 type
@@ -79,6 +78,9 @@ type
     wsMaximized       // 最大化
   );
 
+  // 关闭询问事件
+  TCloseQueryEvent = procedure(Sender: TObject; var CanClose: Boolean) of object;
+
   { 窗口封装类:
     这里只根据游戏程序的需要，对顶层窗口作简单的封装
     该类与窗口句柄的生命周期一一对应，即：
@@ -87,12 +89,21 @@ type
       窗口句柄消毁时，该类也消毁}
   TWindow = class
   private
+    FProcThunk: Pointer;
+    FWindowProc: TWndMethod;
     FDestroying: Boolean;
     FHandle: THandle;
     FHeight: Integer;
     FLeft: Integer;
     FTop: Integer;
     FWidth: Integer;
+    FOnCreate: TNotifyEvent;
+    FOnDestroy: TNotifyEvent;
+    FOnShow: TNotifyEvent;
+    FOnHide: TNotifyEvent;
+    FOnSizeChange: TNotifyEvent;
+    FOnClose: TNotifyEvent;
+    FOnQueryClose: TCloseQueryEvent;
     procedure SetBorderIcons(const Value: TBorderIcons);
     procedure SetBorderStyle(const Value: TBorderStyle);
     procedure SetCaption(const Value: string);
@@ -111,16 +122,13 @@ type
     procedure SetTop(const Value: Integer);
     procedure SetWidth(const Value: Integer);
     function GetClientHeight: Integer;
-    function GetClientRect: TRect;
+    function GetClientSize: TPoint;
+    procedure SetClientSize(Value: TPoint);
     function GetClientWidth: Integer;
     procedure SetClientHeight(const Value: Integer);
     procedure SetClientWidth(const Value: Integer);
-    procedure SetClientSize(Value: TSize);
     procedure SetWindowState(const Value: TWindowState);
   protected
-    FProcThunk: Pointer;
-    FWindowProc: TWndMethod;
-
     function StyleToBorderStyle(Style: LongWord): TBorderStyle;
     function StyleToBorderIcons(Style: LongWord): TBorderIcons;
     function BorderIconsToStyle(OldStyle: LongWord; BIS: TBorderIcons): LongWord;
@@ -130,13 +138,18 @@ type
       BIS: TBorderIcons; BS: TBorderStyle; Caption: string): Boolean;
     procedure MainWndProc(var Message: TMessage);
     procedure WndProc(var Message: TMessage); virtual;
-    procedure KMWMRelease(var Message: TMessage); message KMWM_RELEASE;
     procedure WMClose(var Message: TWMClose); message WM_CLOSE;
     procedure WMSize(var Message: TWMSize); message WM_SIZE;
-    procedure WMNCCalcSize(var Message: TWMNCCalcSize); message WM_NCCALCSIZE;
     procedure WMMove(var Message: TWMMove); message WM_MOVE;
     procedure WMNCDestroy(var Message: TWMNCDestroy); message WM_NCDESTROY;
     procedure UpdateBounds;
+    function CloseQuery: Boolean; dynamic;
+    procedure DoShow; dynamic;
+    procedure DoHide; dynamic;
+    procedure DoClose; dynamic;
+    procedure DoSizeChange; dynamic;
+    procedure DoCreate; dynamic;
+    procedure DoDestroy; dynamic;
   public
     // 构造函数，调用的时候窗口就创建了，参数很多，但都很容易理解
     constructor Create(
@@ -155,7 +168,11 @@ type
     procedure Hide;
     procedure BringToFront;
     procedure SendToBack;
-    procedure SetBounds(ALeft, ATop, AWidth, AHeight: Integer);
+    procedure SetBounds(ALeft, ATop, AWidth, AHeight: Integer); overload;
+    procedure SetBounds(const Rect: TRect); overload;
+    procedure AlignWindow(nPercentX: Integer = 50; nPercentY: Integer = 50);
+    procedure AfterConstruction; override;
+    procedure BeforeDestruction; override;
 
     property Enable: Boolean read GetEnable write SetEnable;
     property TopMost: Boolean read GetTopMost write SetTopMost;
@@ -170,15 +187,19 @@ type
     property Top: Integer read FTop write SetTop;
     property Width: Integer read FWidth write SetWidth;
     property Height: Integer read FHeight write SetHeight;
-    property ClientRect: TRect read GetClientRect;
+    property ClientSize: TPoint read GetClientSize write SetClientSize;
     property ClientHeight: Integer read GetClientHeight write SetClientHeight;
     property ClientWidth: Integer read GetClientWidth write SetClientWidth;
+    property OnCreate: TNotifyEvent read FOnCreate write FOnCreate;
+    property OnDestroy: TNotifyEvent read FOnDestroy write FOnDestroy;
+    property OnClose: TNotifyEvent read FOnClose write FOnClose;
+    property OnQueryClose: TCloseQueryEvent read FOnQueryClose write FOnQueryClose;
   end;
 
-  { 主窗口，消毁的时候结束程序 }
+  { 主窗口 }
   TMainWindow = class(TWindow)
-  public
-    destructor Destroy; override;
+  protected
+    procedure DoClose; override;
   end;
 
 implementation
@@ -282,6 +303,36 @@ end;
 
 { TWindow }
 
+procedure TWindow.AfterConstruction;
+begin
+  DoCreate;
+end;
+
+procedure TWindow.AlignWindow(nPercentX, nPercentY: Integer);
+begin
+  Assert(FHandle <> 0, 'FHandle has not created');
+
+  if nPercentX < 0 then
+    nPercentX := 0;
+  if nPercentX > 100 then
+    nPercentX := 100;
+  if nPercentY < 0 then
+    nPercentY := 0;
+  if nPercentY > 100 then
+    nPercentY := 100;
+
+  SetBounds(
+    (GetSystemMetrics(SM_CXSCREEN) - FWidth) * nPercentX div 100,
+    (GetSystemMetrics(SM_CYSCREEN) - FHeight) * nPercentY div 100,
+    FWidth,
+    FHeight);
+end;
+
+procedure TWindow.BeforeDestruction;
+begin
+  DoDestroy;
+end;
+
 function TWindow.BorderIconsToStyle(OldStyle: LongWord;
   BIS: TBorderIcons): LongWord;
 begin
@@ -324,7 +375,18 @@ procedure TWindow.Close;
 begin
   Assert(FHandle <> 0, 'FHandle has not created');
 
-  PostMessage(FHandle, KMWM_RELEASE, 0, 0);
+  if CloseQuery then
+  begin
+    DoClose;
+    Hide;
+  end;
+end;
+
+function TWindow.CloseQuery: Boolean;
+begin
+  Result := True;
+  if Assigned(FOnQueryClose) then
+    FOnQueryClose(Self, Result);
 end;
 
 constructor TWindow.Create(ALeft, ATop, AWidth, AHeight: Integer;
@@ -377,6 +439,42 @@ begin
   inherited;
 end;
 
+procedure TWindow.DoClose;
+begin
+  if Assigned(FOnClose) then
+    FOnClose(Self);
+end;
+
+procedure TWindow.DoCreate;
+begin
+  if Assigned(FOnCreate) then
+    FOnCreate(Self);
+end;
+
+procedure TWindow.DoDestroy;
+begin
+  if Assigned(FOnDestroy) then
+    FOnDestroy(Self);
+end;
+
+procedure TWindow.DoHide;
+begin
+  if Assigned(FOnHide) then
+    FOnHide(Self);
+end;
+
+procedure TWindow.DoShow;
+begin
+  if Assigned(FOnShow) then
+    FOnShow(Self);
+end;
+
+procedure TWindow.DoSizeChange;
+begin
+  if Assigned(FOnSizeChange) then
+    FOnSizeChange(Self);
+end;
+
 function TWindow.GetBorderIcons: TBorderIcons;
 begin
   Assert(FHandle <> 0, 'FHandle has not created');
@@ -405,29 +503,34 @@ end;
 
 function TWindow.GetClientHeight: Integer;
 begin
-  Result := ClientRect.Bottom;
+  Result := ClientSize.Y;
 end;
 
-function TWindow.GetClientRect: TRect;
+function TWindow.GetClientSize: TPoint;
+var
+  R: TRect;
 begin
   Assert(FHandle <> 0, 'FHandle has not created');
 
   if IsIconic(Handle) then
   begin
-    SetRect(Result, 0, 0, 0, 0);
-    AdjustWindowRectEx(Result, GetWindowLong(FHandle, GWL_STYLE),
+    SetRect(R, 0, 0, 0, 0);
+    AdjustWindowRectEx(R, GetWindowLong(FHandle, GWL_STYLE),
       False, GetWindowLong(FHandle, GWL_EXSTYLE));
-    SetRect(Result, 0, 0,
-      Width - Result.Right + Result.Left,
-      Height - Result.Bottom + Result.Top);
+    SetRect(R, 0, 0,
+      Width - R.Right + R.Left,
+      Height - R.Bottom + R.Top);
   end
-  else
-    Windows.GetClientRect(FHandle, Result);
+  else begin
+    Windows.GetClientRect(FHandle, R);
+  end;
+
+  Result := Point(R.Right, R.Bottom);
 end;
 
 function TWindow.GetClientWidth: Integer;
 begin
-  Result := ClientRect.Right;
+  Result := ClientSize.X;
 end;
 
 function TWindow.GetEnable: Boolean;
@@ -469,11 +572,6 @@ end;
 procedure TWindow.Hide;
 begin
   Visible := False;
-end;
-
-procedure TWindow.KMWMRelease(var Message: TMessage);
-begin
-  Free;
 end;
 
 procedure TWindow.MainWndProc(var Message: TMessage);
@@ -542,6 +640,11 @@ begin
     SWP_FRAMECHANGED or SWP_NOMOVE or SWP_NOSIZE or SWP_NOZORDER);
 end;
 
+procedure TWindow.SetBounds(const Rect: TRect);
+begin
+  SetBounds(Rect.Left, Rect.Top, Rect.Right - Rect.Left, Rect.Bottom - Rect.Top);
+end;
+
 procedure TWindow.SetBounds(ALeft, ATop, AWidth, AHeight: Integer);
 begin
   Assert(FHandle <> 0, 'FHandle has not created');
@@ -549,7 +652,7 @@ begin
   if (ALeft <> FLeft) or (ATop <> FTop) or
     (AWidth <> FWidth) or (AHeight <> FHeight) then
   begin
-    if IsIconic(FHandle) then
+    if not IsIconic(FHandle) then
       SetWindowPos(FHandle, 0, ALeft, ATop, AWidth, AHeight,
         SWP_NOZORDER + SWP_NOACTIVATE);
   end;
@@ -563,32 +666,24 @@ begin
 end;
 
 procedure TWindow.SetClientHeight(const Value: Integer);
-var
-  Size: TSize;
 begin
-  Size.cx := ClientHeight;
-  Size.cy := Value;
-  SetClientSize(Size);
+  SetClientSize(Point(ClientHeight, Value));
 end;
 
-procedure TWindow.SetClientSize(Value: TSize);
+procedure TWindow.SetClientSize(Value: TPoint);
 var
-  Client: TRect;
+  Client: TPoint;
 begin
   Assert(FHandle <> 0, 'FHandle has not created');
 
-  Client := GetClientRect;
-  SetBounds(FLeft, FTop, Width - Client.Right + Value.cx, Height -
-    Client.Bottom + Value.cy);
+  Client := GetClientSize;
+  SetBounds(FLeft, FTop, Width - Client.X + Value.X,  Height -
+    Client.Y + Value.Y);
 end;
 
 procedure TWindow.SetClientWidth(const Value: Integer);
-var
-  Size: TSize;
 begin
-  Size.cx := Value;
-  Size.cy := ClientHeight;
-  SetClientSize(Size);
+  SetClientSize(Point(Value, ClientHeight));
 end;
 
 procedure TWindow.SetEnable(const Value: Boolean);
@@ -628,13 +723,19 @@ begin
   Assert(FHandle <> 0, 'FHandle has not created');
 
   if not Value then
-    ShowWindow(FHandle, SW_HIDE)
-  else if IsIconic(FHandle) then
-    ShowWindow(FHandle, SW_SHOWMINNOACTIVE)
-  else if IsZoomed(FHandle) then
-    ShowWindow(FHandle, SW_SHOWMAXIMIZED)
-  else
-    ShowWindow(FHandle, SW_SHOWNORMAL);
+  begin
+    DoHide;
+    ShowWindow(FHandle, SW_HIDE);
+  end
+  else begin
+    if IsIconic(FHandle) then
+      ShowWindow(FHandle, SW_SHOWMINNOACTIVE)
+    else if IsZoomed(FHandle) then
+      ShowWindow(FHandle, SW_SHOWMAXIMIZED)
+    else
+      ShowWindow(FHandle, SW_SHOWNORMAL);
+    DoShow;
+  end;
 end;
 
 procedure TWindow.SetWidth(const Value: Integer);
@@ -662,6 +763,7 @@ begin
 
   ShowWindow(FHandle, ShowCommands[WndState]);
   BringToFront;
+  DoShow;
 end;
 
 function TWindow.StyleToBorderIcons(Style: LongWord): TBorderIcons;
@@ -682,10 +784,10 @@ begin
   Result := bsNone;
   if Style and WS_CAPTION <> 0 then
   begin
-    if Style and WS_BORDER <> 0 then
+    if Style and WS_THICKFRAME <> 0 then
+      Result := bsSizeable
+    else
       Result := bsSingle
-    else if Style and WS_THICKFRAME <> 0 then
-      Result := bsSizeable;
   end
   else if Style and WS_POPUP <> 0 then
     Result := bsNone;
@@ -717,6 +819,7 @@ begin
   FTop := Rect.Top;
   FWidth := Rect.Right - Rect.Left;
   FHeight := Rect.Bottom - Rect.Top;
+  DoSizeChange;
 end;
 
 procedure TWindow.WMClose(var Message: TWMClose);
@@ -728,11 +831,6 @@ procedure TWindow.WMMove(var Message: TWMMove);
 begin
   inherited;
   UpdateBounds;
-end;
-
-procedure TWindow.WMNCCalcSize(var Message: TWMNCCalcSize);
-begin
-  inherited;
 end;
 
 procedure TWindow.WMNCDestroy(var Message: TWMNCDestroy);
@@ -757,10 +855,10 @@ end;
 
 { TMainWindow }
 
-destructor TMainWindow.Destroy;
+procedure TMainWindow.DoClose;
 begin
-  PostQuitMessage(0);
   inherited;
+  PostQuitMessage(0);
 end;
 
 end.
