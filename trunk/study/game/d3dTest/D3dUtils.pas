@@ -14,7 +14,7 @@ unit D3dUtils;
 
 interface
 uses
-  Direct3D9;
+  Direct3D9, D3DX9;
 
 procedure Setup;
 procedure Run;
@@ -27,7 +27,12 @@ var
   Wnd: THandle;
   bReseting: Boolean;
   bFullScreen: Boolean;
-  VertexBuf: IDirect3DVertexBuffer9;
+
+  VertexBuf: IDirect3DVertexBuffer9;  // 顶点列表
+  VertexBuf2: IDirect3DVertexBuffer9; // 顶点列表
+  TeapotMesh: ID3DXMesh;              // 茶壶
+  Tex: IDirect3DTexture9;             // 纹理
+
 
 implementation
 
@@ -39,87 +44,7 @@ type
 procedure FullScreenSwitch; forward;
 
 //------------------------------------------------------------------------------
-// 创建窗口
-function CreateWnd(WndProc: Pointer; Width, Height: Integer): THandle;
-var
-  szClsName: array [0..64] of char;
-  wc: TWndClassEx;
-begin
-  szClsName := 'D3D.Test.Application';
-  Result := 0;
-
-  wc.cbSize := SizeOf(wc);
-  wc.style := CS_VREDRAW or CS_HREDRAW or CS_DBLCLKS;
-  wc.lpfnWndProc := WndProc;
-  wc.cbClsExtra := 0;
-  wc.cbWndExtra := 0;
-  wc.hInstance := HInstance;
-  wc.hIcon := LoadIcon(0, IDI_APPLICATION);
-  wc.hCursor := LoadCursor(0, IDC_ARROW);
-  wc.hbrBackground := GetStockObject(BLACK_BRUSH);
-  wc.lpszMenuName := '';
-  wc.lpszClassName := szClsName;
-  wc.hIconSm := 0;
-
-  if RegisterClassEx(wc) = 0 then
-    Exit;
-
-  Result := CreateWindow(szClsName, szClsName, WS_OVERLAPPED or WS_CAPTION or WS_SYSMENU or WS_MINIMIZEBOX, 100, 100,
-    Width, Height, 0, 0, HInstance, nil);
-end;
-
-// 消息循环
-procedure MessageLoop(UpdateFrame: TUpdateFrame);
-var
-  msg: TMsg;
-begin
-  while True do
-  begin
-    if PeekMessage(msg, 0, 0, 0, PM_REMOVE) then
-    begin
-      if msg.message = WM_QUIT then
-        Break
-      else begin
-        TranslateMessage(msg);
-        DispatchMessage(msg);
-      end;
-    end
-    else begin
-      UpdateFrame;
-      WaitMessage;
-    end;
-  end;
-end;
-
-// 窗口过程
-function WndProc(hwnd: THandle; Msg: UINT; wParam: LongInt; lParam: LongInt): HRESULT; stdcall;
-var
-  ps: TPaintStruct;
-begin
-  case Msg of
-    WM_PAINT:
-    begin
-      BeginPaint(hwnd, ps);
-      EndPaint(hwnd, ps);
-      Result := 0;
-    end;
-    WM_DESTROY:
-    begin
-      PostQuitMessage(0);
-      Result := 0;
-    end;
-    WM_RBUTTONDOWN:
-    begin
-      // 全屏与窗口模式之间的切换
-      FullScreenSwitch;
-      Result := 0;
-    end;    
-    else
-      Result := DefWindowProc(hwnd, Msg, wParam, lParam);
-  end;
-end;
-
-//------------------------------------------------------------------------------
+// 设备检查
 procedure EnumAdpterModes(Adapter: UINT);
 var
   nMode: Integer;
@@ -235,6 +160,7 @@ begin
   end;
 end;
 
+// 是否支持硬件顶点运算
 function SupportHWVertexProcess: Boolean;
 var
   Caps: TD3DCaps9;
@@ -244,8 +170,107 @@ begin
   else
     Result := False;
 end;
-//------------------------------------------------------------------------------
 
+//------------------------------------------------------------------------------
+// 创建窗口
+function CreateWnd(WndProc: Pointer; Width, Height: Integer): THandle;
+var
+  szClsName: array [0..64] of char;
+  wc: TWndClassEx;
+begin
+  szClsName := 'D3D.Test.Application';
+  Result := 0;
+
+  wc.cbSize := SizeOf(wc);
+  wc.style := CS_VREDRAW or CS_HREDRAW or CS_DBLCLKS;
+  wc.lpfnWndProc := WndProc;
+  wc.cbClsExtra := 0;
+  wc.cbWndExtra := 0;
+  wc.hInstance := HInstance;
+  wc.hIcon := LoadIcon(0, IDI_APPLICATION);
+  wc.hCursor := LoadCursor(0, IDC_ARROW);
+  wc.hbrBackground := 0;
+  wc.lpszMenuName := '';
+  wc.lpszClassName := szClsName;
+  wc.hIconSm := 0;
+
+  if RegisterClassEx(wc) = 0 then
+    Exit;
+
+  Result := CreateWindow(
+    szClsName,
+    szClsName,
+    WS_OVERLAPPED or WS_CAPTION or WS_SYSMENU or WS_MINIMIZEBOX,
+    100, 100,
+    Width, Height,
+    0, 0,
+    HInstance,
+    nil);
+end;
+
+// 消息循环
+procedure MessageLoop(UpdateFrame: TUpdateFrame; dwFrameTime: Cardinal);
+var
+  msg: TMsg;
+  dwTick: Cardinal;
+begin
+  dwTick := 0;
+  while True do
+  begin
+    if PeekMessage(msg, 0, 0, 0, PM_REMOVE) then
+    begin
+      if msg.message = WM_QUIT then
+        Break
+      else begin
+        TranslateMessage(msg);
+        DispatchMessage(msg);
+      end;
+    end
+    else begin
+      if GetTickCount - dwTick > dwFrameTime then
+      begin
+        UpdateFrame;
+        dwTick := GetTickCount;
+      end;
+      Sleep(10);
+    end;
+  end;
+end;
+
+// 窗口过程
+function WndProc(hwnd: THandle; Msg: UINT; wParam: LongInt; lParam: LongInt): HRESULT; stdcall;
+var
+  ps: TPaintStruct;
+begin
+  case Msg of
+    WM_PAINT:
+    begin
+      BeginPaint(hwnd, ps);
+      EndPaint(hwnd, ps);
+      Result := 0;
+    end;
+    WM_LBUTTONDOWN:
+    begin
+      Result := 0;
+    end;
+    WM_DESTROY:
+    begin
+      PostQuitMessage(0);
+      Result := 0;
+    end;
+    WM_RBUTTONDOWN:
+    begin
+      // 全屏与窗口模式之间的切换
+      FullScreenSwitch;
+      Result := 0;
+    end;    
+    else
+      Result := DefWindowProc(hwnd, Msg, wParam, lParam);
+  end;
+end;
+
+//------------------------------------------------------------------------------
+// 全屏切换
 procedure FullScreenSwitch;
 begin
   if bFullScreen then
@@ -261,6 +286,22 @@ begin
   end;
 end;
 
+//------------------------------------------------------------------------------
+// 重置设备
+procedure ResetDevice;
+begin
+  // 要等到返回D3DERR_DEVICENOTRESET，才可以试着Reset。
+  if Device9.TestCooperativeLevel = D3DERR_DEVICENOTRESET then
+  begin
+    if Succeeded(Device9.Reset(d3dpp)) then
+    begin
+      bReseting := False;
+     end;
+  end;
+end;
+
+//------------------------------------------------------------------------------
+// 初始化D3D
 function InitD3D(Width, Height: Integer; bWindowed: Boolean; Format: TD3DFormat): Boolean;
 var
   Flag: Cardinal;
@@ -272,15 +313,14 @@ begin
   if Wnd = 0 then
     Exit;
 
-  // Show window
-  ShowWindow(Wnd, SW_SHOWNORMAL);
-  UpdateWindow(Wnd);
-
-
   // Create IDirect3D9
   D3D9 := Direct3DCreate9(D3D_SDK_VERSION);
   if D3D9 = nil then
     Exit;
+
+  // Show window
+  ShowWindow(Wnd, SW_SHOWNORMAL);
+  UpdateWindow(Wnd);
 
   bFullScreen := not bWindowed;
 
@@ -293,6 +333,8 @@ begin
   d3dpp.BackBufferCount := 1;
   d3dpp.BackBufferFormat := Format;
   d3dpp.SwapEffect := D3DSWAPEFFECT_DISCARD;
+  d3dpp.EnableAutoDepthStencil := True;
+  d3dpp.AutoDepthStencilFormat := D3DFMT_D16;
 
   // Check Vertex processing
   if SupportHWVertexProcess then
@@ -304,63 +346,14 @@ begin
   if Failed(D3D9.CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, Wnd, Flag, @d3dpp, Device9)) then
     Exit;
 
+  Device9.SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
+  Device9.SetRenderState(D3DRS_ZENABLE, 1);
+
   Result := True;
 end;
 
-procedure ResetDevice;
-begin
-  // 要等到返回D3DERR_DEVICENOTRESET，才可以试着Reset。
-  if Device9.TestCooperativeLevel = D3DERR_DEVICENOTRESET then
-  begin
-    if Succeeded(Device9.Reset(d3dpp)) then
-      bReseting := False;
-  end;
-end;
-
-type
-  PD3DVertex = ^TD3DVertex;
-  TD3DVertex = packed record
-    x, y, z, rhw: Single;
-    color: DWORD;
-  end;
-
-procedure DrawPrimitive;
-begin
-  if Succeeded(Device9.BeginScene) then
-  try
-    if Failed(Device9.SetStreamSource(0, VertexBuf, 0, SizeOf(TD3DVertex))) then
-      Exit;
-
-    if Failed(Device9.SetFVF(D3DFVF_XYZRHW or D3DFVF_DIFFUSE)) then
-      Exit;
-
-    Device9.DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 4);
-  finally
-    Device9.EndScene;
-  end;
-end;  
-
-// 更新
-procedure UpdateFrame;
-begin
-  if bReseting then
-  begin
-    ResetDevice;
-    Exit;
-  end;
-
-  // draw scene
-  Device9.Clear(0, nil, D3DCLEAR_TARGET, D3DCOLOR_ARGB(255, 255, 0, 0), 1, 0);
-
-  // draw Primitive
-  DrawPrimitive;
-
-  // 当设备丢失时，Present会返回D3DERR_DEVICELOST，此时应该进行设备重设置处理
-  // 什么时候设备会丢失，一个典型的例子就是全屏时，通过Alt+Tab切换窗口便会出现。
-  if Device9.Present(nil, nil, 0, nil) = D3DERR_DEVICELOST then
-    bReseting := True;
-end;
-
+//------------------------------------------------------------------------------
+// 设置视口
 procedure SetViewPort;
 var
   vp: D3DVIEWPORT9;
@@ -374,11 +367,230 @@ begin
   Device9.SetViewport(vp);
 end;
 
+//------------------------------------------------------------------------------
+// 渲染
+type
+  // D3DFVF_XYZRHW表明坐标经过转换，即与屏幕坐标一样，rhw意思是w的倒数，
+  // w是齐次坐标的值，在这里通常为1
+  PD3DVertex = ^TD3DVertex;
+  TD3DVertex = packed record
+    x, y, z, rhw: Single;
+    ux, uy: Single;
+  end;
+const
+  D3DFVF_CUSTOM = D3DFVF_XYZRHW or D3DFVF_TEX1;
+
+type
+  PD3DVertex2 = ^TD3DVertex2;
+  TD3DVertex2 = packed record
+    x, y, z: Single;
+  end;
+
+// 启动变换: 茶壶旋转
+procedure SetupTransform;
+var
+  uTime: LongWord;
+  fAngle: Single;
+  mat: TD3DMatrix;
+  eye, LookAt, Up: TD3DVector;
+begin
+  // 物体坐标到世界坐标的转换, 自动旋转
+  uTime := GetTickCount mod 2000;
+  fAngle := uTime * 2 * D3DX_PI / 2000;
+  D3DXMatrixRotationY(mat, fAngle);
+  Device9.SetTransform(D3DTS_WORLD, mat);
+
+  // 观察坐标转换
+  eye := D3DXVector3(0, 2, 4);
+  LookAt := D3DXVector3(0, 0, 0);
+  Up := D3DXVector3(0, 1, 0);
+  D3DXMatrixLookAtLH(mat, eye, LookAt, Up);
+  Device9.SetTransform(D3DTS_VIEW, mat);
+
+  // 投影转换
+  D3DXMatrixPerspectiveFovLH(mat, D3DX_PI * 0.5, d3dpp.BackBufferWidth / d3dpp.BackBufferHeight, 1, 100);
+  Device9.SetTransform(D3DTS_PROJECTION, mat);
+end;
+
+// 启动变换: 相机旋转
+procedure SetupTransform2;
+var
+  uTime: LongWord;
+  fAngle, x, z: Single;
+  mat: TD3DMatrix;
+  eye, LookAt, Up: TD3DVector;
+begin
+  // 茶壶
+  uTime := GetTickCount mod 2000;
+  fAngle := uTime * 2 * D3DX_PI / 2000;
+
+  // 观察坐标转换
+  x := 4 * Cos(fAngle);
+  z := 4 * Sin(fAngle);
+  eye := D3DXVector3(x, 2, z);
+  LookAt := D3DXVector3(0, 0, 0);
+  Up := D3DXVector3(0, 1, 0);
+  D3DXMatrixLookAtLH(mat, eye, LookAt, Up);
+  Device9.SetTransform(D3DTS_VIEW, mat);
+
+  // 投影转换
+  D3DXMatrixPerspectiveFovLH(mat, D3DX_PI * 0.5, d3dpp.BackBufferWidth / d3dpp.BackBufferHeight, 1, 100);
+  Device9.SetTransform(D3DTS_PROJECTION, mat);
+end;
+
+// 光照
+procedure SetupLight;
+var
+  mtr: TD3DMaterial9;
+  light: TD3DLight9;
+  vecDir: TD3DVector;
+begin
+  // 材质
+  FillChar(mtr, SizeOf(mtr), 0);
+  mtr.Ambient.r := 1;
+  mtr.Ambient.g := 1;
+  mtr.Ambient.b := 1;
+  mtr.Ambient.a := 1;
+  mtr.Diffuse.r := 1;
+  mtr.Diffuse.g := 1;
+  mtr.Diffuse.b := 1;
+  mtr.Diffuse.a := 1;
+  Device9.SetMaterial(mtr);
+
+  // 环境光
+  Device9.SetRenderState(D3DRS_AMBIENT, $00405B43);
+
+  // 漫射光
+  FillChar(light, SizeOf(light), 0);
+  light._Type := D3DLIGHT_DIRECTIONAL;
+  light.Diffuse.r := 1;
+  light.Diffuse.g := 1;
+  light.Diffuse.b := 1;
+  light.Diffuse.a := 1;
+  vecDir := D3DXVector3(10, 0, -4);
+  D3DXVec3Normalize(light.Direction, vecDir);
+  Device9.SetLight(0, light);
+  Device9.LightEnable(0, True);
+  Device9.SetRenderState(D3DRS_LIGHTING, 1);
+end;
+
+
+// 画图元
+procedure DrawObject;
+begin
+  if Succeeded(Device9.BeginScene) then
+  try
+    // --------------------------
+    // 图元
+    Device9.SetTexture(0, Tex);
+    if Failed(Device9.SetStreamSource(0, VertexBuf, 0, SizeOf(TD3DVertex))) then
+      Exit;
+
+    if Failed(Device9.SetFVF(D3DFVF_CUSTOM)) then
+      Exit;
+
+    Device9.DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
+
+//    ---------------------------
+//     直线
+//    if Failed(Device9.SetStreamSource(0, VertexBuf2, 0, SizeOf(TD3DVertex2))) then
+//      Exit;
+//
+//    if Failed(Device9.SetFVF(D3DFVF_XYZ)) then
+//      Exit;
+//
+//    Device9.DrawPrimitive(D3DPT_LINELIST, 0, 4);
+
+    //--------------------------
+    // 光照
+    SetupLight;
+
+    //--------------------------
+    // 茶壶
+    Device9.SetTexture(0, nil);
+    SetupTransform;
+
+    //SetupTransform2;
+    TeapotMesh.DrawSubset(0);
+    //--------------------------
+  finally
+    Device9.EndScene;
+  end;
+end;
+
+// 更新帧
+procedure UpdateFrame;
+begin
+  if bReseting then
+  begin
+    ResetDevice;
+    Exit;
+  end;
+
+  // draw scene
+  Device9.Clear(0, nil, D3DCLEAR_TARGET or D3DCLEAR_ZBUFFER, D3DCOLOR_ARGB(255, 255, 0, 0), 1, 0);
+
+  // draw object
+  DrawObject;
+
+  // 当设备丢失时，Present会返回D3DERR_DEVICELOST，此时应该进行设备重设置处理
+  // 什么时候设备会丢失，一个典型的例子就是全屏时，通过Alt+Tab切换窗口便会出现。
+  if Device9.Present(nil, nil, 0, nil) = D3DERR_DEVICELOST then
+    bReseting := True;
+end;
+
+// 初始化线条
+procedure InitLineVertex;
+var
+  vts: PChar;
+begin
+  if Failed(Device9.CreateVertexBuffer(4 * SizeOf(TD3DVertex2), 0, D3DFVF_XYZ,
+    D3DPOOL_MANAGED, VertexBuf2, nil)) then
+      Exit;
+
+  if Succeeded(VertexBuf2.Lock(0, 4 * SizeOf(TD3DVertex2), Pointer(vts), 0)) then
+  try
+    with PD3DVertex2(vts)^ do
+    begin
+      x := -10;
+      y := 0;
+      z := 0;
+    end;
+
+    Inc(vts, SizeOf(TD3DVertex2));
+    with PD3DVertex2(vts)^ do
+    begin
+      x := 10;
+      y := 0;
+      z := 0;
+    end;
+
+    Inc(vts, SizeOf(TD3DVertex2));
+    with PD3DVertex2(vts)^ do
+    begin
+      x := 0;
+      y := 0;
+      z := -10;
+    end;
+
+    Inc(vts, SizeOf(TD3DVertex2));
+    with PD3DVertex2(vts)^ do
+    begin
+      x := 0;
+      y := 0;
+      z := 10;
+    end;
+  finally
+    VertexBuf2.Unlock;
+  end;
+end;
+
+// 初始化顶点
 procedure InitVertex;
 var
   vts: PChar;
 begin
-  if Failed(Device9.CreateVertexBuffer(4 * SizeOf(TD3DVertex), 0, D3DFVF_XYZRHW or D3DFVF_DIFFUSE,
+  if Failed(Device9.CreateVertexBuffer(4 * SizeOf(TD3DVertex), 0, D3DFVF_CUSTOM,
     D3DPOOL_MANAGED, VertexBuf, nil)) then
       Exit;
 
@@ -386,41 +598,45 @@ begin
   try
     with PD3DVertex(vts)^ do
     begin
-      x := 0-0.5;
-      y := 0-0.5;
-      z := 0;
+      x := 10;
+      y := 200;
+      z := 1;
       rhw := 1;
-      color := $ff00ff00;
+      ux := 0;
+      uy := 1;
     end;
 
     Inc(vts, SizeOf(TD3DVertex));
     with PD3DVertex(vts)^ do
     begin
-      x := 200-0.5;
-      y := -0.5;
-      z := 0;
+      x := 10;
+      y := 10;
+      z := 1;
       rhw := 1;
-      color := $ff0000ff;
+      ux := 0;
+      uy := 0;
     end;
 
     Inc(vts, SizeOf(TD3DVertex));
     with PD3DVertex(vts)^ do
     begin
-      x := -0.5;
-      y := 200-0.5;
-      z := 0.5;
+      x := 200;
+      y := 200;
+      z := 1;
       rhw := 1;
-      color := $ff00ff00;
+      ux := 1;
+      uy := 1;
     end;
 
     Inc(vts, SizeOf(TD3DVertex));
     with PD3DVertex(vts)^ do
     begin
-      x := 200-0.5;
-      y := 200-0.5;
-      z := 0.5;
+      x := 200;
+      y := 10;
+      z := 1;
       rhw := 1;
-      color := $ff0000ff;
+      ux := 1;
+      uy := 0;
     end;
 
   finally
@@ -428,10 +644,40 @@ begin
   end;
 end;
 
+// 创建茶壶
+procedure InitTeapot;
+begin
+  D3DXCreateTeapot(Device9, TeapotMesh, nil);
+end;
+
+// 创建纹理
+procedure InitTexture;
+begin
+  D3DXCreateTextureFromFile(Device9, 'banana.bmp', Tex);
+end;
+
 //------------------------------------------------------------------------------
 // 初始化
 procedure Setup;
 begin
+  // 如果在全屏下传入D3DFMT_UNKNOWN，创建会失败，
+  // 但在窗口模式下传入D3DFMT_UNKNOWN会成功，并且再切换全屏时也没有问题
+  if not InitD3D(800, 600, True, D3DFMT_X8R8G8B8) then
+  begin
+    MessageBox(GetActiveWindow, 'D3D创建化失败！', '', MB_OK);
+    Exit;
+  end;
+
+  // 设置视口
+  SetViewPort;
+
+  // 初始化顶点列表
+  InitVertex;
+  InitLineVertex;
+  InitTexture;
+
+  // 初始化一个茶壶
+  InitTeapot;
 end;
 
 // 清除
@@ -442,17 +688,7 @@ end;
 // 运行程序
 procedure Run;
 begin
-  if not InitD3D(800, 600, True, D3DFMT_X8R8G8B8) then
-  begin
-    MessageBox(GetActiveWindow, 'D3D创建化失败！', '', MB_OK);
-    Exit;
-  end;
-
-  SetViewPort;
-
-  InitVertex;
-  
-  MessageLoop(UpdateFrame);
+  MessageLoop(UpdateFrame, 30);
 end;
 //------------------------------------------------------------------------------
 

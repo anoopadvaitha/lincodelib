@@ -94,8 +94,8 @@ OutputDir=
 UnitOutputDir=
 PackageDLLOutputDir=
 PackageDCPOutputDir=
-SearchPath=
-Packages=
+SearchPath=..\..\..\3rdparty\Delphi_DirectX\Borland_D6-7
+Packages=rtl;vcl;inet;xmlrtl;vclie;inetdbbde;inetdbxpress;vclx;webdsnap;dbrtl;vcldb;iedelphi;KAction;WideClass
 Conditionals=
 DebugSourceDirs=
 UsePackages=0
@@ -105,10 +105,6 @@ HostApplication=
 Launcher=
 UseLauncher=0
 DebugCWD=
-[Language]
-ActiveLang=
-ProjectLang=
-RootDir=
 [Version Info]
 IncludeVerInfo=0
 AutoIncBuild=0
@@ -134,6 +130,8 @@ OriginalFilename=
 ProductName=
 ProductVersion=1.0.0.0
 Comments=
+[Excluded Packages]
+C:\Program Files\RemObjects Software\Everwood\Bin\RemObjects_Everwood_D7.bpl=RemObjects Everwood for Delphi
 [HistoryLists\hlConditionals]
 Count=3
 Item0=DxApp; Unicode;
@@ -143,8 +141,9 @@ Item2=Debug; Log; Unicode;
 Count=1
 Item0=WinTypes=Windows;WinProcs=Windows;DbiTypes=BDE;DbiProcs=BDE;DbiErrs=BDE;
 [HistoryLists\hlSearchPath]
-Count=1
-Item0=../lib;
+Count=2
+Item0=..\..\..\3rdparty\Delphi_DirectX\Borland_D6-7
+Item1=../lib;
 [HistoryLists\hlOutputDirectorry]
 Count=3
 Item0=C:\Program Files\盛大网络\传奇外传
