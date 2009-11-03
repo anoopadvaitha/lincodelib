@@ -19,6 +19,7 @@ uses
 procedure Setup;
 procedure Run;
 procedure Cleanup;
+procedure ResetDevice;
 
 var
   D3D9: IDirect3D9;
@@ -287,20 +288,6 @@ begin
 end;
 
 //------------------------------------------------------------------------------
-// 重置设备
-procedure ResetDevice;
-begin
-  // 要等到返回D3DERR_DEVICENOTRESET，才可以试着Reset。
-  if Device9.TestCooperativeLevel = D3DERR_DEVICENOTRESET then
-  begin
-    if Succeeded(Device9.Reset(d3dpp)) then
-    begin
-      bReseting := False;
-     end;
-  end;
-end;
-
-//------------------------------------------------------------------------------
 // 初始化D3D
 function InitD3D(Width, Height: Integer; bWindowed: Boolean; Format: TD3DFormat): Boolean;
 var
@@ -334,7 +321,7 @@ begin
   d3dpp.BackBufferFormat := Format;
   d3dpp.SwapEffect := D3DSWAPEFFECT_DISCARD;
   d3dpp.EnableAutoDepthStencil := True;
-  d3dpp.AutoDepthStencilFormat := D3DFMT_D16;
+  d3dpp.AutoDepthStencilFormat := D3DFMT_D24S8;
 
   // Check Vertex processing
   if SupportHWVertexProcess then
@@ -346,8 +333,12 @@ begin
   if Failed(D3D9.CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, Wnd, Flag, @d3dpp, Device9)) then
     Exit;
 
+  // 禁用背面消除
   Device9.SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
+  // 启用深度缓冲
   Device9.SetRenderState(D3DRS_ZENABLE, 1);
+  // 启用模板缓冲
+  Device9.SetRenderState(D3DRS_STENCILENABLE, 1);
 
   Result := True;
 end;
@@ -394,14 +385,14 @@ var
   mat: TD3DMatrix;
   eye, LookAt, Up: TD3DVector;
 begin
-  // 物体坐标到世界坐标的转换, 自动旋转
+  // 世界转换, 自动旋转
   uTime := GetTickCount mod 2000;
   fAngle := uTime * 2 * D3DX_PI / 2000;
   D3DXMatrixRotationY(mat, fAngle);
   Device9.SetTransform(D3DTS_WORLD, mat);
 
-  // 观察坐标转换
-  eye := D3DXVector3(0, 2, 4);
+  // 相机转换
+  eye := D3DXVector3(0, 2, -4);
   LookAt := D3DXVector3(0, 0, 0);
   Up := D3DXVector3(0, 1, 0);
   D3DXMatrixLookAtLH(mat, eye, LookAt, Up);
@@ -439,7 +430,7 @@ begin
 end;
 
 // 光照
-procedure SetupLight;
+procedure SetLight;
 var
   mtr: TD3DMaterial9;
   light: TD3DLight9;
@@ -447,10 +438,12 @@ var
 begin
   // 材质
   FillChar(mtr, SizeOf(mtr), 0);
+  // 环境光
   mtr.Ambient.r := 1;
   mtr.Ambient.g := 1;
   mtr.Ambient.b := 1;
   mtr.Ambient.a := 1;
+  // 漫射光
   mtr.Diffuse.r := 1;
   mtr.Diffuse.g := 1;
   mtr.Diffuse.b := 1;
@@ -460,59 +453,43 @@ begin
   // 环境光
   Device9.SetRenderState(D3DRS_AMBIENT, $00405B43);
 
-  // 漫射光
+  // 漫射光， 绿色的
   FillChar(light, SizeOf(light), 0);
   light._Type := D3DLIGHT_DIRECTIONAL;
-  light.Diffuse.r := 1;
+  light.Diffuse.r := 0;
   light.Diffuse.g := 1;
-  light.Diffuse.b := 1;
+  light.Diffuse.b := 0;
   light.Diffuse.a := 1;
-  vecDir := D3DXVector3(10, 0, -4);
+  vecDir := D3DXVector3(10, 0, 4);
   D3DXVec3Normalize(light.Direction, vecDir);
   Device9.SetLight(0, light);
   Device9.LightEnable(0, True);
+
   Device9.SetRenderState(D3DRS_LIGHTING, 1);
 end;
-
 
 // 画图元
 procedure DrawObject;
 begin
   if Succeeded(Device9.BeginScene) then
   try
-    // --------------------------
-    // 图元
+    // 绘图元， 没有坐标转换
     Device9.SetTexture(0, Tex);
     if Failed(Device9.SetStreamSource(0, VertexBuf, 0, SizeOf(TD3DVertex))) then
       Exit;
-
     if Failed(Device9.SetFVF(D3DFVF_CUSTOM)) then
       Exit;
-
     Device9.DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
-
-//    ---------------------------
-//     直线
-//    if Failed(Device9.SetStreamSource(0, VertexBuf2, 0, SizeOf(TD3DVertex2))) then
-//      Exit;
-//
-//    if Failed(Device9.SetFVF(D3DFVF_XYZ)) then
-//      Exit;
-//
-//    Device9.DrawPrimitive(D3DPT_LINELIST, 0, 4);
-
-    //--------------------------
-    // 光照
-    SetupLight;
-
-    //--------------------------
-    // 茶壶
     Device9.SetTexture(0, nil);
+
+    // 坐标转换
     SetupTransform;
 
-    //SetupTransform2;
+    // 光照
+    SetLight;
+
+    // 画茶壶
     TeapotMesh.DrawSubset(0);
-    //--------------------------
   finally
     Device9.EndScene;
   end;
@@ -527,10 +504,11 @@ begin
     Exit;
   end;
 
-  // draw scene
-  Device9.Clear(0, nil, D3DCLEAR_TARGET or D3DCLEAR_ZBUFFER, D3DCOLOR_ARGB(255, 255, 0, 0), 1, 0);
+  // 清除后面缓冲， 深度缓冲， 模板缓冲
+  Device9.Clear(0, nil, D3DCLEAR_TARGET or D3DCLEAR_ZBUFFER or D3DCLEAR_STENCIL,
+    D3DCOLOR_ARGB(255, 255, 0, 0), 1, 0);
 
-  // draw object
+  // 绘对象
   DrawObject;
 
   // 当设备丢失时，Present会返回D3DERR_DEVICELOST，此时应该进行设备重设置处理
@@ -657,6 +635,20 @@ begin
 end;
 
 //------------------------------------------------------------------------------
+// 重置设备
+procedure ResetDevice;
+begin
+  // 要等到返回D3DERR_DEVICENOTRESET，才可以试着Reset。
+  if Device9.TestCooperativeLevel = D3DERR_DEVICENOTRESET then
+  begin
+    if Succeeded(Device9.Reset(d3dpp)) then
+    begin
+      bReseting := False;
+    end;
+  end;
+end;
+
+//------------------------------------------------------------------------------
 // 初始化
 procedure Setup;
 begin
@@ -675,8 +667,6 @@ begin
   InitVertex;
   InitLineVertex;
   InitTexture;
-
-  // 初始化一个茶壶
   InitTeapot;
 end;
 
