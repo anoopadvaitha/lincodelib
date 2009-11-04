@@ -337,8 +337,7 @@ begin
   Device9.SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
   // 启用深度缓冲
   Device9.SetRenderState(D3DRS_ZENABLE, 1);
-  // 启用模板缓冲
-  Device9.SetRenderState(D3DRS_STENCILENABLE, 1);
+  Device9.SetRenderState(D3DRS_LIGHTING, 0);
 
   Result := True;
 end;
@@ -361,15 +360,13 @@ end;
 //------------------------------------------------------------------------------
 // 渲染
 type
-  // D3DFVF_XYZRHW表明坐标经过转换，即与屏幕坐标一样，rhw意思是w的倒数，
-  // w是齐次坐标的值，在这里通常为1
   PD3DVertex = ^TD3DVertex;
   TD3DVertex = packed record
-    x, y, z, rhw: Single;
-    ux, uy: Single;
+    x, y, z: Single;
+    Color: DWORD;
   end;
 const
-  D3DFVF_CUSTOM = D3DFVF_XYZRHW or D3DFVF_TEX1;
+  D3DFVF_CUSTOM = D3DFVF_XYZ or D3DFVF_DIFFUSE;
 
 type
   PD3DVertex2 = ^TD3DVertex2;
@@ -385,14 +382,14 @@ var
   mat: TD3DMatrix;
   eye, LookAt, Up: TD3DVector;
 begin
-  // 世界转换, 自动旋转
-  uTime := GetTickCount mod 2000;
-  fAngle := uTime * 2 * D3DX_PI / 2000;
-  D3DXMatrixRotationY(mat, fAngle);
-  Device9.SetTransform(D3DTS_WORLD, mat);
+//   世界转换, 自动旋转
+//  uTime := GetTickCount mod 2000;
+//  fAngle := uTime * 2 * D3DX_PI / 2000;
+//  D3DXMatrixRotationY(mat, fAngle);
+//  Device9.SetTransform(D3DTS_WORLD, mat);
 
   // 相机转换
-  eye := D3DXVector3(0, 2, -4);
+  eye := D3DXVector3(0, 2, -20);
   LookAt := D3DXVector3(0, 0, 0);
   Up := D3DXVector3(0, 1, 0);
   D3DXMatrixLookAtLH(mat, eye, LookAt, Up);
@@ -474,22 +471,22 @@ begin
   if Succeeded(Device9.BeginScene) then
   try
     // 绘图元， 没有坐标转换
-    Device9.SetTexture(0, Tex);
+    //Device9.SetTexture(0, Tex);
     if Failed(Device9.SetStreamSource(0, VertexBuf, 0, SizeOf(TD3DVertex))) then
       Exit;
     if Failed(Device9.SetFVF(D3DFVF_CUSTOM)) then
       Exit;
-    Device9.DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 2);
-    Device9.SetTexture(0, nil);
+    Device9.DrawPrimitive(D3DPT_TRIANGLELIST, 0, 1);
+    //Device9.SetTexture(0, nil);
 
     // 坐标转换
     SetupTransform;
 
     // 光照
-    SetLight;
+    //SetLight;
 
     // 画茶壶
-    TeapotMesh.DrawSubset(0);
+    //TeapotMesh.DrawSubset(0);
   finally
     Device9.EndScene;
   end;
@@ -572,49 +569,32 @@ begin
     D3DPOOL_MANAGED, VertexBuf, nil)) then
       Exit;
 
-  if Succeeded(VertexBuf.Lock(0, 4 * SizeOf(TD3DVertex), Pointer(vts), 0)) then
+  if Succeeded(VertexBuf.Lock(0, 3 * SizeOf(TD3DVertex), Pointer(vts), 0)) then
   try
     with PD3DVertex(vts)^ do
     begin
-      x := 10;
-      y := 200;
+      x := -10;
+      y := 0;
       z := 1;
-      rhw := 1;
-      ux := 0;
-      uy := 1;
+      Color := $ff00ff00;
     end;
 
     Inc(vts, SizeOf(TD3DVertex));
     with PD3DVertex(vts)^ do
     begin
-      x := 10;
+      x := 0;
       y := 10;
       z := 1;
-      rhw := 1;
-      ux := 0;
-      uy := 0;
+      Color := $ff00ff00;
     end;
 
     Inc(vts, SizeOf(TD3DVertex));
     with PD3DVertex(vts)^ do
     begin
-      x := 200;
-      y := 200;
+      x := 10;
+      y := 0;
       z := 1;
-      rhw := 1;
-      ux := 1;
-      uy := 1;
-    end;
-
-    Inc(vts, SizeOf(TD3DVertex));
-    with PD3DVertex(vts)^ do
-    begin
-      x := 200;
-      y := 10;
-      z := 1;
-      rhw := 1;
-      ux := 1;
-      uy := 0;
+      Color := $ff00ff00;
     end;
 
   finally
@@ -661,7 +641,7 @@ begin
   end;
 
   // 设置视口
-  SetViewPort;
+  //SetViewPort;
 
   // 初始化顶点列表
   InitVertex;
