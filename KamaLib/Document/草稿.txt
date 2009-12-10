@@ -1,0 +1,39 @@
+KmDebugUtils
+KmCommons
+    String Utils
+    Stream classes
+    Com Utils
+    Thread Utils
+    Window Utils
+KmThreadFrame
+KmResManage
+KmDxRender
+KmViews
+
+基础应用库
+    字符串处理
+    COM
+    流
+    线程
+    。。。
+多线程框架(KmThreadFrame)
+资源回收框架(KmResManage)
+D3D渲染库(KmDxRender)
+    图元渲染
+    纹理渲染
+    字体与文本
+视图控件库(KmViews)
+    视图框架
+    基础控件
+粒子效果库
+------------------------------
+资源编辑器
+    资源格式
+    用KmDxRender来作渲染
+    用KmViews来作界面控件
+
+2D地图编辑器
+    地图格式
+    用KmDxRender来作渲染
+    用KmViews来作界面控件
+

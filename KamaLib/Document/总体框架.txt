@@ -1,0 +1,28 @@
+KamaLib总体框架
+==========================
+作者：Tramper 2009-12-10
+邮件：linzhenqun@gmail.com
+
+
+===============================================================================
+总体模块结构
+===============================================================================
+名字先这样，以后可能会改：
+
+|-KmDebugUtils          调试支持
+|-KmCommons             基础类和函数
+  |-String              字符串辅助函数
+  |-Stream              流类
+  |-Com                 COM辅助函数和类
+  |-Thread              线程类
+  |-Window              Windows辅助函数和类
+  |-... ...
+|-KmMultiThread         多线程框架
+|-KmResManage           资源管理和回收
+|-KmDxRender            D3D渲染引擎
+  |-Draw Primitive      画图元
+  |-Draw Texture        画纹理
+  |-Font and Text       字体和文本
+|-KmViews               视图控件库
+  |-View Framework      视图框架
+  |-View Controls       视图控件集
