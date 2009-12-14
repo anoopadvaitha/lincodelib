@@ -9,6 +9,10 @@
 ***********************************************************/
 #ifndef __KAMA_KMCOMMONS_H__
 #define __KAMA_KMCOMMONS_H__
+#include "KmDebugHelper.h"
+/*=======================================================================
+  说明: 
+========================================================================*/
 namespace kama
 {
 
@@ -22,7 +26,7 @@ namespace kama
 		ADD_INTERFACE(IControl)
 		ADD_INTERFACE(IButton)
 	END_QUERYINTERFACE()
-	COUNTREF(m_ref)
+	COUNTREF(mRef)
 */
 #define BEGIN_QUERYINTERFACE(Intf)										\
 STDMETHODIMP QueryInterface(REFIID riid, void** ppvObject)				\
@@ -102,105 +106,106 @@ class KIntfPtr
 public:
 	KIntfPtr()
 	{
-		p = NULL;
+		mIntf = NULL;
 	}
 	KIntfPtr(T* lp)
 	{
-		if ((p = lp) != NULL)
-			p->AddRef();
+		if ((mIntf = lp) != NULL)
+			mIntf->AddRef();
 	}
 	KIntfPtr(const KIntfPtr<T>& lp)
 	{
-		if ((p = lp.p) != NULL)
-			p->AddRef();
+		if ((mIntf = lp.mIntf) != NULL)
+			mIntf->AddRef();
 	}
 	~KIntfPtr()
 	{
-		if (p)
-			p->Release();
+		if (mIntf)
+			mIntf->Release();
 	}
 	void Release()
 	{
-		IUnknown* pTemp = p;
+		IUnknown* pTemp = mIntf;
 		if (pTemp)
 		{
-			p = NULL;
+			mIntf = NULL;
 			pTemp->Release();
 		}
 	}
 	operator T*() const
 	{
-		return (T*)p;
+		return (T*)mIntf;
 	}
 	T& operator*() const
 	{
-		//V_ASSERTA(p!=NULL);
-		return *p;
+		KASSERT(mIntf!=NULL);
+		return *mIntf;
 	}
 	T** operator&()
 	{
-		//V_ASSERTA(p==NULL);
-		return &p;
+		KASSERT(mIntf==NULL);
+		return &mIntf;
 	}
 	T* operator->() const
 	{
-		//V_ASSERTA(p!=NULL);
-		return p;
+		KASSERT(mIntf!=NULL);
+		return mIntf;
 	}
 	T* operator=(T* lp)
 	{
 		if (lp != NULL) lp->AddRef();
-		if (p) (p)->Release();
-		p = lp;
-		return p;
+		if (mIntf) (mIntf)->Release();
+		mIntf = lp;
+		return mIntf;
 	}
 	T* operator=(const KIntfPtr<T>& lp)
 	{
-		if (lp.p != NULL) lp.p->AddRef();
-		if (p) (p)->Release();
-		p = lp.p;
-		return p;
+		if (lp.mIntf != NULL) lp.mIntf->AddRef();
+		if (mIntf) (mIntf)->Release();
+		mIntf = lp.mIntf;
+		return mIntf;
 	}
 	bool operator!() const
 	{
-		return (p == NULL);
+		return (mIntf == NULL);
 	}
 	bool operator<(T* pT) const
 	{
-		return p < pT;
+		return mIntf < pT;
 	}
 	bool operator==(T* pT) const
 	{
-		return p == pT;
+		return mIntf == pT;
 	}
 	bool IsEqual(IUnknown* pOther)
 	{
-		if (p == NULL && pOther == NULL)
+		if (mIntf == NULL && pOther == NULL)
 			return true;
 
-		if (p == NULL || pOther == NULL)
+		if (mIntf == NULL || pOther == NULL)
 			return false;
 
 		KIntfPtr<IUnknown> punk1;
 		KIntfPtr<IUnknown> punk2;
-		p->QueryInterface(IID_IUnknown, (void**)&punk1);
+		mIntf->QueryInterface(IID_IUnknown, (void**)&punk1);
 		pOther->QueryInterface(IID_IUnknown, (void**)&punk2);
 		return punk1 == punk2;
 	}
 	void Attach(T* p2)
 	{
-		if (p)
-			p->Release();
-		p = p2;
+		if (mIntf)
+			mIntf->Release();
+		mIntf = p2;
 	}
 	T* Detach()
 	{
-		T* pt = p;
-		p = NULL;
+		T* pt = mIntf;
+		mIntf = NULL;
 		return pt;
 	}
 
-	T* p;
+public:
+	T* mIntf;
 };
 
 /*
@@ -290,32 +295,32 @@ class KEvent
 public:
 	KEvent()
 	{
-		m_hEvent = ::CreateEvent(NULL, TRUE, FALSE, NULL);
+		mHEvent = ::CreateEvent(NULL, TRUE, FALSE, NULL);
 	}
 	~KEvent()
 	{
-		::CloseHandle(m_hEvent);
+		::CloseHandle(mHEvent);
 	}
 	operator HANDLE() const
 	{
-		return m_hEvent;
+		return mHEvent;
 	}
 	/*
 		变为通知状态
 	*/
 	void SetEvent()
 	{
-		::SetEvent(m_hEvent);
+		::SetEvent(mHEvent);
 	}
 	/*
 		变为未通知状态
 	*/
 	void ResetEvent()
 	{
-		::ResetEvent(m_hEvent);
+		::ResetEvent(mHEvent);
 	}
 private:
-	HANDLE m_hEvent;
+	HANDLE mHEvent;
 };
 
 /*
@@ -326,22 +331,22 @@ class KCriticalSection
 public:
 	KCriticalSection()
 	{
-		::InitializeCriticalSection(&m_CS);
+		::InitializeCriticalSection(&mCS);
 	}
 	~KCriticalSection()
 	{
-		::DeleteCriticalSection(&m_CS);
+		::DeleteCriticalSection(&mCS);
 	}
 	void Lock()
 	{
-		::EnterCriticalSection(&m_CS);
+		::EnterCriticalSection(&mCS);
 	}
 	void UnLock()
 	{
-		::LeaveCriticalSection(&m_CS);
+		::LeaveCriticalSection(&mCS);
 	}
 private:
-	CRITICAL_SECTION m_CS;
+	CRITICAL_SECTION mCS;
 };
 
 /*
@@ -350,21 +355,21 @@ private:
 class KLock
 {
 public:
-	KLock(CCriticalSection* pCS)
+	KLock(KCriticalSection* pcs)
 	{
-		m_pCS = pCS;
-		m_pCS->Lock();
+		mPCS = pcs;
+		mPCS->Lock();
 	}
 	~KLock()
 	{
-		m_pCS->UnLock();
+		mPCS->UnLock();
 	}
 private:
 	KLock() {}
-	KLock(KLock& Lock) {}
-	void operator = (KLock& Lock) {}
+	KLock(KLock& lock) {}
+	void operator = (KLock& lock) {}
 private:
-	CCriticalSection* m_pCS;
+	KCriticalSection* mPCS;
 };
 
 /*
@@ -376,7 +381,7 @@ public:
 	/*
 		在主线程调用
 	*/
-	KThread(): m_dwThreadID(0), m_hThread(NULL), m_Stop(TRUE), m_Suspended(FALSE)
+	KThread(): mThreadId(0), mThreadHandle(NULL), mIsStop(TRUE), mIsSuspend(FALSE)
 	{
 	}
 	/*
@@ -389,113 +394,119 @@ public:
 	/*
 		启动线程，主线程调用
 	*/
-	void StartThread(BOOL bSuspend = FALSE)
+	void StartThread(BOOL isSuspend = FALSE)
 	{		
-		if (m_hThread && m_dwThreadID)
+		if (mThreadHandle && mThreadId)
 			return;
 
 		SetStop(FALSE);
-		m_Suspended = bSuspend;
-		DWORD dwFlag = bSuspend ? CREATE_SUSPENDED : 0;
-		m_hThread = (HANDLE)CreateThread(NULL, 0, ThreadProc, this, dwFlag, &m_dwThreadID);	
+		mIsSuspend = isSuspend;
+		DWORD flag = isSuspend ? CREATE_SUSPENDED : 0;
+		mThreadHandle = (HANDLE)CreateThread(NULL, 0, ThreadProc, this, flag, &mThreadId);	
 	}
-
-	// 停止线程，主线程调用
-	void StopThread(BOOL bWait = TRUE)
+	/*
+		停止线程，主线程调用
+	*/
+	void StopThread(BOOL isWait = TRUE)
 	{
 		SetStop(TRUE);
 
-		while (m_Suspended)
+		while (mIsSuspend)
 			ResumeThread();
 
-		if (bWait)
+		if (isWait)
 			WaitForExit();
 	}
-
-	// 等待线程结束，主线程调用，否则会发生死锁
+	/*
+		等待线程结束，主线程调用，否则会发生死锁
+	*/
 	void WaitForExit()
 	{
-		::WaitForSingleObject(m_hThread, INFINITE);
-		::CloseHandle(m_hThread);
-		m_hThread = NULL;
-		m_dwThreadID = 0;
+		::WaitForSingleObject(mThreadHandle, INFINITE);
+		::CloseHandle(mThreadHandle);
+		mThreadHandle = NULL;
+		mThreadId = 0;
 	}
-
-	// 强制杀死线程
+	/*
+		强制杀死线程
+	*/
 	void TermThread()
 	{
 		SetStop(TRUE);
-		m_Suspended = FALSE;
-		::TerminateThread(m_hThread, 0);
-		::CloseHandle(m_hThread);
-		m_hThread = NULL;
-		m_dwThreadID = 0;
+		mIsSuspend = FALSE;
+		::TerminateThread(mThreadHandle, 0);
+		::CloseHandle(mThreadHandle);
+		mThreadHandle = NULL;
+		mThreadId = 0;
 	}
-
-	// 线程执行函数
+	/*
+		线程执行函数
+	*/
 	virtual DWORD ThreadExecute()
 	{
 		// 子类覆盖之
 		return 0;
 	}
-
-	// 暂停线程
+	/*
+		暂停线程
+	*/
 	DWORD SuspendThread()
 	{
-		m_Suspended = TRUE;
-		return ::SuspendThread(m_hThread);
+		mIsSuspend = TRUE;
+		return ::SuspendThread(mThreadHandle);
 	}
-
-	// 唤醒线程
+	/*
+		唤醒线程
+	*/
 	DWORD ResumeThread()
 	{
-		DWORD dwRet = ::ResumeThread(m_hThread);
-		if (dwRet == 1)
-			m_Suspended = FALSE;
-		return dwRet;
+		DWORD ret = ::ResumeThread(mThreadHandle);
+		if (ret == 1)
+			mIsSuspend = FALSE;
+		return ret;
 	}
-
-	// 取得线程句柄
+	/*
+		取得线程句柄
+	*/
 	HANDLE GetThreadHandle()
 	{
-		return m_hThread;
+		return mThreadHandle;
 	}
-
-	// 取得线程ID
+	/*
+		取得线程ID
+	*/
 	DWORD GetThreadId()
 	{
-		return m_dwThreadID;
+		return mThreadId;
 	}
-
-	BOOL GetStop()
+	BOOL IsStop()
 	{
-		return InterlockedExchange(&m_Stop, m_Stop);
+		return InterlockedExchange(&mIsStop, mIsStop);
 	}
-
-	void SetStop(BOOL bStop)
+	void SetStop(BOOL isStop)
 	{
-		InterlockedExchange(&m_Stop, bStop);
+		InterlockedExchange(&mIsStop, isStop);
 	}
-
-	BOOL GetSuspended()
+	BOOL IsSuspend()
 	{
-		return m_Suspended;
+		return mIsSuspend;
 	}
 private:
-	// 回调函数
+	/*
+		线程回调函数
+	*/
 	static DWORD WINAPI ThreadProc(LPVOID lpParam)
 	{
-		KThread* pThreadObj = (KThread*)lpParam;
-		return pThreadObj->ThreadExecute();
-
-		// 结束处理
-		pThreadObj->SetStop(TRUE);
+		KThread* threadObject = (KThread*)lpParam;
+		DWORD ret = threadObject->ThreadExecute();
+		threadObject->SetStop(TRUE);
+		return ret;
 	}
 protected:
-	HANDLE m_hThread;
-	DWORD m_dwThreadID;
-	long m_Stop;
-	BOOL m_Suspended;
+	HANDLE	mThreadHandle;
+	DWORD	mThreadId;
+	long	mIsStop;
+	BOOL	mIsSuspend;
 };
 
 }
