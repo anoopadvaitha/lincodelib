@@ -1,5 +1,5 @@
 /***********************************************************
-  Filename:	KmDebugHelper.h
+  Filename:	KmDebug.h
   Author:	Tramper
   Email:	linzhenqun@gmail.com
   Date:		2009/12/15
@@ -7,13 +7,13 @@
   Brief:    这是KamaLib代码库的一部分，由Tramper创建并维护，
 			版权没有，请自由使用！
 ***********************************************************/
-#ifndef __KAMA_KMDEBUGHELPER_H__
-#define __KAMA_KMDEBUGHELPER_H__
+#ifndef __KAMA_KMDEBUG_H__
+#define __KAMA_KMDEBUG_H__
 #include <crtdbg.h>
 #include <stdio.h>
 
 /*=======================================================================
-  说明: 调试辅助函数和类，实现简洁的断言，跟踪和日志
+  说明: 调试辅助函数，实现简洁的断言，跟踪和日志
 
 ========================================================================*/
 namespace kama
@@ -109,4 +109,4 @@ namespace kama
 
 
 }
-#endif // __KAMA_KMDEBUGHELPER_H__
+#endif // __KAMA_KMDEBUG_H__
