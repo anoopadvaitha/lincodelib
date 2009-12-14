@@ -52,11 +52,10 @@ KamaLib代码规范
 2.  CPP文件，以KmViews.h为例：
     #include "stdafx.h"
     #include "KmViews.h"
-    begin_namespace_kama
-
+    namespace kama
+    {
     。。。 。。。
-
-    end_namespace_kama
+    }
 
 ============================================================================
 类，结构，接口的命名
