@@ -147,7 +147,7 @@
 				RelativePath="..\..\Source\KmCommons.h">
 			</File>
 			<File
-				RelativePath="..\..\Source\KmDebugHelper.h">
+				RelativePath="..\..\Source\KmDebug.h">
 			</File>
 		</Filter>
 		<Filter

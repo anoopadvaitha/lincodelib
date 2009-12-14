@@ -2,7 +2,7 @@
 //
 
 #include "stdafx.h"
-#include "../../Source/KmDebugHelper.h"
+#include "../../Source/KmDebug.h"
 using namespace kama;
 
 int _tmain(int argc, _TCHAR* argv[])
