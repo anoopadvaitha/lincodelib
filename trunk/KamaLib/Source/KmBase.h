@@ -17,6 +17,8 @@
 
 // Windows 导入
 #include <Windows.h>
+#include <ShellAPI.h>
+#include <ShlObj.h>
 
 // OLE 导入
 #include <ole2.h>
