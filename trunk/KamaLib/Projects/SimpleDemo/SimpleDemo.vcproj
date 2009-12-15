@@ -155,7 +155,7 @@
 				RelativePath="..\..\Source\KmObject.h">
 			</File>
 			<File
-				RelativePath="..\..\Source\KmString.cpp">
+				RelativePath="..\..\Source\KmString.h">
 			</File>
 		</Filter>
 		<Filter
