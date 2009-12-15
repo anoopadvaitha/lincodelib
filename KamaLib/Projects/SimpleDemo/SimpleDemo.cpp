@@ -4,6 +4,7 @@
 #include "stdafx.h"
 #include "KmDebug.h"
 #include "KmCommons.h"
+#include "KmString.h"
 using namespace kama;
 
 void TestStringList()
