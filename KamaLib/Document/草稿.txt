@@ -37,3 +37,7 @@ D3D渲染库(KmDxRender)
     用KmDxRender来作渲染
     用KmViews来作界面控件
 
+------------------------------
+测试计划
+    Windows函数
+    字符串列表

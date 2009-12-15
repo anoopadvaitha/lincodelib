@@ -75,7 +75,7 @@ protected:
 public:
 	void winx_call open(LPCSTR szFile)
 	{
-		fopen_s (&m_fp, szFile, "w");
+		m_fp = fopen(szFile, "w");
 		// дxmlͷ
 		char szUtf8[4] = "\xEF\xBB\xBF";
 		fwrite(szUtf8, strlen(szUtf8), sizeof(char), m_fp);
@@ -117,7 +117,7 @@ public:
 		HandleESQ(strMsg);
 
 		char szBuf[1024];
-		_snprintf_s(szBuf, 1024, 
+		_snprintf(szBuf, 1024, 
 			"\n\t<TestCase>"
 			"\n\t\t<Name>%s::%s()</Name>"
 			"\n\t\t<Pos>%s(%d)</Pos>"

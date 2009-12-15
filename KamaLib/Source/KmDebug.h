@@ -25,7 +25,7 @@ namespace kama
 #ifdef _DEBUG
 	#define KASSERT(exp)\
 		do {\
-			if (!(exp) && (1 == _CrtDbgReport(_CRT_ASSERT, _CRT_WIDE(__FILE__), __LINE__, NULL, #exp))) \
+			if (!(exp) && (1 == _CrtDbgReport(_CRT_ASSERT, __FILE__, __LINE__, NULL, #exp))) \
 				_CrtDbgBreak(); \
 		} while(0)
 #else

@@ -19,6 +19,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
+				AdditionalIncludeDirectories="..\..\3rdparty;..\..\Source"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
@@ -31,7 +32,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				OutputFile="$(OutDir)/SimpleDemo.exe"
+				OutputFile="Build/SimpleDemo.exe"
 				LinkIncremental="2"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile="$(OutDir)/SimpleDemo.pdb"
@@ -66,6 +67,7 @@
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
+				AdditionalIncludeDirectories="..\..\3rdparty;..\..\Source"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="4"
 				UsePrecompiledHeader="3"
@@ -76,7 +78,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				OutputFile="$(OutDir)/SimpleDemo.exe"
+				OutputFile="Build/SimpleDemo.exe"
 				LinkIncremental="1"
 				GenerateDebugInformation="TRUE"
 				SubSystem="1"
@@ -141,13 +143,19 @@
 				RelativePath="..\..\Source\KmBase.h">
 			</File>
 			<File
-				RelativePath="..\..\Source\KmCommons.cpp">
-			</File>
-			<File
 				RelativePath="..\..\Source\KmCommons.h">
 			</File>
 			<File
 				RelativePath="..\..\Source\KmDebug.h">
+			</File>
+			<File
+				RelativePath="..\..\Source\KmObject.cpp">
+			</File>
+			<File
+				RelativePath="..\..\Source\KmObject.h">
+			</File>
+			<File
+				RelativePath="..\..\Source\KmString.cpp">
 			</File>
 		</Filter>
 		<Filter
@@ -157,6 +165,10 @@
 			<File
 				RelativePath=".\ReadMe.txt">
 			</File>
+		</Filter>
+		<Filter
+			Name="UnitTest"
+			Filter="">
 		</Filter>
 	</Files>
 	<Globals>
