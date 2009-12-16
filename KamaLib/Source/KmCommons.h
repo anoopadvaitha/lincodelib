@@ -10,6 +10,7 @@
 #ifndef __KAMA_KMCOMMONS_H__
 #define __KAMA_KMCOMMONS_H__
 #include "KmDebug.h"
+#include "KmString.h"
 /*=======================================================================
   说明: 
 ========================================================================*/
@@ -22,7 +23,7 @@ namespace kama
 /*
 	字符串列表
 */
-typedef std::vector<std::wstring> KStrings;
+typedef std::vector<kstring> KStrings;
 
 //------------------------------------------------------------------------------
 // COM的辅助代码
@@ -267,11 +268,11 @@ inline HRESULT DisconnectEvent(IUnknown* ptrSrc, REFIID eiid, DWORD& cookie)
 /*
 	GUID转字符串，如果转换失败，返回空字符串
 */
-inline std::wstring GuidToStr(REFGUID ID)
+inline kstring GuidToStr(REFGUID id)
 {
 	LPOLESTR szGuid;
-	std::wstring strGuid;
-	HRESULT hr = ::StringFromCLSID(ID, &szGuid);
+	kstring strGuid;
+	HRESULT hr = ::StringFromCLSID(id, &szGuid);
 	if (hr == S_OK)
 	{
 		strGuid = szGuid;
@@ -1023,10 +1024,10 @@ public:
 			stream->Write(&cBOM, sizeof(cBOM));
 		}
 		WCHAR cLB[3] = L"\r\n";
-		std::wstring text;
+		kstring text;
 		for (KStrings::iterator itr = begin(); itr != end(); ++itr)
 			text += (*itr) + cLB;
-		stream->Write(text.c_str(), (DWORD)text.size() * sizeof(WCHAR));
+		stream->Write(text, (DWORD)text.Length() * sizeof(WCHAR));
 	}
 
 private:
@@ -1038,13 +1039,13 @@ private:
 		if (!ptrBuf) return;
 
 		WCHAR* ptrStart;
-		std::wstring line;
+		kstring line;
 		while (*ptrBuf)
 		{
 			ptrStart = ptrBuf;
 			while ((*ptrBuf != 0) && (*ptrBuf != 10) && (*ptrBuf != 13) && (*ptrBuf != 0x2028))
 				++ptrBuf;
-			line.assign(ptrStart, ptrBuf - ptrStart);
+			line.Copy(ptrStart, 0, int(ptrBuf - ptrStart));
 			push_back(line);
 			if (*ptrBuf == 13) ++ptrBuf;
 			if (*ptrBuf == 10) ++ptrBuf;
@@ -1125,9 +1126,9 @@ inline HMODULE ThisModuleHandle()
 /*
 	取得窗口的文本
 */
-inline std::wstring GetWndText(HWND hwnd)
+inline kstring GetWndText(HWND hwnd)
 {
-	std::wstring str;
+	kstring str;
 	int len = (int)::SendMessageW(hwnd, WM_GETTEXTLENGTH, 0, 0);
 	if (len > 0)
 	{
@@ -1141,50 +1142,18 @@ inline std::wstring GetWndText(HWND hwnd)
 }
 
 /*
-	加载资源字符串
-	id为资源字符串ID，不能大于65535
-	hres为资源模块句柄，默认NULL表示Exe模块，如果资源字符串在DLL里，须传该DLL的模块句柄。
-*/
-inline std::wstring LoadResStr(UINT id, HINSTANCE hres = NULL)
-{
-// 资源字符串不能大于4097个字符：http://msdn2.microsoft.com/en-us/library/aa381050.aspx
-// 但经验表明，很少会使用大于1024的资源字符串，考虑到栈空间的浪费，这里给出一个选择：
-// 默认情况下使用1024个字符，如果定义了USE_MAX_RESSTRING宏，则使用4097个字符。
-#ifndef USE_MAX_RESSTRING
-	#define MAX_SIZE 1024
-#else
-	#define MAX_SIZE 4097
-#endif
-	WCHAR buf[MAX_SIZE] = {0};
-	if ((id <= 65535) && (::LoadStringW(hres, id, buf, MAX_SIZE) != 0))
-		return (std::wstring)buf;
-	else
-		return (std::wstring)L"";
-}
-
-/*
-	弹消息框
-	textId 为Text的资源字符串ID
-	capId 为Caption的资源字符串ID
-*/
-inline int ShowMsg(HWND hwnd, UINT textId, UINT capId, UINT type, HINSTANCE hres = NULL)
-{
-	return MessageBoxW(hwnd, LoadResStr(textId, hres).c_str(), LoadResStr(capId, hres).c_str(), type);
-}
-
-/*
 	取得系统特定的文件夹路径，比如桌面，Windows目录等，具体请看MSDN SHGetSpecialFolderPath
 	folder为文件夹类型，比如CSIDL_APPDATA，CSIDL_DESKTOP
 	isCreate如果文件夹不存在，是否强制创建
 	返回文件夹的路径，不包括反斜杠
 */
-inline std::wstring GetSpecialFolder(int folder, BOOL isCreate = FALSE)
+inline kstring GetSpecialFolder(int folder, BOOL isCreate = FALSE)
 {
 	WCHAR szPath[MAX_PATH] = {0};
 	if (SHGetSpecialFolderPathW(NULL, szPath, folder, isCreate))
-		return (std::wstring)szPath;
+		return kstring(szPath);
 	else
-		return (std::wstring)L"";
+		return kstring(L"");
 }
 
 /*
@@ -1235,13 +1204,13 @@ inline BOOL GetCmdLines(KStrings& cmdLines)
 
 		// 解析参数
 		WCHAR* ptrStart = szCmd;
-		std::wstring sParam;
+		kstring sParam;
 		if (szCmd[0] == '"')
 		{
 			ptrStart = ++szCmd;
 			while (szCmd[0] && (szCmd[0] != '"'))
 				++szCmd;
-			sParam.assign(ptrStart, szCmd - ptrStart);
+			sParam.Copy(ptrStart, 0, int(szCmd - ptrStart));
 			if (szCmd[0])
 				++szCmd;
 		}
@@ -1249,7 +1218,7 @@ inline BOOL GetCmdLines(KStrings& cmdLines)
 		{
 			while (szCmd[0] > ' ')
 				++szCmd;
-			sParam.assign(ptrStart, szCmd - ptrStart);
+			sParam.Copy(ptrStart, 0, int(szCmd - ptrStart));
 		}
 
 		cmdLines.push_back(sParam);		

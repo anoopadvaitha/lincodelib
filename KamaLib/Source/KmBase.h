@@ -25,7 +25,6 @@
 #include <olectl.h>
 
 // STL µº»Î
-#include <string>
 #include <map>
 #include <vector>
 #include <list>
