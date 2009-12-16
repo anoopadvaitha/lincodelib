@@ -902,7 +902,7 @@ public:
 						// TODO(Tramper 2009/12/16): 不够健壮，但大多数情况不会有问题
 						double f = va_arg(argList, double);
 						WCHAR strTemp[512];
-						swprintf(strTemp, L"%*.*f", nWidth, nPrecision + 6, f);
+						swprintf(strTemp, L"%*.*f", nWidth, nPrecision + 14, f);
 						nItemLen = (int)wcslen(strTemp);
 					}
 					break;

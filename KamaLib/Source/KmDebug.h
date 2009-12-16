@@ -52,25 +52,21 @@ namespace kama
 #endif
 
 /*
-	日志记录: KLOG 输出到应用程序目录下，名字为: appname.log
+	日志记录: KLOG
 	每次调用都将自动换行，且最大字符数为512
+	可调用SetLogPath设置日志文件的路径
 */
 #ifdef _DEBUG
-	inline void __cdecl _KLog(LPCWSTR szFormat, ...)
-	{
-		va_list args;
-		va_start(args, szFormat);
-		WCHAR szBuf[512] = {0};
-		_vsnwprintf(szBuf, 512, szFormat, args);
-		wcscat(szBuf, L"\r\n");
-		va_end(args);	
+	_declspec(selectany) HANDLE _gLogFile = INVALID_HANDLE_VALUE;
 
-		DWORD writeSize;
-		static HANDLE hfile = INVALID_HANDLE_VALUE;
-		if (INVALID_HANDLE_VALUE == hfile)
+	/*
+		设置日志文本路径，如果path为NULL，日志输出到应用程序目录下，名字为: appname.log
+	*/
+	inline void SetLogPath(LPCWSTR path)
+	{
+		WCHAR szPath[MAX_PATH] = {0};
+		if (NULL == path)
 		{
-			// 取日志路径
-			WCHAR szPath[MAX_PATH] = {0};
 			::GetModuleFileNameW(NULL, szPath, MAX_PATH);
 			size_t i = wcslen(szPath);
 			while (--i >= 0)
@@ -83,24 +79,45 @@ namespace kama
 				else
 					szPath[i] = 0;
 			}
+		}
+		else
+		{
+			wcscpy(szPath, path);
+		}
 
-			// 创建日志文件
-			hfile = ::CreateFileW(
-						szPath, 
-						GENERIC_READ | GENERIC_WRITE, 
-						FILE_SHARE_READ, 
-						NULL, 
-						CREATE_ALWAYS, 
-						FILE_ATTRIBUTE_NORMAL, 
-						NULL);
-			if (INVALID_HANDLE_VALUE == hfile)
-				return;
+		// 创建日志文件
+		_gLogFile = ::CreateFileW(
+			szPath, 
+			GENERIC_READ | GENERIC_WRITE, 
+			FILE_SHARE_READ, 
+			NULL, 
+			CREATE_ALWAYS, 
+			FILE_ATTRIBUTE_NORMAL, 
+			NULL);
 
+		if (INVALID_HANDLE_VALUE != _gLogFile)
+		{
 			// 写UNICODE文本头
 			WCHAR UNICODEBOM = 0xFEFF;
-			::WriteFile(hfile, &UNICODEBOM, 2, &writeSize, NULL);	
+			DWORD writeSize;
+			::WriteFile(_gLogFile, &UNICODEBOM, 2, &writeSize, NULL);	
 		}
-		WriteFile(hfile, szBuf, (DWORD)wcslen(szBuf) * sizeof(WCHAR), &writeSize, NULL);
+	}
+
+	inline void __cdecl _KLog(LPCWSTR szFormat, ...)
+	{
+		va_list args;
+		va_start(args, szFormat);
+		WCHAR szBuf[512] = {0};
+		_vsnwprintf(szBuf, 512, szFormat, args);
+		wcscat(szBuf, L"\r\n");
+		va_end(args);	
+
+		DWORD writeSize;
+		if (INVALID_HANDLE_VALUE == _gLogFile)
+			SetLogPath(NULL);
+		if (INVALID_HANDLE_VALUE != _gLogFile)
+			WriteFile(_gLogFile, szBuf, (DWORD)wcslen(szBuf) * sizeof(WCHAR), &writeSize, NULL);
 	}
 	#define KLOG _KLog
 #else

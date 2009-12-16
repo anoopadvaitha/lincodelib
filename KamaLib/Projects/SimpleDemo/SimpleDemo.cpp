@@ -10,14 +10,14 @@ using namespace kama;
 void TestStringList()
 {
 	KStringList strList;
-	strList.LoadFromFile(L"e:\\mycode\\KamaLib\\Projects\\SimpleDemo\\Build\\Test1.txt");
-	strList.SaveToFile(L"e:\\mycode\\KamaLib\\Projects\\SimpleDemo\\Build\\Test1.txt");
-	strList.LoadFromFile(L"e:\\mycode\\KamaLib\\Projects\\SimpleDemo\\Build\\Test2.txt");
-	strList.SaveToFile(L"e:\\mycode\\KamaLib\\Projects\\SimpleDemo\\Build\\Test2.txt");
-	strList.LoadFromFile(L"e:\\mycode\\KamaLib\\Projects\\SimpleDemo\\Build\\Test3.txt");
-	strList.SaveToFile(L"e:\\mycode\\KamaLib\\Projects\\SimpleDemo\\Build\\Test3.txt");
-	strList.LoadFromFile(L"e:\\mycode\\KamaLib\\Projects\\SimpleDemo\\Build\\Test4.txt");
-	strList.SaveToFile(L"e:\\mycode\\KamaLib\\Projects\\SimpleDemo\\Build\\Test4.txt");
+	strList.LoadFromFile(gAppPath + L"Test1.txt");
+	strList.SaveToFile(gAppPath + L"Test1.txt");
+	strList.LoadFromFile(gAppPath + L"Test2.txt");
+	strList.SaveToFile(gAppPath + L"Test2.txt");
+	strList.LoadFromFile(gAppPath + L"Test3.txt");
+	strList.SaveToFile(gAppPath + L"Test3.txt");
+	strList.LoadFromFile(gAppPath + L"Test4.txt");
+	strList.SaveToFile(gAppPath + L"Test4.txt");
 }
 
 void TestWndUtils()
@@ -125,11 +125,74 @@ void TestKString()
 	KTRACE(str12);
 }
 
+void TestFileUtils()
+{
+	kstring logPath = gAppPath + L"test.log";
+	SetLogPath(logPath);
+
+	KTRACE(gAppPath);
+	kstring path1 = gAppPath + L"test1.txt";
+	if (IsFileExists(path1))
+		KTRACE(path1);
+	kstring path2 = ExtractFilePath(path1);
+	KLOG(path2);
+	path2 = ExtractFileDir(path1);
+	KLOG(path2);
+	path2 = ExtractFileName(path1);
+	KLOG(path2);
+	path2 = ExtractFileExt(path1);
+	KLOG(path2);
+	path2 = ChangeFileExt(path1, L"pdf");
+	KLOG(path2);
+	path2 = BslToSl(path1);
+	KLOG(path2);
+	path2 = SlToBsl(path1);
+	KLOG(path2);
+}
+
+void TestIniUtuils()
+{
+	kstring iniFile = gAppPath + L"test.ini";
+	kstring strValue = IniReadString(iniFile, L"boot loader", L"default", L"nonononoo");
+	KTRACE(strValue);
+	strValue = IniReadString(iniFile, L"boot loader", L"default2", L"nonononoo");
+	KTRACE(strValue);
+
+	int intValue = IniReadInteger(iniFile, L"int", L"intkey", -1);
+	KTRACE(L"%d", intValue);
+	intValue = IniReadInteger(iniFile, L"int", L"intkey2", -1);
+	KTRACE(L"%d", intValue);
+	intValue = IniReadInteger(iniFile, L"int", L"intkey3", -1);
+	KTRACE(L"%d", intValue);
+	intValue = IniReadInteger(iniFile, L"int", L"intkey4", -1);
+	KTRACE(L"%d", intValue);
+
+	BOOL boolValue = IniReadBool(iniFile, L"bool", L"boolkey", FALSE);
+	KTRACE(L"%d", boolValue);
+	boolValue = IniReadBool(iniFile, L"bool", L"boolkey2", FALSE);
+	KTRACE(L"%d", boolValue);
+
+	double floatValue = IniReadFloat(iniFile, L"float", L"floatkey", 0.0);
+	KTRACE(L"%f", floatValue);
+
+	IniWriteString(iniFile, L"sec1", L"name1", L"hello world");
+	IniWriteInteger(iniFile, L"sec1", L"name2", 1000);
+	IniWriteBool(iniFile, L"sec1", L"name3", TRUE);
+	IniWriteFloat(iniFile, L"sec1", L"name4", 1.235554554);
+	IniDeleteSection(iniFile, L"sec1");
+
+	IniWriteString(iniFile, L"sec2", L"name1", L"hello world");
+	IniDeleteKey(iniFile, L"sec2", L"name1");
+
+}
+
 int _tmain(int argc, _TCHAR* argv[])
 {
 	//TestStringList();
 	//TestWndUtils();
-	TestKString();
+	//TestKString();
+	TestFileUtils();
+	//TestIniUtuils();
 	return 0;
 }
 
