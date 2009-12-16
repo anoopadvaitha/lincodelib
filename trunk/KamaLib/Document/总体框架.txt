@@ -29,16 +29,18 @@ KamaLib是一个主要面向游戏开发，同时也包含一些实用的基础功能的代码库。KamaLib有
 ===============================================================================
 名字先这样，以后可能会改：
 
-|-KmDebug               调试支持
-|-KmBase                基础类型和宏定义，外部依赖文件导入(.h)
-|-KmCommons             基础类和函数(.h/.cpp)
-  |-String              字符串辅助函数
-  |-Stream              流类
+|-KmDebug               调试支持                OK
+|-KmBase                外部依赖文件导入        OK
+|-KmString              字符串类                OK
+|-KmCommons             通用类和函数
+  |-Stream              流类                    OK
   |-Com                 COM辅助函数和类         OK
   |-Thread              线程类                  OK
-  |-Window              Windows辅助函数和类
-  |-Object              带运行时信息的对象基类
-  |-... ...
+  |-Window              Windows辅助函数和类     OK
+  |-StringList          字符串列表类            OK
+  |-FilePathUtils       文件路径辅助函数        OK
+  |-IniUtils            Ini读写辅助函数         
+|-KmObject              带运行时信息的对象基类  OK
 |-KmMultiThread         多线程框架(.h/.cpp)
 |-KmResManage           资源管理和回收(.h/.cpp)
 |-KmDxRender            D3D渲染引擎(.h/.cpp)

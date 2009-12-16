@@ -11,6 +11,7 @@
 #define __KAMA_KMCOMMONS_H__
 #include "KmDebug.h"
 #include "KmString.h"
+
 /*=======================================================================
   说明: 
 ========================================================================*/
@@ -1102,6 +1103,155 @@ private:
 };
 
 //------------------------------------------------------------------------------
+// 文件路径辅助函数
+
+/*
+	判断文件是否存在
+*/
+inline BOOL IsFileExists(LPCWSTR fileName)
+{
+	DWORD dwRet	= GetFileAttributesW(fileName);
+	return (dwRet != 0xFFFFFFFF) && ((FILE_ATTRIBUTE_DIRECTORY & dwRet) == 0);
+}
+
+/*
+	判断目录是否存在
+*/
+inline BOOL IsDirExists(LPCWSTR dir)
+{
+	DWORD dwRet = GetFileAttributesW(dir);
+	return ((dwRet != 0xFFFFFFFF) && ((FILE_ATTRIBUTE_DIRECTORY & dwRet) != 0));
+}
+
+/*
+	提取文件全路径中的路径部分，包括反斜杠"\"或斜杠"/"
+*/
+inline kstring ExtractFilePath(const kstring& fullPath)
+{	
+	kstring path;
+	int pos = fullPath.ReverseFind('\\');
+	if (pos < 0)
+		pos = fullPath.ReverseFind('/');
+	if (pos >= 0)
+		path = fullPath.Left(pos+1);
+
+	return path;
+}
+
+/*
+	提取文件全路径中的路径部分，不包括反斜杠"\"或斜杠"/"
+*/
+inline kstring ExtractFileDir(const kstring& fullPath)
+{
+	kstring dir;
+	int pos = fullPath.ReverseFind('\\');
+	if (pos < 0)
+		pos = fullPath.ReverseFind('/');
+	 if (pos >= 0)
+		 dir = fullPath.Left(pos);
+
+	return dir;
+}
+
+/*
+	提取文件全路径名中的文件名
+*/
+inline kstring ExtractFileName(const kstring& fullPath)
+{
+	kstring fileName;
+	int pos = fullPath.ReverseFind('\\');
+	if (pos < 0)
+		pos = fullPath.ReverseFind('/');
+	if (pos >= 0)
+		fileName = fullPath.Right(fullPath.Length() - pos - 1);
+
+	return fileName;
+}
+
+/*
+	提取文件名中的扩展名，不包括"."
+*/
+inline kstring ExtractFileExt(const kstring& fullPath)
+{
+	kstring fileExt;
+	int pos = fullPath.ReverseFind('.');
+	if (pos >= 0)
+		fileExt = fullPath.Right(fullPath.Length() - pos - 1);
+
+	return fileExt;
+}
+
+/*
+	改变文件扩展名, fileExt不包括"."
+*/
+inline kstring ChangeFileExt(const kstring& fileName, LPCWSTR fileExt)
+{
+	kstring newFileName = fileName;
+	int pos = newFileName.ReverseFind('.');
+	if(pos >= 0)
+	{
+		newFileName.Delete(pos+1, newFileName.Length());
+		newFileName += fileExt;
+	}
+	return newFileName;
+}
+
+
+/*
+	将路径中的反斜杠转为斜杠："\"-->"/"
+*/
+inline kstring BslToSl(const kstring& path)
+{
+	kstring newPath = path;
+	newPath.Replace('\\', '/');
+	return newPath;
+}
+
+/*
+	将路径中的斜杠转为反斜杠："/"-->"\"
+*/
+inline kstring SlToBsl(const kstring& path)
+{
+	kstring newPath = path;
+	newPath.Replace('/', '\\');
+	return newPath;
+}
+
+/*
+	确保目录存在
+*/
+inline void MakeSureDirExsits(const kstring& dir)
+{
+	if (IsDirExists(dir))
+		return;
+
+	MakeSureDirExsits(ExtractFileDir(dir));
+	CreateDirectoryW(dir, NULL);
+}
+
+/*
+	取得程序当前的路径
+*/
+inline kstring GetAppPath()
+{
+	WCHAR path[MAX_PATH] = {0};
+	if (0 == GetModuleFileNameW(NULL, path, MAX_PATH))
+		return kstring(L"");
+
+	return ExtractFilePath(path);
+}
+
+/*
+	应用程序当前路径，静态全局
+*/
+inline kstring SGetAppPath()
+{
+	static kstring sAppPath = GetAppPath();
+	return sAppPath;
+}
+#define gAppPath SGetAppPath()
+
+//------------------------------------------------------------------------------
 // Windows应用辅助函数
 
 /*
@@ -1224,6 +1374,112 @@ inline BOOL GetCmdLines(KStrings& cmdLines)
 		cmdLines.push_back(sParam);		
 	}
 	return TRUE;
+}
+
+//------------------------------------------------------------------------------
+// ini文件的辅助函数
+
+/*
+	读字符串值
+*/
+inline kstring IniReadString(LPCWSTR fileName, LPCWSTR section, LPCWSTR name, LPCWSTR defValue)
+{
+	WCHAR value[512];
+	GetPrivateProfileStringW(section, name, defValue, value, 512, fileName);
+	return kstring(value);
+}
+
+/*
+	读整形值
+*/
+inline int IniReadInteger(LPCWSTR fileName, LPCWSTR section, LPCWSTR name, int defValue)
+{
+	WCHAR value[512];
+	kstring strDef;
+	strDef.Format(L"%d", defValue);
+	GetPrivateProfileStringW(section, name, strDef, value, 512, fileName);
+	int ret = _wtoi(value);
+	if (ret == 0)
+	{
+		if(wcscmp(value, L"0") != 0)
+			ret = defValue;
+	}
+	return ret;
+}
+
+/*
+	读布尔值
+*/
+inline BOOL IniReadBool(LPCWSTR fileName, LPCWSTR section, LPCWSTR name, BOOL defValue)
+{
+	return IniReadInteger(fileName, section, name, defValue) ? TRUE : FALSE;
+}
+
+/*
+	读浮点值
+*/
+inline double IniReadFloat(LPCWSTR fileName, LPCWSTR section, LPCWSTR name, double defValue)
+{
+	WCHAR value[512];
+	kstring strDef;
+	strDef.Format(L"%f", defValue);
+	GetPrivateProfileStringW(section, name, strDef, value, 512, fileName);
+	if (wcscmp(value, L"") == 0)
+		return defValue;
+	else
+		return _wtof(value);
+}
+
+/*
+	写字符串值
+*/
+inline BOOL IniWriteString(LPCWSTR fileName, LPCWSTR section, LPCWSTR name, LPCWSTR value)
+{
+	return WritePrivateProfileStringW(section, name, value, fileName);
+}
+
+/*
+	写整形值
+*/
+inline BOOL IniWriteInteger(LPCWSTR fileName, LPCWSTR section, LPCWSTR name, int value)
+{
+	WCHAR str[33] = {0};
+	_itow(value, str, 10);
+	return WritePrivateProfileStringW(section, name, str, fileName);
+}
+
+/*
+	写布尔值
+*/
+inline BOOL IniWriteBool(LPCWSTR fileName, LPCWSTR section, LPCWSTR name, BOOL value)
+{
+	return IniWriteInteger(fileName, section, name, value);
+}
+
+/*
+	写浮点值
+*/
+inline BOOL IniWriteFloat(LPCWSTR fileName, LPCWSTR section, LPCWSTR name, double value)
+{
+	kstring str;
+	str.Format(L"%f", value);
+	return WritePrivateProfileStringW(section, name, str, fileName);
+}
+
+/*
+	删除节
+*/
+inline BOOL IniDeleteSection(LPCWSTR fileName, LPCWSTR section)
+{
+	return WritePrivateProfileStringW(section, NULL, NULL, fileName);
+}
+
+/*
+	删除键
+*/
+inline BOOL IniDeleteKey(LPCWSTR fileName, LPCWSTR section, LPCWSTR name)
+{
+	return WritePrivateProfileStringW(section, name, NULL, fileName);
 }
 
 }
