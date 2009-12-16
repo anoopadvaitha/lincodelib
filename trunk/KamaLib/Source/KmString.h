@@ -169,6 +169,24 @@ public:
 		mData[idx] = ch;
 	}
 
+	void Copy(LPCWSTR str, int start, int count)
+	{
+		int len = SafeStrlen(str);
+		if (len <= start) return;
+		if (len < start + count)
+			count = len - start;
+		AssignCopy(count, LPCWSTR(str + start));
+	}
+
+	void Copy(kstring& str, int start, int count)
+	{
+		int len = str.Length();
+		if (len <= start) return;
+		if (len < start + count)
+			count = len - start;
+		AssignCopy(count, LPCWSTR(str.mData + start));
+	}
+
 	WCHAR& operator [](int idx) const
 	{
 		return mData[idx];

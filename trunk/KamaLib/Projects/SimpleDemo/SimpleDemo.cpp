@@ -25,9 +25,9 @@ void TestWndUtils()
 	KTRACE(L"%x", ThisModuleHandle());
 	POINT pt;
 	GetCursorPos(&pt);
-	KTRACE(L"%s", GetWndText(::WindowFromPoint(pt)).c_str());
+	KTRACE(L"%s", GetWndText(::WindowFromPoint(pt)));
 
-	KTRACE(L"%s", GetSpecialFolder(CSIDL_APPDATA).c_str());
+	KTRACE(L"%s", GetSpecialFolder(CSIDL_APPDATA));
 }
 
 void TestKString()
