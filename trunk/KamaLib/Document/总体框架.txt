@@ -39,11 +39,11 @@ KamaLib是一个主要面向游戏开发，同时也包含一些实用的基础功能的代码库。KamaLib有
   |-Window              Windows辅助函数和类     OK
   |-StringList          字符串列表类            OK
   |-FilePathUtils       文件路径辅助函数        OK
-  |-IniUtils            Ini读写辅助函数         
+  |-IniUtils            Ini读写辅助函数         OK
 |-KmObject              带运行时信息的对象基类  OK
-|-KmMultiThread         多线程框架(.h/.cpp)
-|-KmResManage           资源管理和回收(.h/.cpp)
-|-KmDxRender            D3D渲染引擎(.h/.cpp)
+|-KmMultiThread         多线程框架
+|-KmResManage           资源管理和回收
+|-KmDxRender            D3D渲染引擎
   |-Draw Primitive      画图元
   |-Draw Texture        画纹理
   |-Font and Text       字体和文本
