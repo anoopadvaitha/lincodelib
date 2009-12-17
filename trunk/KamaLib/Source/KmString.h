@@ -48,7 +48,7 @@ _declspec(selectany) KStringData* _tmpDataNil = (KStringData*)&_gInitData;
 _declspec(selectany) LPCWSTR tmpStrNil = (LPCWSTR)(((BYTE*)&_gInitData) + sizeof(KStringData));
 
 /*
-	字符串类，作为关键字看待，因此全部用小字
+	字符串类，作为关键字看待，因此用小写
 */
 class kstring
 {
