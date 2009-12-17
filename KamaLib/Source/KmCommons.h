@@ -26,6 +26,27 @@ namespace kama
 */
 typedef std::vector<kstring> KStrings;
 
+/*
+	接口关键字
+*/
+#ifndef interface
+#define interface struct
+#endif
+
+/*
+增加标志
+*/
+#define ADD_FLAG(set, flag) set|=(flag)
+/*
+	删除标志
+*/
+#define DEL_FLAG(set, flag) set&=~(flag)
+/*
+	是否包含标志
+*/
+#define HAS_FLAG(set, flag) ((set & (flag)) != 0)
+
+
 //------------------------------------------------------------------------------
 // COM的辅助代码
 
@@ -1375,6 +1396,357 @@ inline BOOL GetCmdLines(KStrings& cmdLines)
 	}
 	return TRUE;
 }
+
+
+class KMsgLooper;
+
+/*
+	消息循环事件接口
+*/
+interface IMsgLoopEvent
+{
+	/*
+		消息过滤
+	*/
+	virtual void OnMsgFilter(KMsgLooper* sender, MSG& msg, BOOL& isHandled) = 0;
+	/*
+		空闲事件
+	*/
+	virtual void OnIdle(KMsgLooper* sender, BOOL& isDone) = 0;
+};
+
+/*
+	消息循环类
+*/
+class KMsgLooper
+{
+public:
+	/*
+		执行消息循环，当mIsTerm为True时结束
+		当mIsTerm在两种情况下会为True：
+		1、收到WM_QUIT时。
+		2、手动设为True。
+	*/
+	virtual void Run()
+	{
+		do 
+		{
+			HandleMsg();
+		} 
+		while (!mIsTerm);
+	}
+
+	/*
+		处理一次消息队列里的消息，当消息队列没有消息时，会触发一次Idle事件
+	*/
+	void HandleMsg()
+	{
+		MSG msg;
+		if (!ProcessMsg(msg))
+			Idle();
+	}
+
+	/*
+		循环处理消息队列里的消息，直到队列没有消息为止，不会触发Idle事件
+	*/
+	void ProcessMsgs()
+	{
+		MSG msg;
+		while (ProcessMsg(msg))
+		{
+		}
+	}
+
+	/*
+		处理一次消息队列里的消息
+	*/
+	BOOL ProcessMsg(MSG& msg)
+	{
+		if (PeekMessageW(&msg, 0, 0, 0, PM_REMOVE))
+		{
+			if (msg.message != WM_QUIT)
+			{
+				BOOL isHandled = FALSE;
+				DoMsgFilter(msg, isHandled);
+				if (!isHandled)
+				{
+					TranslateMessage(&msg);
+					DispatchMessageW(&msg);
+				}
+			}
+			else
+			{
+				mIsTerm = TRUE;
+			}
+			return TRUE;
+		}
+		return FALSE;
+	}
+
+	/*
+		结束消息循环
+	*/
+	void Term()
+	{
+		PostQuitMessage(0);
+	}
+
+	/*
+		查询是否结构消息循环
+	*/
+	BOOL IsTerm()
+	{
+		return mIsTerm;
+	}
+
+	/*
+		取事件
+	*/
+	IMsgLoopEvent* GetEvent()
+	{
+		return mMsgEvent;
+	}
+
+	/*
+		设事件
+	*/
+	void SetEvent(IMsgLoopEvent* event)
+	{
+		mMsgEvent = event;
+	}
+
+protected:
+	/*
+		消息过滤
+	*/
+	virtual void DoMsgFilter(MSG& msg, BOOL& isHandled)
+	{
+		if (mMsgEvent)
+			mMsgEvent->OnMsgFilter(this, msg, isHandled);
+	}
+
+	/*
+		空闲消息
+	*/
+	virtual void Idle()
+	{
+		BOOL isDone = TRUE;
+		DoIdle(isDone);
+		if (isDone)
+			WaitMessage();
+	}
+
+	/*
+		空闲消息
+	*/
+	virtual void DoIdle(BOOL& isDone)
+	{
+		if (mMsgEvent)
+			mMsgEvent->OnIdle(this, isDone);
+	}
+
+protected:
+	BOOL			mIsTerm;
+	IMsgLoopEvent*	mMsgEvent;
+};
+
+/*
+	窗口标题栏按钮
+*/
+typedef DWORD KBorderIcons;
+#define biSysMenu		0x01	// 系统菜单
+#define biMinimize		0x02	// 最大化按钮
+#define biMaximize		0x04	// 最小化按钮
+
+/*
+	窗口边框风格
+*/
+enum KBorderStyle
+{
+	bsNone,						// 无边框
+	bsSingle,					// 细边框，不可拉动大小
+	bsSizeable					// 厚边框，可以拉动大小
+};
+
+/*
+	窗口类名
+*/
+#define KAMA_WNDCLSNAME L"Kama.Window.Frame"
+
+/*
+	顶层窗口类
+*/
+class KWndFrame
+{
+public:
+	/*
+		创建窗口
+	*/
+	BOOL Create(
+		int left			= 0,							// 左
+		int top				= 0,							// 顶
+		int width			= 800,							// 宽
+		int height			= 600,							// 高
+		KBorderIcons bis	= biSysMenu | biMinimize,	// 标题栏按钮
+		KBorderStyle bs		= bsSingle,						// 边框风格		
+		LPCWSTR caption		= L"",							// 标题
+		HICON icon			= NULL)							// 图标
+	{
+		mLeft = left;
+		mTop = top;
+		mWidth = width;
+		mHeight = height;
+		BOOL ret = FALSE;
+		if (RegWndClass())
+		{
+			ret = CreateWndHandle(left, top, width, height, bis, bs, caption);
+			if (ret)
+			{
+				SendMessageW(mHwnd, WM_SETICON, ICON_BIG, LPARAM(icon));
+			}
+		}
+		KASSERT(ret);
+		return ret;
+	}
+
+	/*
+		关闭
+	*/
+	void Close()
+	{
+		KASSERT(mHwnd);
+
+		if (CloseQuery())
+		{
+			DoClose();
+			Hide();
+		}
+	}
+
+	/*
+		隐藏
+	*/
+	void Hide()
+	{
+		//SetVisible(FALSE);
+	}
+
+protected:
+	/*
+		注册窗口类
+	*/
+	virtual BOOL RegWndClass()
+	{
+		WNDCLASSW wc;
+ 		BOOL isReg = GetClassInfoW(ThisModuleHandle(), KAMA_WNDCLSNAME, &wc);
+		if (isReg && (wc.lpfnWndProc != &InitWndProc))
+		{
+			UnregisterClassW(KAMA_WNDCLSNAME, ThisModuleHandle());
+			isReg = FALSE;
+		}
+
+		if (!isReg)
+		{
+			wc.style = CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS;
+			wc.lpfnWndProc = &InitWndProc;
+			wc.cbClsExtra = 0;
+			wc.cbWndExtra = 0;
+			wc.hInstance = ThisModuleHandle();
+			wc.hIcon = 0;
+			wc.hCursor = LoadCursorW(0, IDC_ARROW);
+			wc.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
+			wc.lpszClassName = KAMA_WNDCLSNAME;
+			wc.lpszMenuName = NULL;
+			return (RegisterClassW(&wc) != 0);
+		}
+	}
+
+	/*
+		创建窗口
+	*/
+	virtual BOOL CreateWndHandle(
+		int left,
+		int top,
+		int width,
+		int height,
+		KBorderIcons bis,
+		KBorderStyle bs,
+		LPCWSTR caption)
+	{
+		return CreateWindowW(
+			KAMA_WNDCLSNAME, 
+			caption, 
+			BorderIconsToStyle(0, bis) | BorderStyleToStyle(0, bs),
+			left, 
+			top, 
+			width,
+			height,
+			NULL,
+			NULL,
+			ThisModuleHandle(),
+			this) != 0;
+	}
+
+	DWORD BorderIconsToStyle(DWORD oldStyle, KBorderIcons bis)
+	{
+		DWORD style = oldStyle;
+		DEL_FLAG(style, WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX);
+		if (HAS_FLAG(bis, biSysMenu))
+		{
+			ADD_FLAG(style, WS_SYSMENU);
+			if (HAS_FLAG(bis, biMaximize))
+				ADD_FLAG(style, WS_MAXIMIZEBOX);
+			if (HAS_FLAG(bis, biMinimize))
+				ADD_FLAG(style, WS_MINIMIZEBOX);
+		}
+
+		return style;
+	}
+
+	DWORD BorderStyleToStyle(DWORD oldStyle, KBorderStyle bs)
+	{
+		DWORD style = oldStyle;
+		DEL_FLAG(style, WS_THICKFRAME | WS_BORDER | WS_CAPTION | WS_POPUP);
+		if (bs == bsNone)
+			ADD_FLAG(style, WS_POPUP);
+		if (bs == bsSingle)
+			ADD_FLAG(style, WS_CAPTION | WS_BORDER);
+		if (bs == bsSizeable)
+			ADD_FLAG(style, WS_CAPTION | WS_THICKFRAME);
+
+		return style;
+	}
+
+	/*
+		是否允许关闭窗口
+	*/
+	virtual BOOL CloseQuery()
+	{
+		return TRUE;
+	}
+
+	virtual void DoClose()
+	{
+
+	}
+
+protected:
+	/*
+		最原始的窗口过程
+	*/
+	static LRESULT CALLBACK	InitWndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
+	{
+		
+	}
+
+protected:
+	HWND	mHwnd;
+	int		mLeft;
+	int		mTop;
+	int		mWidth;
+	int		mHeight;
+};
+
 
 //------------------------------------------------------------------------------
 // ini文件的辅助函数

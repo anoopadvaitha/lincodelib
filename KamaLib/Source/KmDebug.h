@@ -14,6 +14,7 @@
 
 /*=======================================================================
   说明: 调试辅助函数，实现简洁的断言，跟踪和日志
+		提供高性能计数器
 
 ========================================================================*/
 namespace kama
@@ -123,6 +124,46 @@ namespace kama
 #else
 	#define KLOG __noop
 #endif
+
+//------------------------------------------------------------------------------
+/*
+	高性能计数器，使用方法
+	BeginTimeCounter;
+	// you code
+	EndTimeCounter;
+*/
+_declspec(selectany) LARGE_INTEGER _gFrequency;
+_declspec(selectany) LARGE_INTEGER _gCounter;
+
+inline void _InitCounter()
+{
+	if (_gFrequency.QuadPart == 0)
+		QueryPerformanceFrequency(&_gFrequency);
+}
+
+inline LARGE_INTEGER _QueryCounter()
+{
+	_InitCounter();
+	QueryPerformanceCounter(&_gCounter);
+	return _gCounter;
+}
+
+/*
+	开始计数
+*/
+inline void BeginTimeCounter()
+{
+	_gCounter = _QueryCounter();
+}
+
+/*
+	结束计数，返回的结果以秒为单位
+*/
+inline double EndTimeCounter()
+{
+	LARGE_INTEGER counter = _QueryCounter();
+	return double(counter.QuadPart - _gCounter.QuadPart) / double(_gFrequency.QuadPart);
+}
 
 
 }
