@@ -21,6 +21,9 @@ namespace kama
 //------------------------------------------------------------------------------
 // 基础类型及辅助函数
 
+#pragma warning(disable: 4311)
+#pragma warning(disable: 4312)
+
 /*
 	字符串列表
 */
@@ -1421,6 +1424,10 @@ interface IMsgLoopEvent
 class KMsgLooper
 {
 public:
+	KMsgLooper(): mMsgEvent(NULL), mIsTerm(FALSE)
+	{
+	}
+
 	/*
 		执行消息循环，当mIsTerm为True时结束
 		当mIsTerm在两种情况下会为True：
@@ -1569,9 +1576,65 @@ enum KBorderStyle
 };
 
 /*
+	窗口状态
+*/
+enum KWindowState
+{
+	wsNormal,					// 还原
+	wsMinimized,				// 最小化
+	wsMaximized					// 最大化
+};
+
+/*
 	窗口类名
 */
-#define KAMA_WNDCLSNAME L"Kama.Window.Frame"
+#define KAMA_WNDFRAME_CLSNAME	L"Kama.Window.Frame"
+#define KAMA_WNDFRAME_ATOM		L"Kama.Window.Frame.Atom"
+
+class KWndFrame;
+
+/*
+	窗口事件
+*/
+interface IWndFrameEvent
+{
+	/*
+		句柄创建
+	*/
+	virtual void OnCreate(KWndFrame* wndFrame) = 0;
+	/*
+		句柄消毁
+	*/
+	virtual void OnDestroy(KWndFrame* wndFrame) = 0;
+	/*
+		显示
+	*/
+	virtual void OnShow(KWndFrame* wndFrame) = 0;
+	/*
+		隐藏
+	*/
+	virtual void OnHide(KWndFrame* wndFrame) = 0;
+	/*
+		关闭
+	*/
+	virtual void OnClose(KWndFrame* wndFrame) = 0;
+	/*
+		关闭询问
+	*/
+	virtual BOOL OnCloseQuery(KWndFrame* wndFrame) = 0;
+	/*
+		大小改变 
+	*/
+	virtual void OnSizeChange(KWndFrame* wndFrame) = 0;
+	/*
+		位置改变 
+	*/
+	virtual void OnPosChange(KWndFrame* wndFrame) = 0;
+	/*
+		通用消息
+	*/
+	virtual BOOL OnWndProc(KWndFrame* wndFrame, UINT msg, WPARAM wparam, LPARAM lparam, HRESULT& ret) = 0;
+};
 
 /*
 	顶层窗口类
@@ -1579,6 +1642,10 @@ enum KBorderStyle
 class KWndFrame
 {
 public:
+	KWndFrame(): mHwnd(NULL), mWndEvent(NULL), mLeft(0), mTop(0), mWidth(0), mHeight(0)
+	{
+	}
+
 	/*
 		创建窗口
 	*/
@@ -1587,7 +1654,7 @@ public:
 		int top				= 0,							// 顶
 		int width			= 800,							// 宽
 		int height			= 600,							// 高
-		KBorderIcons bis	= biSysMenu | biMinimize,	// 标题栏按钮
+		KBorderIcons bis	= biSysMenu | biMinimize,		// 标题栏按钮
 		KBorderStyle bs		= bsSingle,						// 边框风格		
 		LPCWSTR caption		= L"",							// 标题
 		HICON icon			= NULL)							// 图标
@@ -1603,10 +1670,29 @@ public:
 			if (ret)
 			{
 				SendMessageW(mHwnd, WM_SETICON, ICON_BIG, LPARAM(icon));
+				DoCreate();
 			}
 		}
 		KASSERT(ret);
 		return ret;
+	}
+
+	/*
+		窗口句柄
+	*/
+	HWND Handle()
+	{
+		return mHwnd;
+	}
+
+	/*
+		显示窗口
+	*/
+	void Show(KWindowState state = wsNormal)
+	{
+		SetWindowState(state);
+		BringToFront();
+		DoShow();
 	}
 
 	/*
@@ -1628,7 +1714,333 @@ public:
 	*/
 	void Hide()
 	{
-		//SetVisible(FALSE);
+		SetVisible(FALSE);
+	}
+
+	/*
+		把窗口移到前面
+	*/
+	void BringToFront()
+	{
+		KASSERT(mHwnd);
+
+		SetWindowPos(mHwnd, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+	}
+
+	/*
+		把窗口移到后面
+	*/
+	void SendToBack()
+	{
+		KASSERT(mHwnd);
+
+		SetWindowPos(mHwnd, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+	}
+
+	/*
+		设置位置大小
+	*/
+	void SetBound(int left, int top, int width, int height)
+	{
+		KASSERT(mHwnd);
+
+		if (left != mLeft || top != mTop || width != mWidth || height != mHeight)
+			if (!IsIconic(mHwnd))
+			{
+				SetWindowPos(mHwnd, 0, left, top, width, height, SWP_NOZORDER + SWP_NOACTIVATE);
+			}
+	}
+
+	/*
+		设置位置大小
+	*/
+	void SetBound(const RECT& rc)
+	{
+		SetBound(rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top);
+	}
+
+	/*
+		取整个窗口的区域
+	*/
+	RECT BoundRect()
+	{
+		RECT rc;
+		SetRect(&rc, mLeft, mTop, mWidth, mHeight);
+		return rc;
+	}
+
+	/*
+		窗口在屏幕的位置，百分比
+	*/
+	void AlignWindow(int percentX = 50, int percentY = 50)
+	{
+		KASSERT(mHwnd);
+		if (percentX < 0) percentX = 0;
+		if (percentY < 0) percentY = 0;
+		if (percentX > 100) percentX = 100;
+		if (percentY > 100) percentY = 100;
+
+		SetBound(
+			int((GetSystemMetrics(SM_CXSCREEN) - mWidth) * ((double)percentX / 100)),
+			int((GetSystemMetrics(SM_CYSCREEN) - mHeight) * ((double)percentY / 100)),
+			mWidth,
+			mHeight);
+	}
+
+	/*
+		左
+	*/
+	int Left()
+	{
+		return mLeft;
+	}
+
+	void SetLeft(int left)
+	{
+		SetBound(left, mTop, mWidth, mHeight);
+	}
+
+	/*
+		顶
+	*/
+	int Top()
+	{
+		return mTop;
+	}
+
+	void SetTop(int top)
+	{
+		SetBound(mLeft, top, mWidth, mHeight);
+	}
+
+	/*
+		宽
+	*/
+	int Width()
+	{
+		return mWidth;
+	}
+
+	void SetWidth(int width)
+	{
+		SetBound(mLeft, mTop, width, mHeight);
+	}
+
+	/*
+		高
+	*/
+	int Height()
+	{
+		return mHeight;
+	}
+
+	void SetHeight(int height)
+	{
+		SetBound(mLeft, mTop, mWidth, height);
+	}
+
+	/*
+		取客户区尺寸
+	*/
+	SIZE ClientSize()
+	{
+		KASSERT(mHwnd);
+		RECT rc;
+		GetClientRect(mHwnd, &rc);
+		SIZE sz;
+		sz.cx = rc.right;
+		sz.cy = rc.bottom;
+		return sz;
+	}
+
+	/*
+		设客户端尺寸
+	*/
+	void SetClientSize(SIZE size)
+	{
+		KASSERT(mHwnd);
+		SIZE sz = ClientSize();
+		SetBound(mLeft, mTop, mWidth - sz.cx + size.cx, mHeight - sz.cy + size.cy);
+	}
+
+	/*
+		是否可用
+	*/
+	BOOL IsEnable()
+	{
+		KASSERT(mHwnd);
+		return IsWindowEnabled(mHwnd);
+	}
+
+	/*
+		设置可用性
+	*/
+	void SetEnable(BOOL enable)
+	{
+		KASSERT(mHwnd);
+		EnableWindow(mHwnd, enable);
+	}
+
+	/*
+		是否是置顶窗口
+	*/
+	BOOL IsTopMost()
+	{
+		KASSERT(mHwnd);
+		LONG style = GetWindowLongW(mHwnd, GWL_EXSTYLE);
+		return HAS_FLAG(style, WS_EX_TOPMOST);
+	}
+
+	/*
+		设置项窗口
+	*/
+	void SetTopMost(BOOL topMost)
+	{
+		KASSERT(mHwnd);
+		SetWindowPos(mHwnd, topMost ? HWND_TOPMOST : HWND_NOTOPMOST, 
+			0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+	}
+
+	/*
+		是否可见
+	*/
+	BOOL IsVisible()
+	{
+		KASSERT(mHwnd);
+		return IsWindowVisible(mHwnd);
+	}
+
+	/*
+		设置可见性
+	*/
+	void SetVisible(BOOL visible)
+	{
+		KASSERT(mHwnd);
+		if (!visible)
+		{
+			DoHide();
+			ShowWindow(mHwnd, SW_HIDE);
+		}
+		else
+		{
+			if (IsIconic(mHwnd))
+				ShowWindow(mHwnd, SW_SHOWMINNOACTIVE);
+			else if (IsZoomed(mHwnd))
+				ShowWindow(mHwnd, SW_SHOWMAXIMIZED);
+			else
+				ShowWindow(mHwnd, SW_SHOWNORMAL);
+			DoShow();
+		}
+	}
+
+	/*
+		取按钮风格
+	*/
+	KBorderIcons BorderIcons()
+	{
+		KASSERT(mHwnd);
+		return StyleToBorderIcons(GetWindowLongW(mHwnd, GWL_STYLE))	;
+	}
+
+	/*
+		设按钮风格
+	*/
+	void SetBorderIcons(KBorderIcons bis)
+	{
+		KASSERT(mHwnd);
+		SetWindowLong(mHwnd, GWL_STYLE, 
+			BorderIconsToStyle(GetWindowLongW(mHwnd, GWL_STYLE), bis));
+		SetWindowPos(mHwnd, 0, 0, 0, 0, 0,
+			SWP_NOMOVE |SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
+	}
+
+	/*
+		边框风格
+	*/
+	KBorderStyle BorderStyle()
+	{
+		KASSERT(mHwnd);
+		return StyleToBorderStyle(GetWindowLongW(mHwnd, GWL_STYLE));
+	}
+
+	/*
+		设边框风格
+	*/
+	void SetBorderStyle(KBorderStyle bs)
+	{
+		KASSERT(mHwnd);
+		SetWindowLongW(mHwnd, GWL_STYLE,
+			BorderStyleToStyle(GetWindowLongW(mHwnd, GWL_STYLE), bs));
+		SetWindowPos(mHwnd, 0, 0, 0, 0, 0,
+			SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER);
+	}
+
+	/*
+		窗口状态
+	*/
+	KWindowState WindowState()
+	{
+		KASSERT(mHwnd);
+		if (IsIconic(mHwnd))
+			return wsMinimized;
+		else if (IsZoomed(mHwnd))
+			return wsMaximized;
+		else
+			return wsNormal;
+	}
+
+	/*
+		设窗口状态
+	*/
+	void SetWindowState(KWindowState state)
+	{
+		KASSERT(mHwnd);
+
+		int cmdShow = SW_SHOWNORMAL;
+		switch (state)
+		{
+		case wsMaximized:
+			cmdShow = SW_SHOWMAXIMIZED;
+		case wsMinimized:
+			cmdShow = SW_MINIMIZE;
+		default:
+			cmdShow = SW_SHOWNORMAL;
+		}
+		ShowWindow(mHwnd, cmdShow);
+	}
+
+	/*
+		窗口标题
+	*/
+	kstring Caption()
+	{
+		KASSERT(mHwnd);
+		return GetWndText(mHwnd);
+	}
+
+	/*
+		设窗口标题
+	*/
+	void SetCaption(const kstring& cap)
+	{
+		KASSERT(mHwnd);
+		SetWindowTextW(mHwnd, cap);
+	}
+
+	/*
+		取事件
+	*/
+	IWndFrameEvent* GetEvent()
+	{
+		return mWndEvent;
+	}
+
+	/*
+		设事件
+	*/
+	void SetEvent(IWndFrameEvent* event)
+	{
+		mWndEvent = event;
 	}
 
 protected:
@@ -1638,10 +2050,10 @@ protected:
 	virtual BOOL RegWndClass()
 	{
 		WNDCLASSW wc;
- 		BOOL isReg = GetClassInfoW(ThisModuleHandle(), KAMA_WNDCLSNAME, &wc);
+		BOOL isReg = ::GetClassInfoW(ThisModuleHandle(), KAMA_WNDFRAME_CLSNAME, &wc);
 		if (isReg && (wc.lpfnWndProc != &InitWndProc))
 		{
-			UnregisterClassW(KAMA_WNDCLSNAME, ThisModuleHandle());
+			UnregisterClassW(KAMA_WNDFRAME_CLSNAME, ThisModuleHandle());
 			isReg = FALSE;
 		}
 
@@ -1653,12 +2065,13 @@ protected:
 			wc.cbWndExtra = 0;
 			wc.hInstance = ThisModuleHandle();
 			wc.hIcon = 0;
-			wc.hCursor = LoadCursorW(0, IDC_ARROW);
+			wc.hCursor = LoadCursor(0, IDC_ARROW);
 			wc.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
-			wc.lpszClassName = KAMA_WNDCLSNAME;
+			wc.lpszClassName = KAMA_WNDFRAME_CLSNAME;
 			wc.lpszMenuName = NULL;
 			return (RegisterClassW(&wc) != 0);
 		}
+		return TRUE;
 	}
 
 	/*
@@ -1674,7 +2087,7 @@ protected:
 		LPCWSTR caption)
 	{
 		return CreateWindowW(
-			KAMA_WNDCLSNAME, 
+			KAMA_WNDFRAME_CLSNAME, 
 			caption, 
 			BorderIconsToStyle(0, bis) | BorderStyleToStyle(0, bs),
 			left, 
@@ -1717,17 +2130,111 @@ protected:
 		return style;
 	}
 
-	/*
-		是否允许关闭窗口
-	*/
+	KBorderIcons StyleToBorderIcons(DWORD style)
+	{
+		KBorderIcons bis = 0;
+		if (HAS_FLAG(style, WS_SYSMENU))
+		{
+			ADD_FLAG(bis, biSysMenu);
+			if (HAS_FLAG(style, WS_MAXIMIZEBOX))
+				ADD_FLAG(bis, biMaximize);
+			if (HAS_FLAG(style, WS_MINIMIZEBOX))
+				ADD_FLAG(bis, biMinimize);
+		}
+		return bis;
+	}
+
+	KBorderStyle StyleToBorderStyle(DWORD style)
+	{
+		KBorderStyle bi = bsNone;
+		if (HAS_FLAG(style, WS_CAPTION))
+		{
+			if (HAS_FLAG(style, WS_THICKFRAME))
+				bi = bsSizeable;
+			else
+				bi = bsSingle;
+		}
+		return bi;
+	}
+
+	void UpdateBounds()
+	{
+		KASSERT(mHwnd);
+		RECT rc;
+		if (IsIconic(mHwnd))
+		{
+			WINDOWPLACEMENT wp;
+			wp.length = sizeof(wp);
+			GetWindowPlacement(mHwnd, &wp);
+			if (HAS_FLAG(wp.flags, WPF_RESTORETOMAXIMIZED))
+			{
+				rc.left = wp.ptMaxPosition.x;
+				rc.top = wp.ptMaxPosition.y;
+				rc.right = rc.left + mWidth;
+				rc.bottom = rc.top + mHeight;
+			}
+			else
+			{
+				rc = wp.rcNormalPosition;
+			}
+		}
+		else
+		{
+			GetWindowRect(mHwnd, &rc);
+		}
+		mLeft = rc.left;
+		mTop = rc.top;
+		mWidth = rc.right - rc.left;
+		mHeight = rc.bottom - rc.top;
+	}
+
 	virtual BOOL CloseQuery()
 	{
+		if (mWndEvent)
+			return mWndEvent->OnCloseQuery(this);
 		return TRUE;
 	}
 
 	virtual void DoClose()
 	{
+		if (mWndEvent)
+			mWndEvent->OnClose(this);
+	}
 
+	virtual void DoShow()
+	{
+		if (mWndEvent)
+			mWndEvent->OnShow(this);
+	}
+
+	virtual void DoHide()
+	{
+		if (mWndEvent)
+			mWndEvent->OnHide(this);
+	}
+
+	virtual void DoCreate()
+	{
+		if (mWndEvent)
+			mWndEvent->OnCreate(this);
+	}
+
+	virtual void DoDestroy()
+	{
+		if (mWndEvent)
+			mWndEvent->OnDestroy(this);
+	}
+
+	virtual void DoSizeChange()
+	{
+		if (mWndEvent)
+			mWndEvent->OnSizeChange(this);
+	}
+
+	virtual void DoPosChange()
+	{
+		if (mWndEvent)
+			mWndEvent->OnPosChange(this);
 	}
 
 protected:
@@ -1736,16 +2243,100 @@ protected:
 	*/
 	static LRESULT CALLBACK	InitWndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 	{
-		
+		// 在NCCreate之前还有几个消息，忽略掉它，作默认处理就行了
+		if (msg == WM_CREATE)
+		{
+			KASSERT(lparam);
+			LPCREATESTRUCTW pcs = (LPCREATESTRUCTW)lparam;
+
+			KASSERT(pcs->lpCreateParams);
+			KWndFrame* wndFrame = (KWndFrame*)pcs->lpCreateParams;
+			wndFrame->mHwnd = hwnd;
+
+			KASSERT(::GetPropW(hwnd, KAMA_WNDFRAME_ATOM) == NULL);
+			SetWindowLongW(hwnd, GWL_WNDPROC, (LONG)StdWndProc);
+			SetPropW(hwnd, KAMA_WNDFRAME_ATOM, (HANDLE)pcs->lpCreateParams);
+
+			LRESULT ret = TRUE;
+			wndFrame->WndProc(hwnd, msg, wparam, lparam, ret);
+			return ret;
+		}
+		return CallWindowProcW(DefWindowProcW, hwnd, msg, wparam, lparam);
+	}
+	
+	/*
+		标准窗口过程
+	*/
+	static LRESULT CALLBACK StdWndProc(HWND hwnd, UINT msg, WPARAM wparam,  LPARAM lparam)
+	{
+		KWndFrame* wndFrame = (KWndFrame*)GetPropW(hwnd, KAMA_WNDFRAME_ATOM);
+		KASSERT(wndFrame);
+
+		LRESULT ret = 0;
+		BOOL isDone = wndFrame->WndProc(hwnd, msg, wparam, lparam, ret);
+		if (isDone)
+			return ret;
+		else
+			return CallWindowProcW(DefWindowProc, hwnd, msg, wparam, lparam);
+	}
+
+	/*
+		类的窗口过程
+		ret 为标准窗口过程的返回值
+		return 如果返回TRUE，标准窗口过程将返回ret; 如果返回FALSE，交给默认处理过程去处理
+	*/
+	virtual BOOL WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam, LRESULT& ret)
+	{
+		if (mWndEvent && mWndEvent->OnWndProc(this, msg, wparam, lparam, ret))
+			return TRUE;
+
+		else if (msg == WM_CLOSE)
+		{
+			Close();
+			return TRUE;
+		}
+		else if (msg == WM_SIZE)
+		{
+			UpdateBounds();
+			DoSizeChange();
+		}
+		else if (msg == WM_MOVE)
+		{
+			UpdateBounds();
+			DoPosChange();
+		}
+		else if (msg == WM_DESTROY)
+		{
+			DoDestroy();
+			mHwnd = NULL;
+		}
+
+		return FALSE;
 	}
 
 protected:
-	HWND	mHwnd;
-	int		mLeft;
-	int		mTop;
-	int		mWidth;
-	int		mHeight;
+	HWND		mHwnd;
+	int			mLeft;
+	int			mTop;
+	int			mWidth;
+	int			mHeight;
+	IWndFrameEvent* mWndEvent;
 };
+
+
+/*
+	主窗口类
+*/
+class KMainFrame: public KWndFrame
+{
+protected:
+	virtual void DoClose()
+	{
+		KWndFrame::DoClose();
+		PostQuitMessage(0);
+	}
+};
+
 
 
 //------------------------------------------------------------------------------
