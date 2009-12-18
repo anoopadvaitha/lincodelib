@@ -597,7 +597,7 @@ public:
 	}
 
 	/*
-	设当前指针的位置
+	    设当前指针的位置
 	*/
 	void SetPos(DWORD pos)
 	{
@@ -1585,6 +1585,13 @@ enum KWindowState
 	wsMaximized					// 最大化
 };
 
+enum KCloseMode
+{
+	cmHideWindow,				// 隐藏窗口
+	cmFreeHandle,				// 消毁窗口句柄
+	cmTermApp					// 结束应用程序
+};
+
 /*
 	窗口类名
 */
@@ -1617,7 +1624,11 @@ interface IWndFrameEvent
 	/*
 		关闭
 	*/
-	virtual void OnClose(KWndFrame* wndFrame) = 0;
+	virtual void OnClose(KWndFrame* wndFrame, KCloseMode& mode) = 0;
+	/*
+		绘制
+	*/
+	virtual void OnPaint(HDC dc) = 0;
 	/*
 		关闭询问
 	*/
@@ -1644,6 +1655,12 @@ class KWndFrame
 public:
 	KWndFrame(): mHwnd(NULL), mWndEvent(NULL), mLeft(0), mTop(0), mWidth(0), mHeight(0)
 	{
+	}
+
+	virtual ~KWndFrame()
+	{
+		if (mHwnd)
+			DestroyWindow(mHwnd);
 	}
 
 	/*
@@ -1704,8 +1721,17 @@ public:
 
 		if (CloseQuery())
 		{
-			DoClose();
-			Hide();
+			KCloseMode closeMode = cmHideWindow;
+			DoClose(closeMode);
+			if (closeMode == cmHideWindow)
+				Hide();
+			else if (closeMode == cmFreeHandle)
+				DestroyWindow(mHwnd);
+			else if (closeMode == cmTermApp)
+			{
+				PostQuitMessage(0);
+				DestroyWindow(mHwnd);
+			}
 		}
 	}
 
@@ -1858,7 +1884,6 @@ public:
 	*/
 	void SetClientSize(SIZE size)
 	{
-		KASSERT(mHwnd);
 		SIZE sz = ClientSize();
 		SetBound(mLeft, mTop, mWidth - sz.cx + size.cx, mHeight - sz.cy + size.cy);
 	}
@@ -2188,6 +2213,12 @@ protected:
 		mHeight = rc.bottom - rc.top;
 	}
 
+	virtual void DoPaint(HDC dc)
+	{
+		if (mWndEvent)
+			mWndEvent->OnPaint(dc);
+	}
+
 	virtual BOOL CloseQuery()
 	{
 		if (mWndEvent)
@@ -2195,10 +2226,10 @@ protected:
 		return TRUE;
 	}
 
-	virtual void DoClose()
+	virtual void DoClose(KCloseMode& mode)
 	{
 		if (mWndEvent)
-			mWndEvent->OnClose(this);
+			mWndEvent->OnClose(this, mode);
 	}
 
 	virtual void DoShow()
@@ -2243,7 +2274,7 @@ protected:
 	*/
 	static LRESULT CALLBACK	InitWndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 	{
-		// 在NCCreate之前还有几个消息，忽略掉它，作默认处理就行了
+		// 在Create之前还有几个消息，忽略掉它，作默认处理
 		if (msg == WM_CREATE)
 		{
 			KASSERT(lparam);
@@ -2287,9 +2318,20 @@ protected:
 	*/
 	virtual BOOL WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam, LRESULT& ret)
 	{
+		// mHwnd等于NULL，说明已经被释放掉
+		if (mHwnd == NULL)
+			return FALSE;
+
 		if (mWndEvent && mWndEvent->OnWndProc(this, msg, wparam, lparam, ret))
 			return TRUE;
-
+		else if (msg == WM_PAINT)
+		{
+			PAINTSTRUCT ps;
+			HDC dc = BeginPaint(hwnd, &ps);
+			DoPaint(dc);
+			EndPaint(hwnd, &ps);
+			return TRUE;
+		}
 		else if (msg == WM_CLOSE)
 		{
 			Close();
@@ -2308,6 +2350,9 @@ protected:
 		else if (msg == WM_DESTROY)
 		{
 			DoDestroy();
+		}
+		else if (msg == WM_NCDESTROY)
+		{
 			mHwnd = NULL;
 		}
 
@@ -2330,14 +2375,12 @@ protected:
 class KMainFrame: public KWndFrame
 {
 protected:
-	virtual void DoClose()
+	virtual void DoClose(KCloseMode& mode)
 	{
-		KWndFrame::DoClose();
-		PostQuitMessage(0);
+		mode = cmTermApp;
+		KWndFrame::DoClose(mode);
 	}
 };
-
-
 
 //------------------------------------------------------------------------------
 // ini文件的辅助函数
