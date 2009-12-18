@@ -163,6 +163,12 @@
 			<File
 				RelativePath="..\..\Source\KmString.h">
 			</File>
+			<File
+				RelativePath="..\..\Source\KmViews.cpp">
+			</File>
+			<File
+				RelativePath="..\..\Source\KmViews.h">
+			</File>
 		</Filter>
 		<Filter
 			Name="resource"

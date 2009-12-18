@@ -16,7 +16,7 @@ protected:
 
 	virtual BOOL WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam, LRESULT& ret)
 	{
-		KTestFrame::WndProc(hwnd, msg, wparam, lparam, ret);
+		return KMainFrame::WndProc(hwnd, msg, wparam, lparam, ret);
 	}
 };
 
