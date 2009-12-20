@@ -155,6 +155,12 @@
 				RelativePath="..\..\Source\KmDebug.h">
 			</File>
 			<File
+				RelativePath="..\..\Source\KmDxViews.cpp">
+			</File>
+			<File
+				RelativePath="..\..\Source\KmDxViews.h">
+			</File>
+			<File
 				RelativePath="..\..\Source\KmObject.cpp">
 			</File>
 			<File
@@ -162,12 +168,6 @@
 			</File>
 			<File
 				RelativePath="..\..\Source\KmString.h">
-			</File>
-			<File
-				RelativePath="..\..\Source\KmViews.cpp">
-			</File>
-			<File
-				RelativePath="..\..\Source\KmViews.h">
 			</File>
 		</Filter>
 		<Filter
