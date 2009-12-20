@@ -4,6 +4,7 @@
 #include "stdafx.h"
 #include "ViewDemo.h"
 #include "KmCommons.h"
+#include "KmDxViews.h"
 using namespace kama;
 
 class KTestFrame: public KMainFrame
@@ -33,6 +34,8 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		LoadIcon(NULL, IDI_APPLICATION));
 	mainFrame.AlignWindow();
 	mainFrame.Show();
+
+	KDxView* view = NEW_VIEW(KDxView, NULL, NULL);
 
 	KMsgLooper msgLooper;
 	msgLooper.Run();

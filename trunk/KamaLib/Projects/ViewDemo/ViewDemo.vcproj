@@ -155,6 +155,12 @@
 				RelativePath="..\..\Source\KmDebug.h">
 			</File>
 			<File
+				RelativePath="..\..\Source\KmDxCtrls.h">
+			</File>
+			<File
+				RelativePath="..\..\Source\KmDxRender.h">
+			</File>
+			<File
 				RelativePath="..\..\Source\KmDxViews.h">
 			</File>
 			<File
