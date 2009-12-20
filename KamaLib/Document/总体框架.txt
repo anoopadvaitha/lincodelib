@@ -41,7 +41,7 @@ KamaLib是一个主要面向游戏开发，同时也包含一些实用的基础功能的代码库。KamaLib有
   |-FilePathUtils       文件路径辅助函数        OK
   |-WindFrame           顶层窗口和消息循环封装类OK
   |-IniUtils            Ini读写辅助函数         OK
-|-KmObject              带运行时信息的对象基类  OK
+  |-Object              带运行时信息的对象基类  OK
 |-KmMultiThread         多线程框架
 |-KmResManage           资源管理和回收
 |-KmDxRender            D3D渲染引擎
@@ -49,5 +49,5 @@ KamaLib是一个主要面向游戏开发，同时也包含一些实用的基础功能的代码库。KamaLib有
   |-Draw Texture        画纹理
   |-Font and Text       字体和文本
 |-KmViews               视图控件库
-  |-View Framework      视图框架
+  |-View Framework      视图框架                OK
   |-View Controls       视图控件集
