@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "KmViews.h"
+#include "KmDxViews.h"
 namespace kama
 {
 
