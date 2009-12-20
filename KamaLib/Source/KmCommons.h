@@ -37,7 +37,7 @@ typedef std::vector<kstring> KStrings;
 #endif
 
 /*
-增加标志
+	增加标志
 */
 #define ADD_FLAG(set, flag) set|=(flag)
 /*
@@ -48,6 +48,39 @@ typedef std::vector<kstring> KStrings;
 	是否包含标志
 */
 #define HAS_FLAG(set, flag) ((set & (flag)) != 0)
+
+/*
+	点结构转换
+*/
+inline POINT SmallPtToPoint(POINTS spt)
+{
+	POINT pt;
+	pt.x = spt.x;
+	pt.y = spt.y;
+	return pt;
+}
+
+/*
+	点结构转换
+*/
+inline POINTS PointToSmallPt(POINT pt)
+{
+	POINTS spt;
+	spt.x = (SHORT)pt.x;
+	spt.y = (SHORT)pt.y;
+	return spt;
+}
+
+/*
+	生成点结构
+*/
+inline POINT MakePoint(int x, int y)
+{
+	POINT pt;
+	pt.x = x;
+	pt.y = y;
+	return pt;
+}
 
 
 //------------------------------------------------------------------------------
@@ -199,25 +232,25 @@ public:
 		mIntf = lp.mIntf;
 		return mIntf;
 	}
-	bool operator!() const
+	BOOL operator!() const
 	{
 		return (mIntf == NULL);
 	}
-	bool operator<(T* pT) const
+	BOOL operator<(T* pT) const
 	{
 		return mIntf < pT;
 	}
-	bool operator==(T* pT) const
+	BOOL operator==(T* pT) const
 	{
 		return mIntf == pT;
 	}
-	bool IsEqual(IUnknown* pOther)
+	BOOL IsEqual(IUnknown* pOther)
 	{
 		if (mIntf == NULL && pOther == NULL)
-			return true;
+			return TRUE;
 
 		if (mIntf == NULL || pOther == NULL)
-			return false;
+			return FALSE;
 
 		KIntfPtr<IUnknown> punk1;
 		KIntfPtr<IUnknown> punk2;
@@ -303,6 +336,10 @@ inline kstring GuidToStr(REFGUID id)
 		strGuid = szGuid;
 		CoTaskMemFree(szGuid);
 	}
+	else
+	{
+		KASSERT(!"GuidToStr failed!");
+	}
 	return strGuid;
 }
 
@@ -315,7 +352,10 @@ inline GUID StrToGuid(WCHAR* szGuid)
 	if (SUCCEEDED(CLSIDFromString(szGuid, &guid))) 
 		return guid;
 	else
+	{
+		KASSERT(!"StrToGuid failed!");
 		return GUID_NULL;
+	}
 }
 
 //------------------------------------------------------------------------------
@@ -1278,6 +1318,13 @@ inline kstring SGetAppPath()
 //------------------------------------------------------------------------------
 // Windows应用辅助函数
 
+
+/*
+	取得LPARAM里面的X和Y
+*/
+#define X_OF_LPARAM(lParam)	((int)(short)LOWORD(lParam))
+#define Y_OF_LPARAM(lParam)	((int)(short)HIWORD(lParam))
+
 /*
 	通过一个地址取模块句柄
 */
@@ -1366,7 +1413,7 @@ inline BOOL GetCmdLines(KStrings& cmdLines)
 	while (szCmd[0])
 	{
 		// 先删除掉空格和空参数
-		while (true)
+		while (TRUE)
 		{
 			while (szCmd[0] && (szCmd[0] <= ' ')) 
 				++szCmd;
@@ -1400,6 +1447,8 @@ inline BOOL GetCmdLines(KStrings& cmdLines)
 	return TRUE;
 }
 
+//------------------------------------------------------------------------------
+// 顶层窗口与消息循环封装类
 
 class KMsgLooper;
 
@@ -1429,10 +1478,10 @@ public:
 	}
 
 	/*
-		执行消息循环，当mIsTerm为True时结束
-		当mIsTerm在两种情况下会为True：
+		执行消息循环，当mIsTerm为TRUE时结束
+		当mIsTerm在两种情况下会为TRUE：
 		1、收到WM_QUIT时。
-		2、手动设为True。
+		2、手动设为TRUE。
 	*/
 	virtual void Run()
 	{
@@ -2487,6 +2536,151 @@ inline BOOL IniDeleteKey(LPCWSTR fileName, LPCWSTR section, LPCWSTR name)
 {
 	return WritePrivateProfileStringW(section, name, NULL, fileName);
 }
+
+//------------------------------------------------------------------------------
+// 提供基础RTTI的对象基类
+
+/*
+	取得一个类的类型信息
+*/
+#define RUNTIMEINFO(thisclass)\
+	(KRuntimeInfo*)(&thisclass::thisclass##RuntimeInfo)
+
+/*
+	判断thisclass是否从baseclass派生
+*/
+#define CLASS_DERIVEDFROM(thisclass, baseclass)\
+	RUNTIMEINFO(thisclass)->IsDerivedFrom(RUNTIMEINFO(baseclass))
+
+/*
+	判断对象指针pobject是否为baseclass或其子类的实例指针
+*/
+#define OBJECT_DERIVEDFROM(pobject, baseclass)\
+	(pobject)->IsDerivedFrom(RUNTIMEINFO(baseclass))
+
+/*
+	判断对象指针pobject是否为thisclass的实例指针
+*/
+#define OBJECT_ISCLASS(pobject, thisclass)\
+	(pobject)->IsEqualTo(RUNTIMEINFO(thisclass))
+
+/*
+	声明类型信息
+*/
+#define DECLARE_RUNTIMEINFO(className)\
+public:\
+	static const KRuntimeInfo className##RuntimeInfo;\
+	virtual KRuntimeInfo* GetRuntimeInfo() const\
+	{ return RUNTIMEINFO(className); }
+
+/*
+	实现类型信息
+*/
+#define IMPLEMENT_RUNTIMEINFO(thisclass, baseclass)\
+	_declspec(selectany) const KRuntimeInfo thisclass::thisclass##RuntimeInfo =\
+	{RUNTIMEINFO(baseclass), #baseclass, sizeof(thisclass)};
+
+/*
+	RTTI信息结构
+*/
+struct KRuntimeInfo
+{
+	KRuntimeInfo*	mBaseInfo;			// 指向基类的RTTI
+	LPCSTR			mClassName;			// 类名
+	int				mClassSize;			// 类的大小
+
+	/*
+		判断是否派生自某个类
+		如果该类派生自info代表的类，函数返回TRUE
+		如果info代表的是类自己，函数也返回TRUE
+	*/
+	BOOL IsDerivedFrom(const KRuntimeInfo* info)
+	{
+		if (NULL == info)
+			return FALSE;
+
+		const KRuntimeInfo* mBaseInfo = this;
+		while (NULL != mBaseInfo)
+		{
+			if (mBaseInfo == info)
+				return TRUE;
+
+			mBaseInfo = mBaseInfo->mBaseInfo;
+		}
+
+		return FALSE;
+	}
+};
+
+/*
+	基础类，提供RTTI能力，要从该类派生，具体做法如下:
+	1.  h文件:
+		class KMyClass: public KObject
+		{
+			DECLARE_RUNTIMEINFO(KMyClass)
+		};
+	2.  cpp文件:
+		IMPLEMENT_RUNTIMEINFO(KMyClass, KObject)
+	或
+	1.  h文件
+		class KMyClass: public KObject
+		{
+		DECLARE_RUNTIMEINFO(KMyClass)
+		};
+		IMPLEMENT_RUNTIMEINFO(KMyClass, KObject)
+
+*/
+class KObject
+{
+public:
+	DECLARE_RUNTIMEINFO(KObject)
+
+	/*
+		判断是否派生自某个类
+		如果是派生自info代表的类，函数返回TRUE
+		info代表的类是自己，函数也返回TRUE
+	*/
+	BOOL IsDerivedFrom(const KRuntimeInfo* info)
+	{
+		KRuntimeInfo* thisInfo = GetRuntimeInfo();
+		return thisInfo->IsDerivedFrom(info);
+	}
+
+	/*
+		是否等于某个类
+	*/
+	BOOL IsEqualTo(const KRuntimeInfo* info)
+	{
+		if (NULL == info)
+			return FALSE;
+
+		return (GetRuntimeInfo() == info);
+	}
+
+public:
+	/*
+		虚析构函数
+	*/
+	virtual~KObject(){}
+
+protected:
+	/*
+		不允许直接实例化KObject
+	*/
+	KObject() {}
+private:
+	/*
+		不允许拷贝构造
+	*/
+	KObject(const KObject& vObj){}
+	void operator=(const KObject& vObj){}
+};
+
+/*
+	静态类型信息成员
+*/
+_declspec(selectany) const KRuntimeInfo KObject::KObjectRuntimeInfo = 
+	{NULL, "KObject", sizeof(KObject)};
 
 }
 #endif // __KAMA_KMCOMMONS_H__
