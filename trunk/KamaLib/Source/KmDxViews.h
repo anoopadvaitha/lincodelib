@@ -200,7 +200,7 @@ typedef DWORD KDxWndStyle;
 #define wsMovable					0x01	// 可移动
 #define wsSizable					0x02	// 可拖动
 #define wsTopMost					0x04	// 顶层窗口
-#define wsEscHide					0x08	// ESC关闭
+#define wsEscClose					0x08	// ESC关闭
 
 /*
 	窗口状态
@@ -880,12 +880,12 @@ public:
 	/*
 		ESC关闭
 	*/
-	BOOL IsEscHide();
+	BOOL IsEscClose();
 
 	/*
 		设置ESC关闭
 	*/
-	void SetEscHide(BOOL isEscHide);
+	void SetEscClose(BOOL isEscClose);
 
 	/*
 		是否为顶层窗口
@@ -2039,17 +2039,17 @@ inline void KDxWindow::SetSizable(BOOL isSizable)
 		DEL_FLAG(mWndStyle, wsSizable);
 }
 
-inline BOOL KDxWindow::IsEscHide() 
+inline BOOL KDxWindow::IsEscClose() 
 { 
-	return HAS_FLAG(mWndStyle, wsEscHide); 
+	return HAS_FLAG(mWndStyle, wsEscClose); 
 }
 
-inline void KDxWindow::SetEscHide(BOOL isEscHide)
+inline void KDxWindow::SetEscClose(BOOL isEscClose)
 {
-	if (isEscHide)
-		ADD_FLAG(mWndStyle, wsEscHide);
+	if (isEscClose)
+		ADD_FLAG(mWndStyle, wsEscClose);
 	else
-		DEL_FLAG(mWndStyle, wsEscHide);
+		DEL_FLAG(mWndStyle, wsEscClose);
 }
 
 inline BOOL KDxWindow::IsTopMost() 
@@ -2653,7 +2653,7 @@ inline BOOL KDxWindow::PreKeyHandle(WORD& key, KDxShiftState shift)
 				ReleaseCapture();		
 				return TRUE;
 			}
-			else if (IsEscHide())
+			else if (IsEscClose())
 			{
 				if (NULL != mFocusedView)
 					if (mFocusedView->DoQuery(qtWantEscape, NULL))

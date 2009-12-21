@@ -149,7 +149,7 @@ protected:
 		wnd->SetPos(10, 10);
 		wnd->SetSize(200, 200);
 		wnd->SetSizable(false);
-		wnd->SetEscHide(true);
+		wnd->SetEscClose(true);
 		wnd->Show();
 		
 		// 2
