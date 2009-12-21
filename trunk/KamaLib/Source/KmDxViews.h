@@ -122,6 +122,7 @@ typedef DWORD KDxNotifyType;
 */
 #define ntTextChanged				15
 
+
 /*
 	请求事件类型, 0~QT_USER-1由框架保留，用户可以使用其他的值
 */
@@ -147,6 +148,7 @@ typedef DWORD KDxQueryType;
 	设置光标，参数： param=点击测试值；返回值：!0=设置成功
 */
 #define qtSetCursor					5
+
 
 /*
 	视图点击测试值0~oxHT_USER-1由框架保留，用户可以使用其他值
@@ -318,7 +320,7 @@ struct KDxPostInfo
 
 /*
 	必须使用该宏创建一个视图类
-	theclass 要创建的视图类
+	theclass 要创建的视图类，如KDxView，KDxWindow等
 	parenview 父视图，可以为NULL
 	ownerscreen 所属的屏幕类：KDxScreen
 */
@@ -326,7 +328,7 @@ struct KDxPostInfo
 	(theclass*)((new theclass)->Initialize(parenview, ownerscreen));
 
 /*
-	必须该宏释放一个视图
+	必须使用该宏释放一个视图
 */
 #define FREE_VIEW(theobject)\
 	do{\
@@ -336,7 +338,15 @@ struct KDxPostInfo
 
 
 /*
-	视图类
+	视图类，大概用法如下: 
+	*.  创建
+		KDxView* view = NEW_VIEW(KDxView, wnd, screen);
+	*.  设置各种属性
+		view->Set... ...
+	*.  释放
+		FREE_VIEW(view);
+
+	可继承自该类实现自定义视图，详见KmDxCtrls.h
 */
 class KDxView: public KObject
 {
@@ -738,7 +748,7 @@ class KDxShortcutMgr;
 /*
 	快捷键事件
 */
-interface IShortcutEvent
+interface IDxShortcutEvent
 {
 	/*
 		快捷键事件 KDxShortcut为相应快捷键
@@ -753,13 +763,13 @@ interface IShortcutEvent
 */
 class KDxShortcutMgr
 {
-	typedef std::map<KDxShortcut, IShortcutEvent*> KDxShortcutMap;
+	typedef std::map<KDxShortcut, IDxShortcutEvent*> KDxShortcutMap;
 
 public:
 	/*
 		增加快捷键以及相应事件
 	*/
-	BOOL AddShortcut(KDxShortcut shortcut, IShortcutEvent* event)
+	BOOL AddShortcut(KDxShortcut shortcut, IDxShortcutEvent* event)
 	{
 		KDxShortcutMap::iterator itr = mShortcutMap.find(shortcut);
 		if (itr != mShortcutMap.end())
@@ -811,7 +821,25 @@ private:
 typedef std::list<KDxWindow*> KDxWindowList;
 
 /*
-	窗口类
+	创建视图窗口
+*/
+#define NEW_WINDOW(theclass, ownerscreen) NEW_VIEW(theclass, ownerscreen, ownerscreen)
+/*
+	释放窗口
+*/
+#define FREE_WINDOW(theobject) FREE_VIEW(theobject)
+
+/*
+	窗口类，大概用法如下：
+	*.  创建
+		KDxWindow* wnd = NEW_WINDOW(KDxWindow, screen);
+	*.  设置各种属性并显示
+		... ...
+		wnd->Show();
+	*.  释放
+		FREE_WINDOW(wnd);
+
+	可以继承自该类实现自定义窗口，详见KmDxCtrls.h
 */
 class KDxWindow: public KDxView, public KDxShortcutMgr
 {
@@ -975,7 +1003,7 @@ public:
 
 	virtual KDxHitTest HitTestView(const POINT& pt);
 
-	virtual BOOL PreKeyHandle(WORD key, KDxShiftState shift);
+	virtual BOOL PreKeyHandle(WORD& key, KDxShiftState shift);
 
 	virtual void HandlePostAction(KDxPostId paId, DWORD param1, DWORD param2);
 
@@ -994,45 +1022,45 @@ protected:
 };
 
 /*
-	消息循环接口
+	默认的消息循环
 */
-interface IMessageLoop 
-{
-	/*
-		处理一次消息循环
-	*/
-	virtual void ProcessMessage() = 0;
-	/*
-		是否结束程序
-	*/
-	virtual BOOL IsTerm() = 0;
-};
-
-/*
-	默认的消息循环处理
-*/
-class KDxMessageLoop: public IMessageLoop
+class KDxMsgLooper: public KMsgLooper
 {
 public:
-	KDxMessageLoop(KDxScreen* screen): 
-		mIsTerm(FALSE), 
-		mScreen(screen) 
+	KDxMsgLooper(KDxScreen* screen): mScreen(screen)
 	{
-		mTick = ::GetTickCount();
+		mTick = KGetTickCount();
 	}
 
-	void ProcessMessage();
-
-	BOOL IsTerm();
+	virtual void DoIdle(BOOL& isDone);
 
 private:
-	BOOL		mIsTerm;
 	DWORD		mTick;
 	KDxScreen*	mScreen;
 };
 
 /*
-	屏幕类
+	创建屏幕类
+*/
+#define NEW_SCREEN(theclass) NEW_VIEW(theclass, NULL, NULL)
+/*
+	释放屏幕
+*/
+#define FREE_SCREEN(theobject) FREE_VIEW(theobject)
+
+/*
+	屏幕类，大概用法如下:
+	*.  创建
+		KDxScreen* screen = NEW_SCREEN(KDxScreen);
+	*.  设宿主窗口
+		screen->SetHostWnd(hwnd);
+	*.  定时更新和绘制，一般在消息循环的Idle时做
+		screen->Update();
+		// 这里可能要限制帧数
+		screen->Screen();
+	*.  释放
+		FREE_SCREEN(screen);
+		
 */
 class KDxScreen: public KDxView, public KDxShortcutMgr
 {
@@ -1048,8 +1076,8 @@ public:
 		mMouseX(0),
 		mMouseY(0),
 		mModalLevel(0),
-		mMsgLoop(NULL),
-		mDefMsgLoop(NULL),
+		mMsgLooper(NULL),
+		mDefMsgLooper(NULL),
 		mFrameTime(30),
 		mHoverView(NULL)
 	{
@@ -1109,7 +1137,6 @@ public:
 		当前光标位置
 	*/
 	int MouseX();
-
 	int MouseY(); 
 
 	/*
@@ -1136,12 +1163,12 @@ public:
 	/*
 		取得消息循环接口
 	*/
-	IMessageLoop* MessageLoop();
+	KMsgLooper* MsgLooper();
 
 	/*
 		设消息循环接口
 	*/
-	void SetMessageLoop(IMessageLoop* msgLoop);
+	void SetMessageLoop(KMsgLooper* msgLooper);
 
 	/*
 		取更新和绘制的帧间隔
@@ -1187,17 +1214,17 @@ public:
 	/*
 		子视图必须是窗口
 	*/
-	virtual BOOL InsertChild(KDxView* childView, int pos , BOOL isCheck = TRUE );
+	virtual BOOL InsertChild(KDxView* childView, int pos , BOOL isCheck = TRUE);
 
 	/*
 		处理顶层窗口的情况
 	*/
-	virtual KDxView* GetViewAtPos(const POINT& pt, BOOL allowDisabled  = FALSE );
+	virtual KDxView* GetViewAtPos(const POINT& pt, BOOL allowDisabled  = FALSE);
 
 	/*
 		键盘消息预处理
 	*/
-	virtual BOOL PreKeyHandle(WORD key, KDxShiftState shift);
+	virtual BOOL PreKeyHandle(WORD& key, KDxShiftState shift);
 
 protected:
 	/*
@@ -1234,39 +1261,32 @@ protected:
 	/*
 		宿主窗口过程
 	*/
-	static LRESULT CALLBACK	STHostWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+	static LRESULT CALLBACK	StdWndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam);
 
 	/*
 		返回TRUE将不再交给mDefHostWndProc处理，lRet即是处理过程的返回值
 	*/
-	virtual BOOL HostWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam, LRESULT& lRet);
+	virtual BOOL WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam, LRESULT& lRet);
 
 	/*
 		宿主窗口默认处理过程
 	*/
-	LRESULT DefHostWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+	LRESULT DefWndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam);
 
-	void WMMouseMove(WPARAM wParam, LPARAM lParam);
-
-	void WMSize(WPARAM wParam, LPARAM lParam);
-
-	void WMLButtonDown(WPARAM wParam, LPARAM lParam);
-
-	void WMLButtonUp(WPARAM wParam, LPARAM lParam);
-
-	void WMCancelMode(WPARAM wParam, LPARAM lParam);
-
-	void WMOtherMouse(KDxMouseAction action, WPARAM wParam, LPARAM lParam);
-
-	void WMKeyDown(WPARAM wParam, LPARAM lParam);
-
-	void WMKeyMsg(KDxKeyAction action, WPARAM wParam, LPARAM lParam);
-
-	void WMContextMenu(WPARAM wParam, LPARAM lParam);
-
-	void WMPostAction(WPARAM wParam, LPARAM lParam);
-
-	BOOL WMSetCursor(WPARAM wParam, LPARAM lParam);
+	/*
+		具体窗口消息处理
+	*/
+	void WMMouseMove(WPARAM wparam, LPARAM lparam);
+	void WMSize(WPARAM wparam, LPARAM lparam);
+	void WMLButtonDown(WPARAM wparam, LPARAM lparam);
+	void WMLButtonUp(WPARAM wparam, LPARAM lparam);
+	void WMCancelMode(WPARAM wparam, LPARAM lparam);
+	void WMOtherMouse(KDxMouseAction action, WPARAM wparam, LPARAM lparam);
+	void WMKeyDown(WPARAM wparam, LPARAM lparam);
+	void WMKeyMsg(KDxKeyAction action, WPARAM wparam, LPARAM lparam);
+	void WMContextMenu(WPARAM wparam, LPARAM lparam);
+	void WMPostAction(WPARAM wparam, LPARAM lparam);
+	BOOL WMSetCursor(WPARAM wparam, LPARAM lparam);
 
 protected:
 	WNDPROC				mDefHostWndProc;		// 宿主窗口默认的窗口过程
@@ -1278,11 +1298,12 @@ protected:
 	int					mMouseX;				// 当前光标位置X
 	int					mMouseY;				// 当前光标位置Y
 	int					mModalLevel;			// 模态层次
-	IMessageLoop*		mMsgLoop;				// 消息循环
-	KDxMessageLoop*		mDefMsgLoop;			// 默认消息循环
+	KMsgLooper*			mMsgLooper;				// 消息循环
+	KDxMsgLooper*		mDefMsgLooper;			// 默认消息循环
 	DWORD				mFrameTime;				// 每更新或绘制一帧的时间(ms)
 	KDxView*			mHoverView;				// 鼠标盘旋的视图
 };
+
 
 //////////////////////////////////////////////////////////////////////////
 // implement
@@ -2212,9 +2233,9 @@ inline int KDxWindow::ShowModal()
 
 	ADD_FLAG(mWndState, wsModal);
 	Show();
-	IMessageLoop* msgLoop = mOwnerScreen->MessageLoop();
-	while (HAS_FLAG(mWndState, wsModal) && !msgLoop->IsTerm())
-		msgLoop->ProcessMessage();
+	KMsgLooper* msgLooper = mOwnerScreen->MsgLooper();
+	while (IsModal() && !msgLooper->IsTerm())
+		msgLooper->HandleMsg();
 
 	mOwnerScreen->EndModal(this, disableList);
 	Hide();
@@ -2224,7 +2245,7 @@ inline int KDxWindow::ShowModal()
 
 inline BOOL KDxWindow::CloseModal(int ret)
 {
-	if (!HAS_FLAG(mWndStyle, wsModal))
+	if (!IsModal())
 		return FALSE;
 
 	KDxCloseMode action = (KDxCloseMode)DoQuery(qtClose, NULL);
@@ -2615,7 +2636,7 @@ inline KDxHitTest KDxWindow::HitTestView(const POINT& pt)
 	return KDxView::HitTestView(pt);
 }
 
-inline BOOL KDxWindow::PreKeyHandle(WORD key, KDxShiftState shift)
+inline BOOL KDxWindow::PreKeyHandle(WORD& key, KDxShiftState shift)
 {
 	// 窗口快捷键
 	KDxShortcut shortcut = MAKE_SHORTCUT(key, shift);
@@ -2691,49 +2712,26 @@ inline void KDxWindow::GenTabList(KDxViewVector& viewVector, KDxView* parentView
 }
 
 //------------------------------------------------------------------------------
-// KDxMessageLoop
+// KDxMsgLooper
 
-inline void KDxMessageLoop::ProcessMessage()
+inline void KDxMsgLooper::DoIdle(BOOL& isDone)
 {
-	MSG msg;
-	if (::PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+	if (mScreen)
 	{
-		if (msg.message != WM_QUIT)
-		{
-			::TranslateMessage(&msg);
-			::DispatchMessage(&msg);
-		}
-		else
-		{
-			mIsTerm = TRUE;
-		}
+		mScreen->Update();
+		if (KGetTickCount() - mTick >= mScreen->FrameTime())
+			mScreen->Paint();
 	}
-	else
-	{
-		if (mScreen)
-		{
-			if (::GetTickCount() - mTick >= mScreen->FrameTime())
-			{
-				mScreen->Update();
-				mScreen->Paint();
-			}
-		}
-		::WaitMessage();
-	}
+	KMsgLooper::DoIdle(isDone);
 }
 
-
-inline BOOL KDxMessageLoop::IsTerm()
-{
-	return mIsTerm;
-}
 
 //------------------------------------------------------------------------------
 // KDxScreen
 
-#define DXSCREEN_ATOM  L"VSCREEN.ATOM.THISOBJECT"
-#define DXSCREEN_POSTACTION L"VSCREEN.POSTMESSAGE"
-_declspec(selectany) UINT WM_POSTACTION = ::RegisterWindowMessageW(DXSCREEN_POSTACTION);
+#define KAMA_DXSCREEN_ATOM  L"Kama.DxScreen.Atom"
+#define KAMA_DXSCREEN_POST L"Kama.DxScreen.PostEvent"
+_declspec(selectany) UINT WM_POSTEVENT = ::RegisterWindowMessageW(KAMA_DXSCREEN_POST);
 
 IMPLEMENT_RUNTIMEINFO(KDxScreen, KDxView)
 
@@ -2877,7 +2875,7 @@ inline BOOL KDxScreen::PostEvent(KDxView* view, KDxPostId id, DWORD param1, DWOR
 	if (NULL == view)
 		return FALSE;
 
-	if (0 == WM_POSTACTION)
+	if (0 == WM_POSTEVENT)
 		return FALSE;
 
 	KDxPostInfo Info;
@@ -2887,7 +2885,7 @@ inline BOOL KDxScreen::PostEvent(KDxView* view, KDxPostId id, DWORD param1, DWOR
 	Info.param2 = param2;
 	mPostActionList.push_back(Info);
 
-	::PostMessage(mHostWnd, WM_POSTACTION, 0, 0);
+	PostMessageW(mHostWnd, WM_POSTEVENT, 0, 0);
 	return TRUE;
 }
 
@@ -2933,26 +2931,26 @@ inline void KDxScreen::EndModal(KDxWindow* wnd, KDxWindowList& wndList)
 
 	if (0 == mModalLevel)
 	{
-		IMessageLoop* msgLoop = MessageLoop();
-		if (msgLoop->IsTerm())
+		KMsgLooper* msgLooper = MsgLooper();
+		if (msgLooper->IsTerm())
 			::PostQuitMessage(0);
 	}
 }
 
-inline IMessageLoop* KDxScreen::MessageLoop()
+inline KMsgLooper* KDxScreen::MsgLooper()
 {
-	if (NULL == mMsgLoop)
+	if (NULL == mMsgLooper)
 	{
-		if (NULL == mDefMsgLoop)
-			mDefMsgLoop = new KDxMessageLoop(this);
-		return mDefMsgLoop;
+		if (NULL == mDefMsgLooper)
+			mDefMsgLooper = new KDxMsgLooper(this);
+		return mDefMsgLooper;
 	}
-	return mMsgLoop;
+	return mMsgLooper;
 }
 
-inline void KDxScreen::SetMessageLoop(IMessageLoop* msgLoop)
+inline void KDxScreen::SetMessageLoop(KMsgLooper* msgLooper)
 {
-	mMsgLoop = msgLoop;
+	mMsgLooper = msgLooper;
 }
 
 inline DWORD KDxScreen::FrameTime() 
@@ -2977,10 +2975,13 @@ inline void KDxScreen::ResetHoverView()
 
 inline void KDxScreen::Paint()
 {
-	RECT rcPaint;
-	ScreenRect(rcPaint);
-	DoPaint(rcPaint, rcPaint);
-	PaintChilds(this, rcPaint, rcPaint);
+	if(IsVisible())
+	{
+		RECT rcPaint;
+		ScreenRect(rcPaint);
+		DoPaint(rcPaint, rcPaint);
+		PaintChilds(this, rcPaint, rcPaint);
+	}
 }
 
 inline void KDxScreen::Update()
@@ -2996,8 +2997,11 @@ inline void KDxScreen::Update()
 			mHoverView->DoNotify(ntMouseEnter, NULL);
 	}
 
-	DoUpdate();
-	UpdateChilds(this);
+	if (IsVisible())
+	{
+		DoUpdate();
+		UpdateChilds(this);
+	}
 }
 
 inline KDxView* KDxScreen::Initialize(KDxView* parentView, KDxScreen* screen)
@@ -3016,8 +3020,8 @@ inline void KDxScreen::Finalize()
 
 	DestroyAllCursor();
 
-	if (mDefMsgLoop)
-		delete mDefMsgLoop;
+	if (mDefMsgLooper)
+		delete mDefMsgLooper;
 
 	if (NULL != mHostWnd)
 		UnsubclassWindow(mHostWnd);
@@ -3082,7 +3086,7 @@ inline KDxView* KDxScreen::GetViewAtPos(const POINT& pt, BOOL allowDisabled)
 	return NULL;
 }
 
-inline BOOL KDxScreen::PreKeyHandle(WORD key, KDxShiftState shift)
+inline BOOL KDxScreen::PreKeyHandle(WORD& key, KDxShiftState shift)
 {
 	// 全局快捷键
 	KDxShortcut shortcut = MAKE_SHORTCUT(key, shift);
@@ -3204,125 +3208,129 @@ inline void KDxScreen::UpdateChilds(KDxView* parentView)
 	for (int i = 0; i < parentView->ChildCount(); ++i)
 	{
 		childView = parentView->ChildView(i);
-		childView->DoUpdate();
-		UpdateChilds(childView);
+		if (childView->IsVisible())
+		{
+			childView->DoUpdate();
+			UpdateChilds(childView);
+		}
 	}
 }
 
 inline void KDxScreen::SubclassWindow(HWND hwnd)
 {
 	// 一个窗口只能与一个Screen关联
-	KASSERT(::GetPropW(hwnd, DXSCREEN_ATOM) == NULL);
+	HANDLE handle = GetPropW(hwnd, KAMA_DXSCREEN_ATOM);
+	KASSERT(handle == NULL);
 
-	mDefHostWndProc = (WNDPROC)::SetWindowLongW(hwnd, GWL_WNDPROC, (LONG)&STHostWindowProc);
+	mDefHostWndProc = (WNDPROC)::SetWindowLongW(hwnd, GWL_WNDPROC, (LONG)&StdWndProc);
 	KASSERT(NULL != mDefHostWndProc);
 
-	::SetPropW(hwnd, DXSCREEN_ATOM, (HANDLE)this);
+	::SetPropW(hwnd, KAMA_DXSCREEN_ATOM, (HANDLE)this);
 }
 
 inline void KDxScreen::UnsubclassWindow(HWND hwnd)
 {
 	KASSERT(NULL != mDefHostWndProc);
 
-	::RemovePropW(hwnd, DXSCREEN_ATOM);
+	::RemovePropW(hwnd, KAMA_DXSCREEN_ATOM);
 	::SetWindowLongW(hwnd, GWL_WNDPROC, (LONG)mDefHostWndProc);
 }
 
-inline LRESULT CALLBACK	KDxScreen::STHostWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+inline LRESULT CALLBACK	KDxScreen::StdWndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
 	LRESULT lRet = 0;
 	BOOL bDone = FALSE;
 	KDxScreen* screen = NULL;
 
-	screen = (KDxScreen*)::GetPropW(hwnd, DXSCREEN_ATOM);
+	screen = (KDxScreen*)::GetPropW(hwnd, KAMA_DXSCREEN_ATOM);
 	if (NULL != screen)
-		bDone = screen->HostWindowProc(hwnd, uMsg, wParam, lParam, lRet);
+		bDone = screen->WndProc(hwnd, msg, wparam, lparam, lRet);
 
 	if (bDone)
 		return lRet;
 	else
-		return CallWindowProcW(screen->mDefHostWndProc, hwnd, uMsg, wParam, lParam);
+		return CallWindowProcW(screen->mDefHostWndProc, hwnd, msg, wparam, lparam);
 }
 
-inline BOOL KDxScreen::HostWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam, LRESULT& lRet)
+inline BOOL KDxScreen::WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam, LRESULT& lRet)
 {
-	if ((WM_KEYDOWN == uMsg) || (WM_SYSKEYDOWN == uMsg))
+	if ((WM_KEYDOWN == msg) || (WM_SYSKEYDOWN == msg))
 	{
-		WMKeyDown(wParam, lParam);
+		WMKeyDown(wparam, lparam);
 	}
-	else if ((WM_KEYUP == uMsg) || (WM_SYSKEYUP == uMsg))
+	else if ((WM_KEYUP == msg) || (WM_SYSKEYUP == msg))
 	{
-		WMKeyMsg(kaUp, wParam, lParam);
+		WMKeyMsg(kaUp, wparam, lparam);
 	}
-	else if (WM_CHAR == uMsg)
+	else if (WM_CHAR == msg)
 	{
-		WMKeyMsg(kaChar, wParam, lParam);
+		WMKeyMsg(kaChar, wparam, lparam);
 	}
-	else if (WM_MOUSEMOVE == uMsg)
+	else if (WM_MOUSEMOVE == msg)
 	{
-		WMMouseMove(wParam, lParam);
+		WMMouseMove(wparam, lparam);
 	}
-	else if (WM_LBUTTONDOWN == uMsg)
+	else if (WM_LBUTTONDOWN == msg)
 	{
-		WMLButtonDown(wParam, lParam);
+		WMLButtonDown(wparam, lparam);
 	}
-	else if (WM_LBUTTONUP == uMsg)
+	else if (WM_LBUTTONUP == msg)
 	{
-		WMLButtonUp(wParam, lParam);
+		WMLButtonUp(wparam, lparam);
 	}
-	else if (WM_CANCELMODE == uMsg)
+	else if (WM_CANCELMODE == msg)
 	{
-		WMCancelMode(wParam, lParam);
+		WMCancelMode(wparam, lparam);
 	}
-	else if (WM_LBUTTONDBLCLK == uMsg)
+	else if (WM_LBUTTONDBLCLK == msg)
 	{
-		WMOtherMouse(maLDblClk, wParam, lParam);
+		WMOtherMouse(maLDblClk, wparam, lparam);
 	}
-	else if (WM_RBUTTONDBLCLK == uMsg)
+	else if (WM_RBUTTONDBLCLK == msg)
 	{
-		WMOtherMouse(maRDblClk, wParam, lParam);
+		WMOtherMouse(maRDblClk, wparam, lparam);
 	}
-	else if (WM_MBUTTONDBLCLK == uMsg)
+	else if (WM_MBUTTONDBLCLK == msg)
 	{
-		WMOtherMouse(maMDblClk, wParam, lParam);
+		WMOtherMouse(maMDblClk, wparam, lparam);
 	}
-	else if (WM_RBUTTONDOWN == uMsg)
+	else if (WM_RBUTTONDOWN == msg)
 	{
-		WMOtherMouse(maRDown, wParam, lParam);
+		WMOtherMouse(maRDown, wparam, lparam);
 	}
-	else if (WM_RBUTTONUP == uMsg)
+	else if (WM_RBUTTONUP == msg)
 	{
-		WMOtherMouse(maRUp, wParam, lParam);
+		WMOtherMouse(maRUp, wparam, lparam);
 	}
-	else if (WM_MBUTTONDOWN == uMsg)
+	else if (WM_MBUTTONDOWN == msg)
 	{
-		WMOtherMouse(maMDown, wParam, lParam);
+		WMOtherMouse(maMDown, wparam, lparam);
 	}
-	else if (WM_MBUTTONUP == uMsg)
+	else if (WM_MBUTTONUP == msg)
 	{
-		WMOtherMouse(maMUp, wParam, lParam);
+		WMOtherMouse(maMUp, wparam, lparam);
 	}
-	else if (WM_SIZE == uMsg)
+	else if (WM_SIZE == msg)
 	{
-		WMSize(wParam, lParam);
+		WMSize(wparam, lparam);
 	}
-	else if (WM_CONTEXTMENU == uMsg)
+	else if (WM_CONTEXTMENU == msg)
 	{
-		WMContextMenu(wParam, lParam);
+		WMContextMenu(wparam, lparam);
 	}
-	else if (WM_POSTACTION == uMsg)
+	else if (WM_POSTEVENT == msg)
 	{
-		WMPostAction(wParam, lParam);
+		WMPostAction(wparam, lparam);
 	}
-	else if (WM_SETCURSOR == uMsg)
+	else if (WM_SETCURSOR == msg)
 	{
-		if (WMSetCursor(wParam, lParam))
+		if (WMSetCursor(wparam, lparam))
 		{
 			lRet = 1;
 			return TRUE;
 		}
 	}
-	else if (WM_ERASEBKGND == uMsg)
+	else if (WM_ERASEBKGND == msg)
 	{
 		lRet = 1;
 		return TRUE;
@@ -3331,28 +3339,28 @@ inline BOOL KDxScreen::HostWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARA
 	return FALSE;
 }
 
-inline LRESULT KDxScreen::DefHostWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+inline LRESULT KDxScreen::DefWndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 { 
-	return ::CallWindowProc(mDefHostWndProc, hwnd, uMsg, wParam, lParam); 
+	return ::CallWindowProc(mDefHostWndProc, hwnd, msg, wparam, lparam); 
 }
 
-inline void KDxScreen::WMMouseMove(WPARAM wParam, LPARAM lParam)
+inline void KDxScreen::WMMouseMove(WPARAM wparam, LPARAM lparam)
 {
-	mMouseX = X_OF_LPARAM(lParam);
-	mMouseY = Y_OF_LPARAM(lParam);
+	mMouseX = X_OF_LPARAM(lparam);
+	mMouseY = Y_OF_LPARAM(lparam);
 
-	KDxShiftState shift = VKeyToShiftState((WORD)wParam);
+	KDxShiftState shift = VKeyToShiftState((WORD)wparam);
 	POINT pt;
 
 	// 捕获鼠标的视图优先，注意：CaptureView一定是可见的，可用的
 	if (NULL != mCaptureView)
 	{
-		pt = mCaptureView->ScreenToClient(SmallPtToPoint(MAKEPOINTS(lParam)));
+		pt = mCaptureView->ScreenToClient(SmallPtToPoint(MAKEPOINTS(lparam)));
 		mCaptureView->DoMouse(maMove, shift, pt);
 	}
 	else
 	{
-		pt = SmallPtToPoint(MAKEPOINTS(lParam));
+		pt = SmallPtToPoint(MAKEPOINTS(lparam));
 		KDxView* pVView = GetViewAtPos(pt, FALSE);
 		if (NULL != pVView)
 		{
@@ -3362,18 +3370,18 @@ inline void KDxScreen::WMMouseMove(WPARAM wParam, LPARAM lParam)
 	}								   
 }
 
-inline void KDxScreen::WMSize(WPARAM wParam, LPARAM lParam)
+inline void KDxScreen::WMSize(WPARAM wparam, LPARAM lparam)
 {
 	SetPos(0, 0);
-	SetSize(X_OF_LPARAM(lParam), Y_OF_LPARAM(lParam));
+	SetSize(X_OF_LPARAM(lparam), Y_OF_LPARAM(lparam));
 }
 
-inline void KDxScreen::WMLButtonDown(WPARAM wParam, LPARAM lParam)
+inline void KDxScreen::WMLButtonDown(WPARAM wparam, LPARAM lparam)
 {
-	KDxShiftState shift = VKeyToShiftState((WORD)wParam);
+	KDxShiftState shift = VKeyToShiftState((WORD)wparam);
 	POINT pt;
 
-	pt = SmallPtToPoint(MAKEPOINTS(lParam));
+	pt = SmallPtToPoint(MAKEPOINTS(lparam));
 	KDxView* view = GetViewAtPos(pt, FALSE);
 
 	if (NULL != view)	
@@ -3391,11 +3399,11 @@ inline void KDxScreen::WMLButtonDown(WPARAM wParam, LPARAM lParam)
 	}
 }
 
-inline void KDxScreen::WMLButtonUp(WPARAM wParam, LPARAM lParam)
+inline void KDxScreen::WMLButtonUp(WPARAM wparam, LPARAM lparam)
 {
-	KDxShiftState shift = VKeyToShiftState((WORD)wParam);
+	KDxShiftState shift = VKeyToShiftState((WORD)wparam);
 	POINT pt;
-	pt = SmallPtToPoint(MAKEPOINTS(lParam));
+	pt = SmallPtToPoint(MAKEPOINTS(lparam));
 
 	KDxView* view = mCaptureView;
 	SetCaptureView(NULL);
@@ -3424,19 +3432,19 @@ inline void KDxScreen::WMLButtonUp(WPARAM wParam, LPARAM lParam)
 	}
 }
 
-inline void KDxScreen::WMCancelMode(WPARAM wParam, LPARAM lParam)
+inline void KDxScreen::WMCancelMode(WPARAM wparam, LPARAM lparam)
 {
 	SetCaptureView(NULL);
 	if (mActiveWindow)
 		mActiveWindow->CancelDrag();
 }
 
-inline void KDxScreen::WMOtherMouse(KDxMouseAction action, WPARAM wParam, LPARAM lParam)
+inline void KDxScreen::WMOtherMouse(KDxMouseAction action, WPARAM wparam, LPARAM lparam)
 {
-	KDxShiftState shift = VKeyToShiftState((WORD)wParam);
+	KDxShiftState shift = VKeyToShiftState((WORD)wparam);
 	POINT pt;
 
-	pt = SmallPtToPoint(MAKEPOINTS(lParam));
+	pt = SmallPtToPoint(MAKEPOINTS(lparam));
 	KDxView* pVView = GetViewAtPos(pt, FALSE);
 	if (NULL != pVView)
 	{	
@@ -3445,10 +3453,10 @@ inline void KDxScreen::WMOtherMouse(KDxMouseAction action, WPARAM wParam, LPARAM
 	}
 }
 
-inline void KDxScreen::WMKeyDown(WPARAM wParam, LPARAM lParam)
+inline void KDxScreen::WMKeyDown(WPARAM wparam, LPARAM lparam)
 {
-	KDxShiftState shift = KeyDataToShiftState((WORD)lParam);
-	WORD key = LOWORD(wParam);
+	KDxShiftState shift = KeyDataToShiftState((WORD)lparam);
+	WORD key = LOWORD(wparam);
 
 	// 先处理快捷键，Tab，方向键等
 	if (!PreKeyHandle(key, shift))
@@ -3467,10 +3475,10 @@ inline void KDxScreen::WMKeyDown(WPARAM wParam, LPARAM lParam)
 	}
 }
 
-inline void KDxScreen::WMKeyMsg(KDxKeyAction action, WPARAM wParam, LPARAM lParam)
+inline void KDxScreen::WMKeyMsg(KDxKeyAction action, WPARAM wparam, LPARAM lparam)
 {
-	KDxShiftState shift = KeyDataToShiftState((WORD)lParam);
-	WORD key = LOWORD(wParam);
+	KDxShiftState shift = KeyDataToShiftState((WORD)lparam);
+	WORD key = LOWORD(wparam);
 
 	if (NULL != mActiveWindow)
 	{
@@ -3485,9 +3493,9 @@ inline void KDxScreen::WMKeyMsg(KDxKeyAction action, WPARAM wParam, LPARAM lPara
 	}	
 }
 
-inline void KDxScreen::WMContextMenu(WPARAM wParam, LPARAM lParam)
+inline void KDxScreen::WMContextMenu(WPARAM wparam, LPARAM lparam)
 {
-	POINTS pts = MAKEPOINTS(lParam);	
+	POINTS pts = MAKEPOINTS(lparam);	
 	if ((pts.x == -1) && (pts.y == -1))
 	{
 		// 是由键盘引起的环境菜单事件
@@ -3510,7 +3518,7 @@ inline void KDxScreen::WMContextMenu(WPARAM wParam, LPARAM lParam)
 	}
 }
 
-inline void KDxScreen::WMPostAction(WPARAM wParam, LPARAM lParam)
+inline void KDxScreen::WMPostAction(WPARAM wparam, LPARAM lparam)
 {
 	KDxPostInfoList::iterator itr = mPostActionList.begin();
 	if (itr != mPostActionList.end())
@@ -3522,9 +3530,9 @@ inline void KDxScreen::WMPostAction(WPARAM wParam, LPARAM lParam)
 	}
 }
 
-inline BOOL KDxScreen::WMSetCursor(WPARAM wParam, LPARAM lParam)
+inline BOOL KDxScreen::WMSetCursor(WPARAM wparam, LPARAM lparam)
 {
-	if (LOWORD(lParam) == HTCLIENT)
+	if (LOWORD(lparam) == HTCLIENT)
 	{
 		POINT pt = MakePoint(mMouseX, mMouseY);
 		KDxView* view = GetViewAtPos(pt);

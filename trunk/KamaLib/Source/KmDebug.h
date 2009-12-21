@@ -122,6 +122,7 @@ namespace kama
 	}
 	#define KLOG _KLog
 #else
+	inline void SetLogPath(LPCWSTR path) {}
 	#define KLOG __noop
 #endif
 
@@ -130,7 +131,7 @@ namespace kama
 	高性能计数器，使用方法
 	BeginTimeCounter;
 	// you code
-	EndTimeCounter;
+	double secon = EndTimeCounter;
 */
 _declspec(selectany) LARGE_INTEGER _gFrequency;
 _declspec(selectany) LARGE_INTEGER _gCounter;
