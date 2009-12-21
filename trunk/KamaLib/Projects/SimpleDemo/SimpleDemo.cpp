@@ -128,7 +128,7 @@ void TestKString()
 void TestFileUtils()
 {
 	kstring logPath = gAppPath + L"test.log";
-	SetLogPath(logPath);
+	SETLOGPATH(logPath);
 
 	KTRACE(gAppPath);
 	kstring path1 = gAppPath + L"test1.txt";
