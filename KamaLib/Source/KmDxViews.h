@@ -362,7 +362,7 @@ public:
 		mLeft(0), 
 		mTop(0), 
 		mWidth(100), 
-		mHeight(600), 
+		mHeight(60), 
 		mIsVisible(TRUE), 
 		mIsEnable(TRUE)
 	{
@@ -580,7 +580,7 @@ public:
 	/*
 		点击测试，子类可覆盖返回自定义值 
 	*/
-	virtual KDxHitTest HitTestView(POINT pt);
+	virtual KDxHitTest HitTestView(const POINT& pt);
 
 	/*
 		Tab键定位
@@ -1742,7 +1742,7 @@ inline KDxView* KDxView::GetViewAtPos(POINT pt, BOOL allowDisabled)
 	return NULL;
 }
 
-inline KDxHitTest KDxView::HitTestView(POINT pt)
+inline KDxHitTest KDxView::HitTestView(const POINT& pt)
 {
 	RECT rc;
 	ClientRect(rc);
@@ -2271,7 +2271,7 @@ inline void KDxWindow::ScreenCenter()
 	SetPos(x, y);
 }
 
-inline BOOL IsDraging()
+inline BOOL KDxWindow::IsDraging()
 {
 	return gIsDraging;
 }
@@ -2508,7 +2508,7 @@ inline void KDxWindow::DoMouse(KDxMouseAction action, KDxShiftState state, const
 		// 鼠标点下，拖动开始
 		gDragHitTest = HitTestView(pt);
 		if ((gDragHitTest == htMoveRegion) || 
-			((gDragHitTest >= htBorderLeftBottom) && (gDragHitTest <= htBorderRightBottom)))
+			((gDragHitTest >= htBorderLeft) && (gDragHitTest <= htBorderRightBottom)))
 			BeginDrag(pt);
 	}
 	else if (action = maLUp)
@@ -2742,13 +2742,14 @@ inline void KDxScreen::SetHostWnd(HWND hwnd)
 	if (hwnd == mHostWnd)
 		return;
 
-	if (NULL != mHostWnd)
+	if (IsWindow(mHostWnd))
 	{
 		UnsubclassWindow(mHostWnd);
+		mDefHostWndProc = NULL;
 		mHostWnd = NULL;
 	}
 
-	if ((NULL != hwnd) && IsWindow(hwnd))
+	if (IsWindow(hwnd))
 	{
 		mHostWnd = hwnd;
 		SubclassWindow(mHostWnd);
@@ -2767,7 +2768,7 @@ inline HWND KDxScreen::HostWnd()
 inline KDxWindow* KDxScreen::ChildWindow(int idx)
 {
 	KDxView* view = ChildView(idx);
-	if (view && OBJECT_ISCLASS(view, KDxWindow))
+	if (view && OBJECT_DERIVEDFROM(view, KDxWindow))
 		return (KDxWindow*)view;
 
 	return NULL;
@@ -2871,7 +2872,7 @@ inline int KDxScreen::MouseY()
 
 inline BOOL KDxScreen::PostEvent(KDxView* view, KDxPostId id, DWORD param1, DWORD param2)
 {
-	if (NULL == mHostWnd)
+	if (!IsWindow(mHostWnd))
 		return FALSE;
 
 	if (NULL == view)
@@ -3024,8 +3025,7 @@ inline void KDxScreen::Finalize()
 	if (mDefMsgLooper)
 		delete mDefMsgLooper;
 
-	if (mHostWnd)
-		UnsubclassWindow(mHostWnd);
+	SetHostWnd(NULL);
 }
 
 inline BOOL KDxScreen::InsertChild(KDxView* childView, int pos , BOOL isCheck)
@@ -3048,7 +3048,7 @@ inline KDxView* KDxScreen::GetViewAtPos(const POINT& pt, BOOL allowDisabled)
 		// 先遍历顶层窗口
 		KDxViewVector::reverse_iterator revItr = mChildViews.rbegin();
 		while (revItr != mChildViews.rend())
-		{	wnd = OBJECT_ISCLASS((*revItr), KDxWindow) ? (KDxWindow*)(*revItr) : NULL;
+		{	wnd = OBJECT_DERIVEDFROM((*revItr), KDxWindow) ? (KDxWindow*)(*revItr) : NULL;
 			if (wnd && wnd->IsTopMost())
 			{
 				tmpPt = pt;
@@ -3065,7 +3065,7 @@ inline KDxView* KDxScreen::GetViewAtPos(const POINT& pt, BOOL allowDisabled)
 		revItr = mChildViews.rbegin();
 		while (revItr != mChildViews.rend())
 		{
-			wnd = OBJECT_ISCLASS((*revItr), KDxWindow) ? (KDxWindow*)(*revItr) : NULL;
+			wnd = OBJECT_DERIVEDFROM((*revItr), KDxWindow) ? (KDxWindow*)(*revItr) : NULL;
 			if (wnd && (!wnd->IsTopMost()))
 			{
 				tmpPt = pt;
@@ -3144,7 +3144,7 @@ inline void KDxScreen::PaintChilds(KDxView* parentView, const RECT& rcParentPain
 		for (int i = 0; i < parentView->ChildCount(); ++i)
 		{
 			view = parentView->ChildView(i);
-			wnd = OBJECT_ISCLASS(view, KDxWindow) ? (KDxWindow*)view : NULL;
+			wnd = OBJECT_DERIVEDFROM(view, KDxWindow) ? (KDxWindow*)view : NULL;
 			if (wnd->IsVisible() && (!wnd->IsTopMost()))
 			{
 				rcChildScreen.left = rcParentScreen.left + wnd->Left();
@@ -3164,7 +3164,7 @@ inline void KDxScreen::PaintChilds(KDxView* parentView, const RECT& rcParentPain
 		for (int i = 0; i < parentView->ChildCount(); ++i)
 		{
 			view = parentView->ChildView(i);
-			wnd = OBJECT_ISCLASS(view, KDxWindow) ? (KDxWindow*)view : NULL;
+			wnd = OBJECT_DERIVEDFROM(view, KDxWindow) ? (KDxWindow*)view : NULL;
 			if (wnd->IsVisible() && (wnd->IsTopMost()))
 			{
 				rcChildScreen.left = rcParentScreen.left + wnd->Left();
@@ -3335,6 +3335,10 @@ inline BOOL KDxScreen::WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam
 	{
 		lRet = 1;
 		return TRUE;
+	}
+	else if (WM_DESTROY == msg)
+	{
+		SetHostWnd(NULL);
 	}
 
 	return FALSE;

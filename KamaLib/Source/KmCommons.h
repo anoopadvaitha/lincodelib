@@ -1752,6 +1752,14 @@ public:
 	}
 
 	/*
+		Ïû»Ù´°¿Ú
+	*/
+	void Destroy()
+	{
+		DestroyWindow(mHwnd);
+	}
+
+	/*
 		´°¿Ú¾ä±ú
 	*/
 	HWND Handle()
