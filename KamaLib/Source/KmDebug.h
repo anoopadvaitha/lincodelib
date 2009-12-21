@@ -55,7 +55,7 @@ namespace kama
 /*
 	日志记录: KLOG
 	每次调用都将自动换行，且最大字符数为512
-	可调用SetLogPath设置日志文件的路径
+	可调用SETLOGPATH设置日志文件的路径
 */
 #ifdef _DEBUG
 	_declspec(selectany) HANDLE _gLogFile = INVALID_HANDLE_VALUE;
@@ -63,7 +63,7 @@ namespace kama
 	/*
 		设置日志文本路径，如果path为NULL，日志输出到应用程序目录下，名字为: appname.log
 	*/
-	inline void SetLogPath(LPCWSTR path)
+	inline void _SetLogPath(LPCWSTR path)
 	{
 		WCHAR szPath[MAX_PATH] = {0};
 		if (NULL == path)
@@ -116,14 +116,15 @@ namespace kama
 
 		DWORD writeSize;
 		if (INVALID_HANDLE_VALUE == _gLogFile)
-			SetLogPath(NULL);
+			_SetLogPath(NULL);
 		if (INVALID_HANDLE_VALUE != _gLogFile)
 			WriteFile(_gLogFile, szBuf, (DWORD)wcslen(szBuf) * sizeof(WCHAR), &writeSize, NULL);
 	}
 	#define KLOG _KLog
+	#define SETLOGPATH _SetLogPath
 #else
-	inline void SetLogPath(LPCWSTR path) {}
 	#define KLOG __noop
+	#define SETLOGPATH __noop
 #endif
 
 //------------------------------------------------------------------------------
