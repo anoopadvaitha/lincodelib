@@ -1447,6 +1447,14 @@ inline BOOL GetCmdLines(KStrings& cmdLines)
 	return TRUE;
 }
 
+/*
+	取计时数
+*/
+inline DWORD KGetTickCount()
+{
+	return GetTickCount();
+}
+
 //------------------------------------------------------------------------------
 // 顶层窗口与消息循环封装类
 
