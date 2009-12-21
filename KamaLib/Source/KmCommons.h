@@ -1524,7 +1524,7 @@ public:
 	/*
 		处理一次消息队列里的消息
 	*/
-	BOOL ProcessMsg(MSG& msg)
+	virtual BOOL ProcessMsg(MSG& msg)
 	{
 		if (PeekMessageW(&msg, 0, 0, 0, PM_REMOVE))
 		{
@@ -2633,16 +2633,15 @@ struct KRuntimeInfo
 	1.  h文件
 		class KMyClass: public KObject
 		{
-		DECLARE_RUNTIMEINFO(KMyClass)
+			DECLARE_RUNTIMEINFO(KMyClass)
 		};
 		IMPLEMENT_RUNTIMEINFO(KMyClass, KObject)
 
 */
 class KObject
 {
-public:
 	DECLARE_RUNTIMEINFO(KObject)
-
+public:
 	/*
 		判断是否派生自某个类
 		如果是派生自info代表的类，函数返回TRUE

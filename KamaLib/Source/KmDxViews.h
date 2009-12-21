@@ -900,7 +900,7 @@ public:
 	/*
 		激活自己
 	*/
-	BOOL SetActive();
+	BOOL Active();
 
 	/*
 		是否激活
@@ -1168,7 +1168,7 @@ public:
 	/*
 		设消息循环接口
 	*/
-	void SetMessageLoop(KMsgLooper* msgLooper);
+	void SetMsgLooper(KMsgLooper* msgLooper);
 
 	/*
 		取更新和绘制的帧间隔
@@ -1317,7 +1317,7 @@ protected:
 inline KDxWindow* GetParentWindow(KDxView* view)
 {
 	KDxView* parentView = view;
-	while ((NULL != parentView) && (!OBJECT_DERIVEDFROM(parentView, KDxWindow)))
+	while (parentView && (!OBJECT_DERIVEDFROM(parentView, KDxWindow)))
 		parentView = parentView->ParentView();
 
 	return (KDxWindow*)parentView;
@@ -1354,7 +1354,7 @@ IMPLEMENT_RUNTIMEINFO(KDxView, KObject)
 
 inline KDxView* KDxView::Initialize(KDxView* parentView, KDxScreen* screen)
 {
-	KASSERT(screen);
+	KASSERT(screen != NULL);
 	mOwnerScreen = screen;
 
 	if (parentView)
@@ -1399,13 +1399,11 @@ inline KDxView* KDxView::ParentView()
 
 inline void KDxView::SetParentView(KDxView* parentView)
 {
-	KASSERT(parentView != this);
-
 	if (parentView != mParentView)
 	{
-		if (NULL != mParentView)
+		if (mParentView)
 			mParentView->RemoveChild(this);
-		if (NULL != parentView)
+		if (parentView)
 			parentView->AddChild(this);
 	}
 }
@@ -1430,7 +1428,7 @@ inline BOOL KDxView::InsertChild(KDxView* childView, int pos , BOOL isCheck)
 	if (pos > (int)mChildViews.size()) 
 		pos = (int)mChildViews.size();
 
-	if (pos == mChildViews.size())
+	if (pos == (int)mChildViews.size())
 		mChildViews.push_back(childView);
 	else
 		mChildViews.insert((mChildViews.begin() + pos), childView);
@@ -1505,15 +1503,16 @@ inline BOOL KDxView::MoveChildPos(KDxView* childView, int newPos)
 	if (0 == mChildViews.size())
 		return FALSE;
 
-	int nOldPos = IndexOf(childView);
-	if (nOldPos < 0)
+	int oldPos = IndexOf(childView);
+	if (oldPos < 0)
 		return FALSE;
 
-	if (newPos < 0) newPos = 0;
-	if (nOldPos == newPos) 
+	if (newPos < 0) 
+		newPos = 0;
+	if (oldPos == newPos) 
 		return TRUE;
 
-	mChildViews.erase(mChildViews.begin() + nOldPos);
+	mChildViews.erase(mChildViews.begin() + oldPos);
 	if (newPos >= (int)mChildViews.size())
 		mChildViews.push_back(childView);
 	else
@@ -1524,14 +1523,14 @@ inline BOOL KDxView::MoveChildPos(KDxView* childView, int newPos)
 
 inline void KDxView::BringToFront()
 {
-	if (NULL != mParentView)
+	if (mParentView)
 		mParentView->MoveChildPos(this, mParentView->ChildCount() - 1);
 }
 
 
 inline void KDxView::SendToBack()
 {
-	if (NULL != mParentView)
+	if (mParentView)
 		mParentView->MoveChildPos(this, 0);
 }
 
@@ -1952,7 +1951,7 @@ inline BOOL KDxView::VisibleAndEnable()
 		if (!(view->mIsEnable && view->mIsVisible))
 			return FALSE;
 		view = view->mParentView;
-	} while (NULL != view);
+	} while (view);
 
 	return TRUE;
 }
@@ -2066,7 +2065,7 @@ inline void KDxWindow::SetTopMost(BOOL isTopMose)
 		DEL_FLAG(mWndStyle, wsTopMost);
 }
 
-inline BOOL KDxWindow::SetActive()
+inline BOOL KDxWindow::Active()
 {
 	return mOwnerScreen->SetActiveWindow(this);
 }
@@ -2091,7 +2090,7 @@ inline BOOL KDxWindow::SetFocusedView(KDxView* view)
 	if (mFocusedView == view)
 		return TRUE;
 
-	if ((NULL != view) && (!view->CanFocus()))
+	if (view && (!view->CanFocus()))
 		return FALSE;
 
 	KDxView* oldView = mFocusedView;
@@ -2195,7 +2194,7 @@ inline void KDxWindow::Show(BOOL isActive)
 {
 	SetVisible(TRUE);
 	if (isActive)
-		SetActive();
+		Active();
 }
 
 inline void KDxWindow::Close()
@@ -2630,7 +2629,7 @@ inline KDxHitTest KDxWindow::HitTestView(const POINT& pt)
 	if (IsMovable())
 	{
 		ClientRect(rc);
-		return ::PtInRect(&rc, pt) ?htMoveRegion : htNone;
+		return ::PtInRect(&rc, pt) ? htMoveRegion : htNone;
 	}
 
 	return KDxView::HitTestView(pt);
@@ -2720,7 +2719,10 @@ inline void KDxMsgLooper::DoIdle(BOOL& isDone)
 	{
 		mScreen->Update();
 		if (KGetTickCount() - mTick >= mScreen->FrameTime())
+		{
 			mScreen->Paint();
+			mTick = KGetTickCount();
+		}
 	}
 	KMsgLooper::DoIdle(isDone);
 }
@@ -2805,7 +2807,7 @@ inline void KDxScreen::ActiveNextWindow(KDxWindow* wnd)
 	while ((idx--) >= 0)
 	{
 		nextWnd = ChildWindow(idx);
-		if (nextWnd->SetActive())
+		if (nextWnd->Active())
 			break;
 	}
 }
@@ -2905,14 +2907,14 @@ inline void KDxScreen::BeginModal(KDxWindow* wnd, KDxWindowList& wndList)
 {
 	++mModalLevel;	
 
-	KDxWindow* pChildWnd;
+	KDxWindow* childWnd;
 	for (int i = 0; i < ChildCount(); ++i)
 	{
-		pChildWnd = ChildWindow(i);
-		if ((wnd != pChildWnd) && pChildWnd->IsVisible() && pChildWnd->IsEnable())
+		childWnd = ChildWindow(i);
+		if ((wnd != childWnd) && childWnd->IsVisible() && childWnd->IsEnable())
 		{
-			wndList.push_back(pChildWnd);
-			pChildWnd->SetEnable(FALSE);
+			wndList.push_back(childWnd);
+			childWnd->SetEnable(FALSE);
 		}
 	}
 }
@@ -2931,8 +2933,7 @@ inline void KDxScreen::EndModal(KDxWindow* wnd, KDxWindowList& wndList)
 
 	if (0 == mModalLevel)
 	{
-		KMsgLooper* msgLooper = MsgLooper();
-		if (msgLooper->IsTerm())
+		if (MsgLooper()->IsTerm())
 			::PostQuitMessage(0);
 	}
 }
@@ -2948,7 +2949,7 @@ inline KMsgLooper* KDxScreen::MsgLooper()
 	return mMsgLooper;
 }
 
-inline void KDxScreen::SetMessageLoop(KMsgLooper* msgLooper)
+inline void KDxScreen::SetMsgLooper(KMsgLooper* msgLooper)
 {
 	mMsgLooper = msgLooper;
 }
@@ -3023,7 +3024,7 @@ inline void KDxScreen::Finalize()
 	if (mDefMsgLooper)
 		delete mDefMsgLooper;
 
-	if (NULL != mHostWnd)
+	if (mHostWnd)
 		UnsubclassWindow(mHostWnd);
 }
 
@@ -3361,11 +3362,11 @@ inline void KDxScreen::WMMouseMove(WPARAM wparam, LPARAM lparam)
 	else
 	{
 		pt = SmallPtToPoint(MAKEPOINTS(lparam));
-		KDxView* pVView = GetViewAtPos(pt, FALSE);
-		if (NULL != pVView)
+		KDxView* view = GetViewAtPos(pt, FALSE);
+		if (NULL != view)
 		{
-			pt = pVView->ScreenToClient(pt);
-			pVView->DoMouse(maMove, shift, pt);
+			pt = view->ScreenToClient(pt);
+			view->DoMouse(maMove, shift, pt);
 		}
 	}								   
 }
@@ -3445,11 +3446,11 @@ inline void KDxScreen::WMOtherMouse(KDxMouseAction action, WPARAM wparam, LPARAM
 	POINT pt;
 
 	pt = SmallPtToPoint(MAKEPOINTS(lparam));
-	KDxView* pVView = GetViewAtPos(pt, FALSE);
-	if (NULL != pVView)
+	KDxView* view = GetViewAtPos(pt, FALSE);
+	if (NULL != view)
 	{	
-		pt = pVView->ScreenToClient(pt);
-		pVView->DoMouse(action, shift, pt);
+		pt = view->ScreenToClient(pt);
+		view->DoMouse(action, shift, pt);
 	}
 }
 
