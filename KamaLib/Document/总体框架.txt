@@ -43,7 +43,7 @@ KamaLib是一个主要面向游戏开发，同时也包含一些实用的基础功能的代码库。KamaLib有
   |-IniUtils            Ini读写辅助函数         OK
   |-Object              带运行时信息的对象基类  OK
 |-KmMultiThread         多线程框架
-|-KmResManage           资源管理和回收
+|-KmResCache            资源缓存和回收          OK
 |-KmDxRender            D3D渲染引擎
   |-Draw Primitive      画图元
   |-Draw Texture        画纹理
