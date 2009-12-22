@@ -1,24 +1,25 @@
-/***********************************************************
-  Filename:	KmString.cpp
-  Author:	Tramper
-  Email:	linzhenqun@gmail.com
-  Date:		2009/12/15
+/*******************************************************************************
+  Filename:		KmString.h
+  Author:		Tramper
+  Email:		linzhenqun@gmail.com
+  Date:			2009/12/15
 
-  Brief:    这是KamaLib代码库的一部分，由Tramper创建并维护，
-			版权没有，请自由使用！
-			Thanks to Microsoft Corporation. 
-***********************************************************/
-#ifndef __KAMA_KMSTRING_H__
-#define __KAMA_KMSTRING_H__
-#include "KmDebug.h"
-
-/*=============================================================================
-  说明: 字符串类，基于WTL的实现，主要作了如下的修改:
+  Brief:    	这是KamaLib代码库的一部分，由Tramper创建并维护，版权没有，
+				请自由使用！
+ -------------------------------------------------------------------------------
+  Description:
+	字符串类，基于WTL的实现，主要作了如下的修改:
 	1.  修改命名，符合Kama的规范
 	2.  TCHAR改成WCHAR，只保留Ansi的兼容性操作
 	3.  去除_ATL_MIN_CRT, _WIN32_WCE, _ATL_USE_kstring_FLOAT, _UNICODE等宏
 	4.  减少一些函数
-==============================================================================*/
+
+	Thanks to Microsoft Corporation.
+
+*******************************************************************************/
+#ifndef __KAMA_KMSTRING_H__
+#define __KAMA_KMSTRING_H__
+#include "KmDebug.h"
 
 namespace kama
 {

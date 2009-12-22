@@ -7,6 +7,10 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ViewDemo", "ViewDemo\ViewDe
 	ProjectSection(ProjectDependencies) = postProject
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RenderDemo", "RenderDemo\RenderDemo.vcproj", "{E4A5A291-8A6A-4F80-AC98-C26987C719F6}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfiguration) = preSolution
 		Debug = Debug
@@ -21,6 +25,10 @@ Global
 		{F8BF90C1-9C0C-4D62-B132-0B2FEDAF4F5D}.Debug.Build.0 = Debug|Win32
 		{F8BF90C1-9C0C-4D62-B132-0B2FEDAF4F5D}.Release.ActiveCfg = Release|Win32
 		{F8BF90C1-9C0C-4D62-B132-0B2FEDAF4F5D}.Release.Build.0 = Release|Win32
+		{E4A5A291-8A6A-4F80-AC98-C26987C719F6}.Debug.ActiveCfg = Debug|Win32
+		{E4A5A291-8A6A-4F80-AC98-C26987C719F6}.Debug.Build.0 = Debug|Win32
+		{E4A5A291-8A6A-4F80-AC98-C26987C719F6}.Release.ActiveCfg = Release|Win32
+		{E4A5A291-8A6A-4F80-AC98-C26987C719F6}.Release.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 	EndGlobalSection

@@ -160,10 +160,6 @@
 				RelativePath=".\ReadMe.txt">
 			</File>
 		</Filter>
-		<Filter
-			Name="UnitTest"
-			Filter="">
-		</Filter>
 	</Files>
 	<Globals>
 	</Globals>
