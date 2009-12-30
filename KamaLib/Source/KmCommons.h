@@ -2880,5 +2880,12 @@ private:
 	IResChecker*	mResChecker;			// 资源检查器
 };
 
+//------------------------------------------------------------------------------
+// 数学函数支持
+inline int Round(FLOAT x)
+{
+	return x >= 0 ? (int)(x + 0.5f) : (int)(x - 0.5f);
+}
+
 }
 #endif // __KAMA_KMCOMMONS_H__
