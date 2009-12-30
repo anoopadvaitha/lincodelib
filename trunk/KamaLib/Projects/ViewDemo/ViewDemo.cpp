@@ -136,7 +136,10 @@ public:
 	{
 		mScreen->Update();
 		if (KGetTickCount() - mTick > mScreen->FrameTime())
+		{
+			mTick = KGetTickCount();
 			mScreen->Paint();
+		}
 	}
 protected:
 	virtual void DoCreate()
