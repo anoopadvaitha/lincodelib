@@ -1665,47 +1665,88 @@ interface IWndFrameEvent
 	/*
 		句柄创建
 	*/
-	virtual void OnCreate(KWndFrame* wndFrame) = 0;
+	virtual void OnCreate(KWndFrame* wndFrame)
+	{
+
+	}
+
 	/*
 		句柄消毁
 	*/
-	virtual void OnDestroy(KWndFrame* wndFrame) = 0;
+	virtual void OnDestroy(KWndFrame* wndFrame)
+	{
+
+	}
+
 	/*
 		显示
 	*/
-	virtual void OnShow(KWndFrame* wndFrame) = 0;
+	virtual void OnShow(KWndFrame* wndFrame)
+	{
+
+	}
+
 	/*
 		隐藏
 	*/
-	virtual void OnHide(KWndFrame* wndFrame) = 0;
+	virtual void OnHide(KWndFrame* wndFrame)
+	{
+
+	}
+
 	/*
 		关闭
 	*/
-	virtual void OnClose(KWndFrame* wndFrame, KCloseMode& mode) = 0;
+	virtual void OnClose(KWndFrame* wndFrame, KCloseMode& mode)
+	{
+
+	}
+
 	/*
 		绘制
 	*/
-	virtual void OnPaint(HDC dc) = 0;
+	virtual void OnPaint(HDC dc)
+	{
+
+	}
+
 	/*
 		关闭询问
 	*/
-	virtual BOOL OnCloseQuery(KWndFrame* wndFrame) = 0;
+	virtual BOOL OnCloseQuery(KWndFrame* wndFrame)
+	{
+		return TRUE;
+	}
+
 	/*
 		大小改变 
 	*/
-	virtual void OnSizeChange(KWndFrame* wndFrame) = 0;
+	virtual void OnSizeChange(KWndFrame* wndFrame)
+	{
+
+	}
+
 	/*
 		位置改变 
 	*/
-	virtual void OnPosChange(KWndFrame* wndFrame) = 0;
+	virtual void OnPosChange(KWndFrame* wndFrame)
+	{
+
+	}
+
 	/*
 		通用消息
+		return 如果返回TRUE，标准窗口过程将返回ret; 如果返回FALSE，交给默认处理过程去处理
 	*/
-	virtual BOOL OnWndProc(KWndFrame* wndFrame, UINT msg, WPARAM wparam, LPARAM lparam, HRESULT& ret) = 0;
+	virtual BOOL OnWndProc(KWndFrame* wndFrame, UINT msg, WPARAM wparam, LPARAM lparam, HRESULT& ret)
+	{
+		return FALSE;
+	}
+
 };
 
 /*
-	顶层窗口类
+	顶层窗口类，专门为游戏而封装，作其他应用还比较简陋
 */
 class KWndFrame
 {
@@ -2149,7 +2190,7 @@ protected:
 
 		if (!isReg)
 		{
-			wc.style = CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS;
+			wc.style = CS_DBLCLKS;
 			wc.lpfnWndProc = &InitWndProc;
 			wc.cbClsExtra = 0;
 			wc.cbWndExtra = 0;

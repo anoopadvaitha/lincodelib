@@ -145,8 +145,9 @@ inline void _InitCounter()
 inline LARGE_INTEGER _QueryCounter()
 {
 	_InitCounter();
-	QueryPerformanceCounter(&_gCounter);
-	return _gCounter;
+	LARGE_INTEGER count;
+	QueryPerformanceCounter(&count);
+	return count;
 }
 
 /*
