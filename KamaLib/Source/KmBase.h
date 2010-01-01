@@ -19,6 +19,9 @@
 #include <Windows.h>
 #include <ShellAPI.h>
 #include <ShlObj.h>
+#include <Mmsystem.h>
+
+#pragma comment(lib, "Winmm.lib")
 
 // OLE µº»Î
 #include <ole2.h>

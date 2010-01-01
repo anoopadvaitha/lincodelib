@@ -1452,7 +1452,7 @@ inline BOOL GetCmdLines(KStrings& cmdLines)
 */
 inline DWORD KGetTickCount()
 {
-	return GetTickCount();
+	return timeGetTime();
 }
 
 //------------------------------------------------------------------------------
