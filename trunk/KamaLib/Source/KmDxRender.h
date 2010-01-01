@@ -429,7 +429,7 @@ protected:
 	*/
 	void SetBlendMode(KDxBlendMode blendMode);
 
-private:
+public:
 	BOOL					mInited;			// 是否已经初始化
 	BOOL					mIsFullScreen;		// 是否全屏
 	BOOL					mIsVSync;			// 是否与屏幕刷新率同步
@@ -582,6 +582,11 @@ inline BOOL KDxRender::SetFullScreen(BOOL isFullScreen)
 		return ResetDevice();
 	}
 	return TRUE;
+}
+
+inline BOOL KDxRender::IsFullScreen()
+{
+	return mIsFullScreen;
 }
 
 inline BOOL KDxRender::SetVerticalSync(BOOL isVSync)
@@ -778,13 +783,9 @@ inline BOOL KDxRender::Initialize()
 	// 设置显示参数
 	ResetPresentParams();
 
-	// 确定顶点运算类型
-	DWORD vp = (mDeviceCaps.DevCaps && D3DDEVCAPS_HWTRANSFORMANDLIGHT) ? 
-		D3DCREATE_HARDWARE_VERTEXPROCESSING : D3DCREATE_SOFTWARE_VERTEXPROCESSING;
-
 	// 创建设备
 	HRESULT hr = mDirect3D9->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, 
-		mHwnd, vp, &mPresentParams,  &mDevice9);
+		mHwnd, D3DCREATE_SOFTWARE_VERTEXPROCESSING, &mPresentParams,  &mDevice9);
 	if (FAILED(hr))
 	{
 		KASSERT(!"CreateDevice Failed");
@@ -830,10 +831,6 @@ inline BOOL KDxRender::CheckDeviceCaps()
 	// 取兼容性
 	HRESULT hr = mDirect3D9->GetDeviceCaps(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, &mDeviceCaps);
 	KASSERT(hr == D3D_OK);
-
-	// 必须无条件支持NOPOW2：纹理高宽为2的幂
-	if ((mDeviceCaps.TextureCaps & (D3DPTEXTURECAPS_NONPOW2CONDITIONAL | D3DPTEXTURECAPS_POW2)) != 0)
-		return FALSE;
 
 	// 支持纹理Alpha
 	if ((mDeviceCaps.TextureCaps & D3DPTEXTURECAPS_ALPHA) == 0)
@@ -1004,7 +1001,7 @@ inline void KDxRender::EndPaint()
 	}
 	else
 	{	
-		BatchPaint(TRUE);
+		BatchPaint(0, TRUE);
 		mDevice9->EndScene();
 		// 设备丢失
 		mIsDevLost = (D3DERR_DEVICELOST == mDevice9->Present(NULL, NULL, NULL, NULL));
