@@ -7,92 +7,93 @@
 #include "KmDxRender.h"
 using namespace kama;
 
-class KTestApp: public KMsgLooper, public IWndFrameEvent
+class KTestApp: public KDxApp, public IWndFrameEvent
 {
 public:
-	void Initialize()
+	virtual void Initialize()
 	{
+		mFrameTime = 0;
 		mMainFrame.SetEvent(this);
 		mMainFrame.Create();
 		mMainFrame.AlignWindow();
 		mMainFrame.Show();
-		mRender.SetBkColor(0xFFFFFFFF);
-		mRender.SetSize(mMainFrame.Width(), mMainFrame.Height());
-		mRender.SetWindow(mMainFrame.Handle());
-		mRender.SetFullScreen(FALSE);
-		mRender.SetSmooth(FALSE);
-		mRender.Initialize();
+		Render.SetBkColor(0xFFFFFFFF);
+		Render.SetSize(mMainFrame.Width(), mMainFrame.Height());
+		Render.SetWindow(mMainFrame.Handle());
+		Render.SetFullScreen(FALSE);
+		Render.SetSmooth(FALSE);
+		Render.SetVerticalSync(FALSE);
+		Render.Initialize();
 
 		kstring path = gAppPath + "Hum_000097.bmp";
-		mRender.NewTextureFormFile(path, &mTexture);
+		Render.NewTextureFormFile(path, &mTexture);
+		KDxApp::Initialize();
 	}
 
-	void Finalize()
+	virtual void Finalize()
 	{
 		mMainFrame.SetEvent(NULL);
-		mRender.Finalize();
+		Render.Finalize();
+
+		KDxApp::Finalize();
 	}
 protected:
-	virtual BOOL OnWndProc(KWndFrame* wndFrame, UINT msg, WPARAM wparam, LPARAM lparam, HRESULT& ret)
+	BOOL OnWndProc(KWndFrame* wndFrame, UINT msg, WPARAM wparam, LPARAM lparam, HRESULT& ret)
 	{
 		if (msg == WM_RBUTTONDOWN)
 		{
-			mRender.SetFullScreen(!mRender.IsFullScreen());
+			Render.SetFullScreen(!Render.IsFullScreen());
 		}
 		return FALSE;
 	}
-	virtual void DoIdle(BOOL& isDone)
-	{
-		if (KGetTickCount() - mTick > 20)
-		{
-			mTick = KGetTickCount();
-			DoPaint();
-		}
-		KMsgLooper::DoIdle(isDone);
-	}
-	void DoPaint()
-	{
-		BeginTimeCounter();
-		if (mRender.BeginPaint())
-		{
-// 			mRender.DrawLine(10, 10, 100, 10, D3DCOLOR_ARGB(255, 100, 100, 0));
-// 			mRender.DrawLine(10, 20, 100, 20, D3DCOLOR_ARGB(255, 100, 100, 0));
-// 			mRender.DrawLine(10, 30, 100, 30, D3DCOLOR_ARGB(255, 100, 100, 0));
-// 			//mRender.DrawRect(120, 120, 300, 300, D3DCOLOR_ARGB(255, 100, 100, 0));
-// 			mRender.DrawRect(150, 150, 320, 320, D3DCOLOR_ARGB(255, 100, 100, 0));
-// 			mRender.DrawRect(140, 140, 340, 350, D3DCOLOR_ARGB(255, 100, 100, 0));
-// 			mRender.DrawRect(120, 120, 330, 330, D3DCOLOR_ARGB(255, 100, 100, 0));
-			
-			//mRender.FillRect(120, 120, 500, 400, D3DCOLOR_ARGB(125, 200, 200, 0));
 
-			mRender.FillGradienRect(120, 120, 300, 300, 
+	void RenderFrame()
+	{
+		KTRACE(L"FPS: %d", mFPS);
+		if (Render.BeginPaint())
+		{
+			Render.DrawLine(10, 10, 100, 10, D3DCOLOR_ARGB(255, 100, 100, 0));
+			Render.DrawLine(10, 20, 100, 20, D3DCOLOR_ARGB(255, 100, 100, 0));
+			Render.DrawLine(10, 30, 100, 30, D3DCOLOR_ARGB(255, 100, 100, 0));
+			//Render.DrawRect(120, 120, 300, 300, D3DCOLOR_ARGB(255, 100, 100, 0));
+			Render.DrawRect(150, 150, 320, 320, D3DCOLOR_ARGB(255, 100, 100, 0));
+			Render.DrawRect(140, 140, 340, 350, D3DCOLOR_ARGB(255, 100, 100, 0));
+			Render.DrawRect(120, 120, 330, 330, D3DCOLOR_ARGB(255, 100, 100, 0));
+			
+			//Render.FillRect(120, 120, 500, 400, D3DCOLOR_ARGB(125, 200, 200, 0));
+
+			Render.FillGradienRect(120, 120, 300, 300, 
 				D3DCOLOR_ARGB(125, 120, 120, 0), D3DCOLOR_ARGB(200, 255, 255, 0), TRUE);
-			mRender.DrawRect(120, 120, 300, 300, D3DCOLOR_ARGB(255, 150, 0, 150), 4);
+			Render.DrawRect(120, 120, 300, 300, D3DCOLOR_ARGB(255, 150, 0, 150), 4);
 
 			kama::POINTF pts[4] = {{15, 16}, {180, 19}, {390, 290}, {100, 200}};
-			mRender.FillPolygon(pts, 4, D3DCOLOR_ARGB(255, 150, 0, 150));
-			mRender.DrawPolygon(pts, 4, 0xFF000000, TRUE);
+			Render.FillPolygon(pts, 4, D3DCOLOR_ARGB(255, 150, 0, 150));
+			Render.DrawPolygon(pts, 4, 0xFF000000, TRUE);
 
-			mRender.DrawTriangle(150, 19, 340, 290, 80, 200, 0xFF000000);
+			Render.DrawTriangle(150, 19, 340, 290, 80, 200, 0xFF000000);
 
- 			mRender.FillEllipse(400, 10, 700, 250, 0xFFFF0000);
- 			mRender.DrawEllipse(400, 10, 700, 250, 0xFF000000);
+ 			Render.FillEllipse(400, 10, 700, 250, 0xFFFF0000);
+ 			Render.DrawEllipse(400, 10, 700, 250, 0xFF000000);
 
-			mRender.DrawRoundRect(400, 300, 600, 500, 30, 30, 0xFF000000);
+			Render.DrawRoundRect(400, 300, 600, 500, 30, 30, 0xFF000000);
 
-// 			mRender.Draw(130, 130, &mTexture);
-// 
-// 			mRender.StretchDraw(200, 210, 100, 140, &mTexture);
+			for (int i = 0; i < 15; i++)
+				for (int j = 0; j < 7; j++)
+				{
+					Render.Draw(60 * i, 71 * j, &mTexture);
+				}
+			Render.StretchDraw(200, 210, 100, 140, &mTexture);
 		}
-		mRender.EndPaint();
-		double time = EndTimeCounter();
-		KTRACE(L"time: %f", time);
+		Render.EndPaint();
+	}
+	virtual KDxMainFrame* MainFrame()
+	{
+		return &mMainFrame;
 	}
 private:
-	KMainFrame mMainFrame;	
-	DWORD mTick;
+	KDxMainFrame mMainFrame;	
 	KDxTexture mTexture;
-	KDxRender mRender;
+	KDxRender Render;
 	KD3DTexture9Ptr	mFontTex;
 };
 

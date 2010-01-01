@@ -517,6 +517,94 @@ private:
 	D3DFORMAT			mFormat;
 };
 
+/*
+	Dx主窗口类
+*/
+class KDxMainFrame: public KMainFrame
+{
+public:
+	KDxMainFrame(): mActive(FALSE)
+	{
+
+	}
+
+	/*
+		是否是激活状态
+	*/
+	BOOL IsActive();
+
+protected:
+	virtual BOOL WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam, LRESULT& ret);
+
+private:
+	BOOL mActive;		// 是否是激活状态
+};
+
+/*
+	Dx应用程序类，该类提供适合于Dx的消息循环方式，并提供FPS等信息
+*/
+class KDxApp: public KMsgLooper
+{
+public:
+	KDxApp(): 
+		mFPSCount(0),
+		mFPS(0),
+		mFrameTime(10)
+	{}
+	virtual ~KDxApp()
+	{}
+
+	/*
+		初始化，在这里初始化主窗口类和渲染器
+	*/
+	virtual void Initialize();
+
+	/*
+		结束
+	*/
+	virtual void Finalize();
+
+	/*
+		每秒运行几帧
+	*/
+	DWORD FPS()
+	{
+		return mFPS;
+	}
+
+protected:
+	/*
+		Idle处理
+	*/
+	virtual void Idle();
+
+	/*
+		更新，子类处理
+	*/
+	virtual void UpdateFrame()
+	{
+	}
+
+	/*
+		绘制，子类处理
+	*/
+	virtual void RenderFrame()
+	{
+	}
+
+	/*
+		子类必须返回主窗口类
+	*/
+	virtual KDxMainFrame* MainFrame() = 0;
+
+protected:
+	DWORD			mLastTick;				// 上一帧时间
+	DWORD			mFrameTime;				// 帧间隔
+	DWORD			mFPS;					// 每秒渲染的帧数
+	DWORD			mLastSecTick;			// 上一秒的Tick
+	DWORD			mFPSCount;				// 帧计数器
+};
+
 //////////////////////////////////////////////////////////////////////////
 // implement
 
@@ -873,10 +961,9 @@ inline void KDxRender::ResetPresentParams()
 			}
 		}
 		mPresentParams.BackBufferFormat = format;
-
-		mPresentParams.PresentationInterval = mIsVSync ? 
-			D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
 	}
+	mPresentParams.PresentationInterval = mIsVSync ? 
+		D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
 
 	// 多重采样支持
 	if (SUCCEEDED(mDirect3D9->CheckDeviceMultiSampleType(
@@ -1678,6 +1765,74 @@ inline void KDxTexture::UnLock()
 inline IDirect3DTexture9* KDxTexture::D3DTexture()
 {
 	return mTexture;
+}
+
+//------------------------------------------------------------------------------
+// KDxApp
+
+inline void KDxApp::Initialize()
+{
+	mLastTick = KGetTickCount();
+	mLastSecTick = mLastTick;
+	timeBeginPeriod(1);
+}
+
+inline void KDxApp::Finalize()
+{
+	timeEndPeriod(1);
+}
+
+inline void KDxApp::Idle()
+{
+	KDxMainFrame* mainFrame = MainFrame();
+	if (!mainFrame || !mainFrame->IsActive())
+	{
+		Sleep(1);
+		return;
+	}
+	
+	DWORD tick = KGetTickCount();
+	if (tick - mLastTick >= mFrameTime)
+	{
+		mLastTick = tick;
+		if (mLastTick - mLastSecTick <= 1000)
+		{
+			++mFPSCount;
+		}
+		else
+		{
+			// 更新FPS
+			mFPS = mFPSCount;
+			mFPSCount = 0;
+			mLastSecTick = mLastTick;
+		}
+
+		// 更新与绘制
+		UpdateFrame();
+		RenderFrame();
+	}
+	else
+	{
+		Sleep(1);
+	}
+}
+
+//------------------------------------------------------------------------------
+// KDxMainFrame
+
+inline BOOL KDxMainFrame::WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam, LRESULT& ret)
+{
+	if (msg == WM_ACTIVATEAPP)
+	{
+		mActive	= (wparam == 1);
+	}
+
+	return KMainFrame::WndProc(hwnd, msg, wparam, lparam, ret);
+}
+
+inline BOOL KDxMainFrame::IsActive()
+{
+	return mActive;
 }
 
 }
