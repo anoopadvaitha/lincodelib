@@ -61,6 +61,7 @@ typedef KIntfPtr<IDirect3DTexture9> KD3DTexture9Ptr;
 */
 enum KDxBlendMode
 {
+	bmNone,
 	bmAlpha,
 	bmAdd,
 	bmSrcAlpha,
@@ -90,7 +91,32 @@ struct POINTF
 #define DX_RAD  ((FLOAT)0.017453293f)
 
 
+class KDxRender;
 class KDxTexture;
+
+/*
+	设备通知类型
+*/
+enum KDxNotifyType
+{
+	ntDeviceInit,		 // 设备初始化完
+	ntDeviceLost,		 // 设备丢失
+	ntDeviceReset,		 // 设备重置
+	ntDeviceTerm		 // 设备终止
+};
+
+/*
+	渲染器通知接口
+*/
+class IDxNotify
+{
+public:
+	/*
+		设备通知
+	*/
+	virtual void OnDeviceNotify(KDxRender* render, KDxNotifyType type)
+	{}
+};
 
 /*
 	Dx渲染器
@@ -98,6 +124,7 @@ class KDxTexture;
 class KDxRender
 {
 	typedef std::vector<D3DDISPLAYMODE> KDispModeVector;
+	typedef std::vector<IDxNotify*> KDxNotifyVector;
 public:
 	//------------------------------------------------------------------------------
 	// 初始化和结束处理
@@ -121,7 +148,7 @@ public:
 		mVtxOffset(0),
 		mCurPrimType(0),
 		mVtxNum(0),
-		mCurBlendMode(bmAlpha),
+		mCurBlendMode(bmNone),
 		mCurTexture(NULL)
 	{
 		IDirect3D9* d3d9 = Direct3DCreate9(D3D_SDK_VERSION);
@@ -143,6 +170,21 @@ public:
 		结束，清理D3D
 	*/
 	void Finalize();
+
+	/*
+		增加通知接口
+	*/
+	void AddNotify(IDxNotify* notify);
+
+	/*
+		删除通知接口
+	*/
+	void DelNotify(IDxNotify* notify);
+
+	/*
+		通知
+	*/
+	void DoNotify(KDxNotifyType type);
 
 	//------------------------------------------------------------------------------
 	// 属性设置
@@ -273,18 +315,21 @@ public:
 
 	/*
 		创建纹理
+		由外部手动delete纹理类
 	*/
-	BOOL NewTexture(int width, int height, D3DFORMAT format, KDxTexture* tex);
+	KDxTexture* NewTexture(int width, int height, D3DFORMAT format);
 
 	/*
 		通过图片文件创建纹理，支持：.bmp, .dds, .dib, .hdr, .jpg, .pfm, .png, .ppm, .tga.
+		由外部手动delete纹理类
 	*/
-	BOOL NewTextureFormFile(LPCWSTR imgFile, KDxTexture* tex, D3DFORMAT format = D3DFMT_UNKNOWN, D3DCOLOR colorKey = 0xFF000000);
+	KDxTexture* NewTextureFormFile(LPCWSTR imgFile, D3DFORMAT format = D3DFMT_UNKNOWN, D3DCOLOR colorKey = 0xFF000000);
 
 	/*
 		通过图片数据创建纹理，支持：.bmp, .dds, .dib, .hdr, .jpg, .pfm, .png, .ppm, .tga.
+		由外部手动delete纹理类
 	*/
-	BOOL NewTextureFormData(void* imgData, DWORD size, KDxTexture* tex, D3DFORMAT format = D3DFMT_UNKNOWN, D3DCOLOR colorKey = 0xFF000000);
+	KDxTexture* NewTextureFormData(void* imgData, DWORD size, D3DFORMAT format = D3DFMT_UNKNOWN, D3DCOLOR colorKey = 0xFF000000);
 
 	//------------------------------------------------------------------------------
 	// 绘制
@@ -444,7 +489,6 @@ public:
 	KDispModeVector			mDispModeVector;	// 显示模式列表
 	KDirect3D9Ptr			mDirect3D9;			// D3D9接口
 	KD3DDevice9Ptr			mDevice9;			// D3D设备
-	KD3DSurface9Ptr			mScreenTarget;		// 当前屏幕目标
 	D3DCAPS9				mDeviceCaps;		// 设备兼容性
 	D3DPRESENT_PARAMETERS	mPresentParams;		// 显示参数
 	D3DFORMAT				mWndFormat;			// 窗口模式下的格式
@@ -457,6 +501,9 @@ public:
 	UINT					mVtxNum;			// 顶点数量
 	KDxBlendMode			mCurBlendMode;		// 当前绘制效果
 	KDxTexture*				mCurTexture;		// 纹理类
+	RECT					mWndRect;			// 窗口尺寸
+	BOOL					mIsTopMost;			// 是否置顶
+	KDxNotifyVector			mNotifyVector;		// 通知列表
 };
 
 /*
@@ -469,30 +516,42 @@ public:
 	KDxTexture(): 
 		mFormat(D3DFMT_UNKNOWN),
 		mWidth(0),
-		mHeight(0)
+		mHeight(0),
+		mRealWidth(0),
+		mRealHeight(0)
 	{
 
 	}
 		
-	/*
-		高
-	*/
-	int Width();
+	int Width()
+	{
+		return mWidth;
+	}
 	
-	/*
-		宽
-	*/
-	int Height();
+	int Height()
+	{
+		return mHeight;
+	}
 
-	/*
-		格式
-	*/
-	D3DFORMAT Format();
+	int RealWidth()
+	{
+		return mRealWidth;
+	}
+
+	int RealHeight()
+	{
+		return mRealHeight;
+	}
+
+	D3DFORMAT Format()
+	{
+		return mFormat;
+	}
 
 	/*
 		锁定
 	*/
-	BOOL Lock(D3DLOCKED_RECT& lockRect, BOOL isReadOnly = FALSE, int left = 0, int top = 0, int width = 0, int height = 0);
+	void* Lock(int* ptrPitch, BOOL isReadOnly = FALSE);
 
 	/*
 		解锁
@@ -508,13 +567,15 @@ protected:
 	/*
 		挂接接口，只给Render使用
 	*/
-	void Attach(IDirect3DTexture9* tex);
+	void Attach(IDirect3DTexture9* tex, int readWidth, int readHeight);
 
 private:
-	KD3DTexture9Ptr		mTexture;
-	int					mWidth;
-	int					mHeight;
-	D3DFORMAT			mFormat;
+	KD3DTexture9Ptr		mTexture;			// 纹理接口
+	int					mWidth;				// 高
+	int					mHeight;			// 宽
+	int					mRealWidth;			// 实际高
+	int					mRealHeight;		// 实际宽
+	D3DFORMAT			mFormat;			// 格式
 };
 
 /*
@@ -525,7 +586,6 @@ class KDxMainFrame: public KMainFrame
 public:
 	KDxMainFrame(): mActive(FALSE)
 	{
-
 	}
 
 	/*
@@ -537,7 +597,7 @@ protected:
 	virtual BOOL WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam, LRESULT& ret);
 
 private:
-	BOOL mActive;		// 是否是激活状态
+	BOOL mActive;
 };
 
 /*
@@ -546,13 +606,8 @@ private:
 class KDxApp: public KMsgLooper
 {
 public:
-	KDxApp(): 
-		mFPSCount(0),
-		mFPS(0),
-		mFrameTime(10)
-	{}
-	virtual ~KDxApp()
-	{}
+	KDxApp(): mFPSCount(0), mFPS(0), mFrameTime(10), mRunAlways(FALSE) {}
+	virtual ~KDxApp() {}
 
 	/*
 		初始化，在这里初始化主窗口类和渲染器
@@ -581,16 +636,12 @@ protected:
 	/*
 		更新，子类处理
 	*/
-	virtual void UpdateFrame()
-	{
-	}
+	virtual void UpdateFrame(){}
 
 	/*
 		绘制，子类处理
 	*/
-	virtual void RenderFrame()
-	{
-	}
+	virtual void RenderFrame(){}
 
 	/*
 		子类必须返回主窗口类
@@ -603,6 +654,7 @@ protected:
 	DWORD			mFPS;					// 每秒渲染的帧数
 	DWORD			mLastSecTick;			// 上一秒的Tick
 	DWORD			mFPSCount;				// 帧计数器
+	BOOL			mRunAlways;				// 总是运行，不管窗口是否非激活
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -666,8 +718,27 @@ inline BOOL KDxRender::SetFullScreen(BOOL isFullScreen)
 {
 	if (isFullScreen != mIsFullScreen)
 	{
+		// 从窗口化到全屏切换时，保存窗口是否置顶，以及位置
+		if (mHwnd && !mIsFullScreen)
+		{
+			mIsTopMost = HAS_FLAG(GetWindowLongW(mHwnd, GWL_EXSTYLE), WS_EX_TOPMOST);
+			GetWindowRect(mHwnd, &mWndRect);
+		}
+
 		mIsFullScreen = isFullScreen;
-		return ResetDevice();
+		BOOL ret = ResetDevice();
+		
+		// D3D有一个BUG，从全屏到窗口化时，窗口变为置顶
+		// 从全屏到窗口化切换时，恢复窗口置顶，以及位置
+		if (mHwnd && !mIsFullScreen)
+		{
+			SetWindowPos(mHwnd, mIsTopMost ? HWND_TOPMOST : HWND_NOTOPMOST, 
+				mWndRect.left, mWndRect.top, 
+				mWndRect.right - mWndRect.left, 
+				mWndRect.bottom - mWndRect.top, 
+				SWP_NOACTIVATE);
+		}
+		return ret;
 	}
 	return TRUE;
 }
@@ -885,13 +956,16 @@ inline BOOL KDxRender::Initialize()
 
 	// 重置渲染状态
 	ResetRenderState();
-
 	mInited = TRUE;
+
+	DoNotify(ntDeviceInit);
+
 	return TRUE;
 }
 
 inline void KDxRender::Finalize()
 {
+	DoNotify(ntDeviceTerm);
 	mVertexBuf.Release();
 	mVertexBuf.Release();
 	mDevice9.Release();
@@ -994,10 +1068,6 @@ inline void KDxRender::ResetResource()
 	}
 	mDevice9->SetFVF(FVF_DXVERTEX);
 	mDevice9->SetStreamSource(0, mVertexBuf, 0, sizeof(KDxVertex));
-
-	// 当前渲染目标
-	mScreenTarget.Release();
-	mDevice9->GetRenderTarget(0, &mScreenTarget);
 }
 
 inline void KDxRender::ResetRenderState()
@@ -1014,17 +1084,22 @@ inline void KDxRender::ResetRenderState()
 	mDevice9->SetRenderState(D3DRS_ALPHAFUNC,D3DCMP_GREATEREQUAL);
 	
 	// Alpha混合
-	mDevice9->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-	mDevice9->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-	mDevice9->SetRenderState(D3DRS_DESTBLEND,D3DBLEND_INVSRCALPHA);
+	mCurBlendMode = bmNone;
+	mDevice9->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+	mDevice9->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
+	mDevice9->SetRenderState(D3DRS_DESTBLEND,D3DBLEND_ZERO);
 	
-	// 纹理混合: TODO
+	// 纹理混合
 	mDevice9->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
 	mDevice9->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
 	mDevice9->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
-	mDevice9->SetTextureStageState(0,D3DTSS_ALPHAOP,  D3DTOP_MODULATE);
+	mDevice9->SetTextureStageState(0,D3DTSS_ALPHAOP,  D3DTOP_SELECTARG1);
 	mDevice9->SetTextureStageState(0,D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
-	mDevice9->SetTextureStageState(0,D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
+	for (DWORD i = 1; i < mDeviceCaps.MaxTextureBlendStages; ++i)
+	{
+		mDevice9->SetTextureStageState(i, D3DTSS_COLOROP, D3DTOP_DISABLE);
+		mDevice9->SetTextureStageState(i, D3DTSS_ALPHAOP, D3DTOP_DISABLE);
+	}
 
 	// 纹理平滑
 	if (mIsTexFilter)
@@ -1037,7 +1112,6 @@ inline void KDxRender::ResetRenderState()
 		mDevice9->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
 		mDevice9->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
 	}
-
 	if (mIsSmooth)
 		mDevice9->SetRenderState(D3DRS_MULTISAMPLEANTIALIAS, TRUE);
 	else
@@ -1048,13 +1122,14 @@ inline void KDxRender::DoDeviceLost()
 {
 	// 设备丢失，释放资源
 	mVertexBuf.Release();
-	mScreenTarget.Release();
+	DoNotify(ntDeviceLost);
 }
 
 inline void KDxRender::DoDeviceReset()
 {
 	// 设备恢复时，要重建资源
 	ResetResource();
+	DoNotify(ntDeviceReset);
 }
 
 inline BOOL KDxRender::BeginPaint()
@@ -1284,10 +1359,19 @@ inline void KDxRender::SetBlendMode(KDxBlendMode blendMode)
 	mCurBlendMode = blendMode;
 	switch (mCurBlendMode)
 	{
+	case bmNone:
+		{
+			mDevice9->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+			mDevice9->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
+			mDevice9->SetRenderState(D3DRS_DESTBLEND,D3DBLEND_ZERO);
+			break;
+		}
 	case bmAlpha:
 		{
+			mDevice9->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
 			mDevice9->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
 			mDevice9->SetRenderState(D3DRS_DESTBLEND,D3DBLEND_INVSRCALPHA);
+			break;
 		}
 	}
 }
@@ -1555,10 +1639,10 @@ inline void KDxRender::Draw(FLOAT x, FLOAT y, KDxTexture* tex)
 	if ((mCurPrimType != D3DPT_TRIANGLELIST) || 
 		(mVtxOffset + mVtxNum + 6 > VERTEX_BUF_SIZE) ||
 		(mCurTexture != tex) || 
-		(mCurBlendMode != bmAlpha))
+		(mCurBlendMode != bmNone))
 	{
 		BatchPaint(6);
-		SetBlendMode(bmAlpha);
+		SetBlendMode(bmNone);
 		mCurPrimType = D3DPT_TRIANGLELIST;
 		if (mCurTexture != tex)
 		{
@@ -1573,14 +1657,16 @@ inline void KDxRender::Draw(FLOAT x, FLOAT y, KDxTexture* tex)
 	D3DCOLOR color = 0xFFFFFFFF;
 	FLOAT left = x;
 	FLOAT top = y;
-	FLOAT right = left + tex->Width();
-	FLOAT bottom = top + tex->Height();
+	FLOAT right = left + tex->RealWidth();
+	FLOAT bottom = top + tex->RealHeight();
+	FLOAT u = 1; //FLOAT(tex->RealWidth()) / FLOAT(tex->Width());
+	FLOAT v = 1; //FLOAT(tex->RealHeight()) / FLOAT(tex->Height());
 	AddVertex(left, top, color, 0, 0);
-	AddVertex(right, bottom, color, 1, 1);
-	AddVertex(left, bottom, color, 0, 1);
+	AddVertex(right, bottom, color, u, v);
+	AddVertex(left, bottom, color, 0, v);
 	AddVertex(left, top, color, 0, 0);
-	AddVertex(right, top, color, 1, 0);
-	AddVertex(right, bottom, color, 1, 1);
+	AddVertex(right, top, color, u, 0);
+	AddVertex(right, bottom, color, u, v);
 	mPrimCount += 2;
 }
 
@@ -1630,7 +1716,7 @@ inline BOOL KDxRender::TexFormatAvailable(D3DFORMAT format)
 
 }
 
-inline BOOL KDxRender::NewTexture(int width, int height,D3DFORMAT format, KDxTexture* tex)
+inline KDxTexture* KDxRender::NewTexture(int width, int height,D3DFORMAT format)
 {
 	KASSERT(mInited);
 	if (!TexFormatAvailable(format))
@@ -1645,114 +1731,129 @@ inline BOOL KDxRender::NewTexture(int width, int height,D3DFORMAT format, KDxTex
 	if (FAILED(hr))
 		return FALSE;
 
-	tex->Attach(texPtr);
-	return TRUE;
+	KDxTexture* Texture = new KDxTexture;
+	Texture->Attach(texPtr, width, height);
+	return Texture;
 }
 
-inline BOOL KDxRender::NewTextureFormFile(LPCWSTR imgFile, KDxTexture* tex, 
-	D3DFORMAT format, D3DCOLOR colorKey)
+inline KDxTexture* KDxRender::NewTextureFormFile(LPCWSTR imgFile, D3DFORMAT format, D3DCOLOR colorKey)
 {
 	KASSERT(mInited);
 
 	IDirect3DTexture9* texPtr;
+	D3DXIMAGE_INFO info;
 	HRESULT hr = D3DXCreateTextureFromFileExW(
 		mDevice9, imgFile,
-		D3DX_DEFAULT_NONPOW2, D3DX_DEFAULT_NONPOW2, 
+		D3DX_DEFAULT, D3DX_DEFAULT, 
 		1, 0, format, D3DPOOL_MANAGED, 
 		D3DX_DEFAULT, D3DX_DEFAULT, 
-		colorKey, NULL, NULL,
+		colorKey, 
+		&info, 
+		NULL,
 		&texPtr);
 	if (FAILED(hr))
 		return FALSE;
 
-	tex->Attach(texPtr);
-	return TRUE;
+	KDxTexture* Texture = new KDxTexture;
+	Texture->Attach(texPtr, info.Width, info.Height);
+	return Texture;
 }
 
-inline BOOL KDxRender::NewTextureFormData(void* imgData, DWORD size, KDxTexture* tex, 
-	D3DFORMAT format, D3DCOLOR colorKey)
+inline KDxTexture* KDxRender::NewTextureFormData(void* imgData, DWORD size, D3DFORMAT format, D3DCOLOR colorKey)
 {
 	KASSERT(mInited);
 
 	IDirect3DTexture9* texPtr;
+	D3DXIMAGE_INFO info;
 	HRESULT hr = D3DXCreateTextureFromFileInMemoryEx(
 		mDevice9, imgData, size, 
-		D3DX_DEFAULT_NONPOW2, D3DX_DEFAULT_NONPOW2, 
+		D3DX_DEFAULT, D3DX_DEFAULT, 
 		1, 0, format, D3DPOOL_MANAGED, 
 		D3DX_DEFAULT, D3DX_DEFAULT, 
-		colorKey, NULL, NULL,
+		colorKey, 
+		&info, 
+		NULL,
 		&texPtr);
 	if (FAILED(hr))
 		return FALSE;
 
-	tex->Attach(texPtr);
-	return TRUE;
+	KDxTexture* Texture = new KDxTexture;
+	Texture->Attach(texPtr, info.Width, info.Height);
+	return Texture;
+}
+
+inline void KDxRender::AddNotify(IDxNotify* notify)
+{
+	KDxNotifyVector::iterator itr = std::find(mNotifyVector.begin(), mNotifyVector.end(), notify);
+	if (itr == mNotifyVector.end())
+		mNotifyVector.push_back(notify);
+}
+
+inline void KDxRender::DelNotify(IDxNotify* notify)
+{
+	KDxNotifyVector::iterator itr = std::find(mNotifyVector.begin(), mNotifyVector.end(), notify);
+	if (itr != mNotifyVector.end())
+		mNotifyVector.erase(itr);
+}
+
+inline void KDxRender::DoNotify(KDxNotifyType type)
+{
+	KDxNotifyVector::iterator itr = mNotifyVector.begin();
+	IDxNotify* notify;
+	while (itr != mNotifyVector.end())
+	{
+		notify = *itr;
+		itr++;
+		notify->OnDeviceNotify(this, type);
+	}
 }
 
 //------------------------------------------------------------------------------
 // KDxTexture
 
-inline void KDxTexture::Attach(IDirect3DTexture9* tex)
+inline void KDxTexture::Attach(IDirect3DTexture9* tex, int readWidth, int readHeight)
 {
 	mTexture.Release();
 	mTexture.Attach(tex);
 	if (mTexture)
 	{
+		mRealHeight = readHeight;
+		mRealWidth = readWidth;
 		D3DSURFACE_DESC desc;
 		if (SUCCEEDED(mTexture->GetLevelDesc(0, &desc)))
 		{
 			mWidth = desc.Width;
 			mHeight = desc.Height;
 			mFormat = desc.Format;
-			return;
 		}
 	}
-
-	mWidth = 0;
-	mHeight = 0;
-	mFormat = D3DFMT_UNKNOWN;
+	else
+	{
+		mRealHeight = 0;
+		mRealWidth = 0;
+		mWidth = 0;
+		mHeight = 0;
+		mFormat = D3DFMT_UNKNOWN;
+	}
 }
 
-inline int KDxTexture::Height()
-{
-	return mHeight;
-}
-
-inline int KDxTexture::Width()
-{
-	return mWidth;
-}
-
-inline D3DFORMAT KDxTexture::Format()
-{
-	return mFormat;
-}
-
-inline BOOL KDxTexture::Lock(D3DLOCKED_RECT& lockRect, BOOL isReadOnly /* = FALSE */, 
-	int left /* = 0 */, int top /* = 0 */, int width /* = 0 */, int height /* = 0 */)
+inline void* KDxTexture::Lock(int* ptrPitch, BOOL isReadOnly)
 {
 	if (!mTexture)
 		return NULL;
 
-	RECT rc;
-	PRECT prc = NULL;
-	if (width && height)
-	{
-		 rc.left = left;
-		 rc.top = top;
-		 rc.right = left + width;
-		 rc.bottom = top + height;
-		 prc = &rc;
-	}
-
 	DWORD flag = 0;
-	if (isReadOnly)
+	if (isReadOnly) 
 		flag = D3DLOCK_READONLY;
-
-	if (SUCCEEDED(mTexture->LockRect(0, &lockRect, prc, flag)))
-		return TRUE;
+	D3DLOCKED_RECT lockRect;
+	if (SUCCEEDED(mTexture->LockRect(0, &lockRect, NULL, flag)))
+	{
+		if (ptrPitch)
+			*ptrPitch = lockRect.Pitch;
+		return lockRect.pBits;
+	}
 	else
-		return FALSE;
+		return NULL;
 }
 
 inline void KDxTexture::UnLock()
@@ -1785,7 +1886,7 @@ inline void KDxApp::Finalize()
 inline void KDxApp::Idle()
 {
 	KDxMainFrame* mainFrame = MainFrame();
-	if (!mainFrame || !mainFrame->IsActive())
+	if (!mainFrame || (!mainFrame->IsActive() && !mRunAlways))
 	{
 		Sleep(1);
 		return;
@@ -1802,7 +1903,7 @@ inline void KDxApp::Idle()
 		else
 		{
 			// 更新FPS
-			mFPS = mFPSCount;
+			mFPS = mFPSCount * 1000 / (mLastTick - mLastSecTick);
 			mFPSCount = 0;
 			mLastSecTick = mLastTick;
 		}

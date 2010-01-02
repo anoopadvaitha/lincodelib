@@ -12,12 +12,12 @@ class KTestApp: public KDxApp, public IWndFrameEvent
 public:
 	virtual void Initialize()
 	{
-		mFrameTime = 0;
+		mFrameTime = 10;
 		mMainFrame.SetEvent(this);
 		mMainFrame.Create();
 		mMainFrame.AlignWindow();
 		mMainFrame.Show();
-		Render.SetBkColor(0xFFFFFFFF);
+		//Render.SetBkColor(0xFFFFFFFF);
 		Render.SetSize(mMainFrame.Width(), mMainFrame.Height());
 		Render.SetWindow(mMainFrame.Handle());
 		Render.SetFullScreen(FALSE);
@@ -25,8 +25,8 @@ public:
 		Render.SetVerticalSync(FALSE);
 		Render.Initialize();
 
-		kstring path = gAppPath + "Hum_000097.bmp";
-		Render.NewTextureFormFile(path, &mTexture);
+		kstring path = gAppPath + L"fig6.bmp";
+		mTexture = Render.NewTextureFormFile(path, D3DFMT_UNKNOWN, 0);
 		KDxApp::Initialize();
 	}
 
@@ -34,6 +34,7 @@ public:
 	{
 		mMainFrame.SetEvent(NULL);
 		Render.Finalize();
+		delete mTexture;
 
 		KDxApp::Finalize();
 	}
@@ -77,12 +78,14 @@ protected:
 
 			Render.DrawRoundRect(400, 300, 600, 500, 30, 30, 0xFF000000);
 
-			for (int i = 0; i < 15; i++)
-				for (int j = 0; j < 7; j++)
-				{
-					Render.Draw(60 * i, 71 * j, &mTexture);
-				}
-			Render.StretchDraw(200, 210, 100, 140, &mTexture);
+			Render.Draw(200, 210, mTexture);
+
+// 			for (int i = 0; i < 15; i++)
+// 				for (int j = 0; j < 7; j++)
+// 				{
+// 					Render.Draw(60 * i, 71 * j, &mTexture);
+// 				}
+// 			Render.StretchDraw(200, 210, 100, 140, &mTexture);
 		}
 		Render.EndPaint();
 	}
@@ -92,7 +95,7 @@ protected:
 	}
 private:
 	KDxMainFrame mMainFrame;	
-	KDxTexture mTexture;
+	KDxTexture* mTexture;
 	KDxRender Render;
 	KD3DTexture9Ptr	mFontTex;
 };
