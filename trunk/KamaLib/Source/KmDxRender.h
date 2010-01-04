@@ -63,14 +63,9 @@ enum KDxBlendMode
 {
 	bmNone,
 	bmAlpha,
-	bmMagic,
-	bmInvert,
 	bmSrcBright,
 	bmDestBright,
-	bmAlphaBright,
-	bmLight,
-	bmOneColor,
-	bmGrayScale,
+	bmShadow,
 };
 
 /*
@@ -550,6 +545,8 @@ public:
 	void StretchDraw(FLOAT x, FLOAT y, FLOAT w, FLOAT h, KDxTexture* tex, 
 		KDxBlendMode blendMode = bmNone, D3DCOLOR color = 0xFFFFFFFF);
 
+	// TODO(Tramper-2010/01/04): 旋转，画一部分，Mask纹理，待实现
+
 protected:
 	/*
 		重置设备
@@ -655,32 +652,32 @@ class KDxTexture
 public:
 	KDxTexture(): 
 		mFormat(D3DFMT_UNKNOWN),
-		mWidth(0),
-		mHeight(0),
-		mDesireWidth(0),
-		mDesireHeight(0)
+		mTexWidth(0),
+		mTexHeight(0),
+		mImgWidth(0),
+		mImgHeight(0)
 	{
 
 	}
 		
-	int Width()
+	int TexWidth()
 	{
-		return mWidth;
+		return mTexWidth;
 	}
 	
-	int Height()
+	int TexHeight()
 	{
-		return mHeight;
+		return mTexHeight;
 	}
 
-	int DesireWidth()
+	int ImgWidth()
 	{
-		return mDesireWidth;
+		return mImgWidth;
 	}
 
-	int DesireHeight()
+	int ImgHeight()
 	{
-		return mDesireHeight;
+		return mImgHeight;
 	}
 
 	D3DFORMAT Format()
@@ -708,19 +705,19 @@ public:
 		通过图片文件创建纹理
 	*/
 	BOOL LoadFromFile(KDxRender* render, LPCWSTR imgFile, 
-		D3DFORMAT format = D3DFMT_UNKNOWN, D3DCOLOR colorKey = 0xFF000000);
+		D3DFORMAT format = D3DFMT_UNKNOWN, D3DCOLOR colorKey = 0);
 
 	/*
 		通过图片数据创建纹理
 	*/
 	BOOL LoadFromData(KDxRender* render, void* imgData, DWORD size, 
-		D3DFORMAT format = D3DFMT_UNKNOWN, D3DCOLOR colorKey = 0xFF000000);
+		D3DFORMAT format = D3DFMT_UNKNOWN, D3DCOLOR colorKey = 0);
 
 	/*
 		通过资源创建纹理
 	*/
-	BOOL LoadFromRes(KDxRender* render, LPCWSTR res, 
-		D3DFORMAT format = D3DFMT_UNKNOWN, D3DCOLOR colorKey = 0xFF000000);
+	BOOL LoadFromRes(KDxRender* render, LPCWSTR res, HMODULE hres,
+		D3DFORMAT format = D3DFMT_UNKNOWN, D3DCOLOR colorKey = 0);
 
 	/*
 		锁定
@@ -742,10 +739,10 @@ protected:
 
 private:
 	KD3DTexture9Ptr		mTexture;			// 纹理接口
-	int					mWidth;				// 实际高
-	int					mHeight;			// 实际宽
-	int					mDesireWidth;		// 期望高
-	int					mDesireHeight;		// 期望宽
+	int					mTexWidth;			// 纹理高
+	int					mTexHeight;			// 纹理宽
+	int					mImgWidth;			// 图片高
+	int					mImgHeight;			// 图片宽
 	D3DFORMAT			mFormat;			// 格式
 };
 
@@ -1097,12 +1094,6 @@ inline void KDxRender::ResetRenderState()
 	// 不要光照
 	mDevice9->SetRenderState(D3DRS_LIGHTING, FALSE);
 	
-	// TODO(Tramper-2010/01/04): 通过性能测试确定需不需要
-	// 允许Alpha测试，提高效率
-	mDevice9->SetRenderState(D3DRS_ALPHATESTENABLE,TRUE);
-	mDevice9->SetRenderState(D3DRS_ALPHAREF, 1);
-	mDevice9->SetRenderState(D3DRS_ALPHAFUNC,D3DCMP_GREATEREQUAL);
-	
 	// Alpha混合
 	mCurBlendMode = bmNone;
 	mDevice9->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
@@ -1392,11 +1383,6 @@ inline void KDxRender::SetBlendMode(KDxBlendMode blendMode)
 	mDevice9->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
 	switch (mCurBlendMode)
 	{
-	case bmNone:
-		{
-			mDevice9->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
-			break;
-		}
 	case bmAlpha:
 		{
 			mDevice9->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
@@ -1404,57 +1390,32 @@ inline void KDxRender::SetBlendMode(KDxBlendMode blendMode)
 			mDevice9->SetRenderState(D3DRS_DESTBLEND,D3DBLEND_INVSRCALPHA);
 			break;
 		}
-	case bmMagic:
-		{
-			mDevice9->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-			mDevice9->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
-			mDevice9->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCCOLOR);
-			break;
-		}
-	case bmInvert:
-		{
-			mDevice9->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_INVDESTCOLOR);
-			mDevice9->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ZERO);
-			break;
-		}
 	case bmSrcBright:
 		{
+			mDevice9->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
 			mDevice9->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCCOLOR);
 			mDevice9->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_SRCCOLOR);
 			break;
 		}
 	case bmDestBright:
 		{
+			mDevice9->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
 			mDevice9->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_DESTCOLOR);
 			mDevice9->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_DESTCOLOR);
 			break;
 		}
-	case bmAlphaBright:
+	case bmShadow:
 		{
-			mDevice9->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+			mDevice9->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+			mDevice9->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ZERO);
 			mDevice9->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
-			mDevice9->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE2X);
 			break;
 		}
-	case bmLight:
-		{
-			mDevice9->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_DESTCOLOR);
-			mDevice9->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
-			mDevice9->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE2X);
-			break;
-		}
-	case bmOneColor:
-		{
-			mDevice9->SetRenderState(D3DRS_SRCBLEND,  D3DBLEND_SRCALPHA);
-			mDevice9->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
-			mDevice9->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MULTIPLYADD);;
-		}
-	case bmGrayScale:
+	default: //bmNone
 		{
 			mDevice9->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
-			mDevice9->SetRenderState(D3DRS_TEXTUREFACTOR, 0xFFFF9B9B);
-			mDevice9->SetTextureStageState(0, D3DTSS_COLOROP,D3DTOP_DOTPRODUCT3);
-			mDevice9->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_TFACTOR);
+			mDevice9->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
+			mDevice9->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ZERO);
 		}
 	}
 }
@@ -1740,10 +1701,10 @@ inline void KDxRender::Draw(FLOAT x, FLOAT y, KDxTexture* tex,
 	
 	FLOAT left = x;
 	FLOAT top = y;
-	FLOAT right = left + tex->DesireWidth();
-	FLOAT bottom = top + tex->DesireHeight();
-	FLOAT u = 1;
-	FLOAT v = 1;
+	FLOAT right = left + tex->ImgWidth();
+	FLOAT bottom = top + tex->ImgHeight();
+	FLOAT u = (FLOAT)tex->ImgWidth() / (FLOAT)tex->TexWidth();
+	FLOAT v = (FLOAT)tex->ImgHeight() / (float)tex->TexHeight();
 	AddVertex(left, top, color, 0, 0);
 	AddVertex(right, bottom, color, u, v);
 	AddVertex(left, bottom, color, 0, v);
@@ -1777,12 +1738,18 @@ inline void KDxRender::StretchDraw(FLOAT x, FLOAT y, FLOAT w, FLOAT h, KDxTextur
 		}
 	}
 
-	AddVertex(x, y, color, 0, 0);
-	AddVertex(x + w, y + h, color, 1, 1);
-	AddVertex(x, y + h, color, 0, 1);
-	AddVertex(x, y, color, 0, 0);
-	AddVertex(x + w, y, color, 1, 0);
-	AddVertex(x + w, y + h, color, 1, 1);
+	FLOAT left = x;
+	FLOAT top = y;
+	FLOAT right = left + w;
+	FLOAT bottom = top + h;
+	FLOAT u = (FLOAT)tex->ImgWidth() / (FLOAT)tex->TexWidth();
+	FLOAT v = (FLOAT)tex->ImgHeight() / (float)tex->TexHeight();
+	AddVertex(left, top, color, 0, 0);
+	AddVertex(right, bottom, color, u, v);
+	AddVertex(left, bottom, color, 0, v);
+	AddVertex(left, top, color, 0, 0);
+	AddVertex(right, top, color, u, 0);
+	AddVertex(right, bottom, color, u, v);
 	mPrimCount += 2;
 }
 
@@ -1868,21 +1835,21 @@ inline void KDxTexture::InitProp(IDirect3DTexture9* tex, int width, int height)
 {
 	if (!tex)
 	{
-		mHeight = 0;
-		mWidth = 0;
-		mDesireHeight = 0;
-		mDesireWidth = 0;
+		mTexHeight = 0;
+		mTexWidth = 0;
+		mImgHeight = 0;
+		mImgWidth = 0;
 		mFormat = D3DFMT_UNKNOWN;
 	}
 	else
 	{
-		mDesireWidth = width;
-		mDesireHeight = height;
+		mImgWidth = width;
+		mImgHeight = height;
 		D3DSURFACE_DESC desc;
 		if (SUCCEEDED(tex->GetLevelDesc(0, &desc)))
 		{
-			mWidth = desc.Width;
-			mHeight = desc.Height;
+			mTexWidth = desc.Width;
+			mTexHeight = desc.Height;
 			mFormat = desc.Format;
 		}
 	}
@@ -1912,7 +1879,7 @@ inline void KDxTexture::FreeTexture()
 }
 
 inline BOOL KDxTexture::LoadFromFile(KDxRender* render, LPCWSTR imgFile, 
-	D3DFORMAT format /* = D3DFMT_UNKNOWN */, D3DCOLOR colorKey /* = 0xFF000000 */)
+	D3DFORMAT format /* = D3DFMT_UNKNOWN */, D3DCOLOR colorKey /* = 0 */)
 {
 	KASSERT((render != NULL) && render->IsInited());
 
@@ -1921,7 +1888,7 @@ inline BOOL KDxTexture::LoadFromFile(KDxRender* render, LPCWSTR imgFile,
 		render->Device9(), imgFile,
 		D3DX_DEFAULT, D3DX_DEFAULT, 
 		1, 0, format, D3DPOOL_MANAGED, 
-		D3DX_DEFAULT, D3DX_DEFAULT, 
+		D3DX_FILTER_NONE, D3DX_DEFAULT, 
 		colorKey, 
 		&info, 
 		NULL,
@@ -1931,7 +1898,7 @@ inline BOOL KDxTexture::LoadFromFile(KDxRender* render, LPCWSTR imgFile,
 }
 
 inline BOOL KDxTexture::LoadFromData(KDxRender* render, void* imgData, DWORD size, 
-	D3DFORMAT format /* = D3DFMT_UNKNOWN */, D3DCOLOR colorKey /* = 0xFF000000 */)
+	D3DFORMAT format /* = D3DFMT_UNKNOWN */, D3DCOLOR colorKey /* = 0 */)
 {
 
 	KASSERT((render != NULL) && render->IsInited());
@@ -1940,7 +1907,25 @@ inline BOOL KDxTexture::LoadFromData(KDxRender* render, void* imgData, DWORD siz
 		render->Device9(), imgData, size,
 		D3DX_DEFAULT, D3DX_DEFAULT, 
 		1, 0, format, D3DPOOL_MANAGED, 
+		D3DX_FILTER_NONE, D3DX_DEFAULT, 
+		colorKey, 
+		&info, 
+		NULL,
+		&mTexture);
+	InitProp(mTexture, info.Width, info.Height);
+	return hr == S_OK;
+}
+
+inline BOOL KDxTexture::LoadFromRes(KDxRender* render, LPCWSTR res, HMODULE hres, 
+	D3DFORMAT format /* = D3DFMT_UNKNOWN */, D3DCOLOR colorKey /* = 0 */)
+{
+	KASSERT((render != NULL) && render->IsInited());
+	D3DXIMAGE_INFO info;
+	HRESULT hr = D3DXCreateTextureFromResourceExW(
+		render->Device9(), hres, res,
 		D3DX_DEFAULT, D3DX_DEFAULT, 
+		1, 0, format, D3DPOOL_MANAGED, 
+		D3DX_FILTER_NONE, D3DX_DEFAULT, 
 		colorKey, 
 		&info, 
 		NULL,
