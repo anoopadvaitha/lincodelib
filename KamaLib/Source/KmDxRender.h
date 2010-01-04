@@ -32,8 +32,8 @@ namespace kama
 */
 enum KDxBitDepth
 {
-	bd16,		// 一个像素16位
-	bd32		// 一个像素32位
+	bd16,		// 16位像素
+	bd32		// 32位像素
 };
 
 // 顶点格式
@@ -57,19 +57,20 @@ typedef KIntfPtr<IDirect3DSurface9> KD3DSurface9Ptr;
 typedef KIntfPtr<IDirect3DTexture9> KD3DTexture9Ptr;
 
 /*
-	绘制效果
+	混合效果
 */
 enum KDxBlendMode
 {
 	bmNone,
 	bmAlpha,
-	bmAdd,
-	bmSrcAlpha,
-	bmSrcAlphaAdd,
-	bmSrcColor,
-	bmSrcColorAdd,
+	bmMagic,
 	bmInvert,
 	bmSrcBright,
+	bmDestBright,
+	bmAlphaBright,
+	bmLight,
+	bmOneColor,
+	bmGrayScale,
 };
 
 /*
@@ -90,6 +91,15 @@ struct POINTF
 // 与1角度等价的弧度
 #define DX_RAD  ((FLOAT)0.017453293f)
 
+// 取A通道
+#define D3DCOLOR_A(color) (BYTE)(HIBYTE(HIWORD(color)))
+// 取R通道
+#define D3DCOLOR_R(color) (BYTE)(LOBYTE(HIWORD(color)))
+// 取G通道
+#define D3DCOLOR_G(color) (BYTE)(HIBYTE(LOWORD(color)))
+// 取B通道
+#define D3DCOLOR_B(color) (BYTE)(LOBYTE(LOWORD(color)))
+
 
 class KDxRender;
 class KDxTexture;
@@ -108,9 +118,8 @@ enum KDxNotifyType
 /*
 	渲染器通知接口
 */
-class IDxNotify
+interface IDxNotify
 {
-public:
 	/*
 		设备通知
 	*/
@@ -500,7 +509,8 @@ public:
 	/*
 		填充渐变矩形
 	*/
-	void FillGradienRect(FLOAT left, FLOAT top, FLOAT right, FLOAT bottom, D3DCOLOR color1, D3DCOLOR color2, BOOL isHoriz);
+	void FillGradienRect(FLOAT left, FLOAT top, FLOAT right, FLOAT bottom, 
+		D3DCOLOR color1, D3DCOLOR color2, BOOL isHoriz);
 
 	/*
 		画多边形, lpPoints为多边形的点数组，color为点数组的大小，isClosed指定是否闭包
@@ -525,17 +535,20 @@ public:
 	/*
 		画圆角矩形
 	*/
-	void DrawRoundRect(FLOAT left, FLOAT top, FLOAT right, FLOAT bottom, FLOAT width, FLOAT height, D3DCOLOR color);
+	void DrawRoundRect(FLOAT left, FLOAT top, FLOAT right, FLOAT bottom, 
+		FLOAT width, FLOAT height, D3DCOLOR color);
 
 	/*
 		画纹理
 	*/
-	void Draw(FLOAT x, FLOAT y, KDxTexture* tex, KDxBlendMode blendMode = bmNone);
+	void Draw(FLOAT x, FLOAT y, KDxTexture* tex, KDxBlendMode blendMode = bmNone, 
+		D3DCOLOR color = 0xFFFFFFFF);
 
 	/*
 		拉伸画纹理
 	*/
-	void StretchDraw(FLOAT x, FLOAT y, FLOAT w, FLOAT h, KDxTexture* tex, KDxBlendMode blendMode = bmNone);
+	void StretchDraw(FLOAT x, FLOAT y, FLOAT w, FLOAT h, KDxTexture* tex, 
+		KDxBlendMode blendMode = bmNone, D3DCOLOR color = 0xFFFFFFFF);
 
 protected:
 	/*
@@ -974,7 +987,6 @@ inline void KDxRender::Finalize()
 {
 	DoNotify(ntDeviceTerm);
 	mVertexBuf.Release();
-	mVertexBuf.Release();
 	mDevice9.Release();
 }
 
@@ -1085,6 +1097,7 @@ inline void KDxRender::ResetRenderState()
 	// 不要光照
 	mDevice9->SetRenderState(D3DRS_LIGHTING, FALSE);
 	
+	// TODO(Tramper-2010/01/04): 通过性能测试确定需不需要
 	// 允许Alpha测试，提高效率
 	mDevice9->SetRenderState(D3DRS_ALPHATESTENABLE,TRUE);
 	mDevice9->SetRenderState(D3DRS_ALPHAREF, 1);
@@ -1100,15 +1113,16 @@ inline void KDxRender::ResetRenderState()
 	mDevice9->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
 	mDevice9->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
 	mDevice9->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
-	mDevice9->SetTextureStageState(0,D3DTSS_ALPHAOP,  D3DTOP_SELECTARG1);
+	mDevice9->SetTextureStageState(0,D3DTSS_ALPHAOP,  D3DTOP_MODULATE);
 	mDevice9->SetTextureStageState(0,D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
+	mDevice9->SetTextureStageState(0,D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
 	for (DWORD i = 1; i < mDeviceCaps.MaxTextureBlendStages; ++i)
 	{
 		mDevice9->SetTextureStageState(i, D3DTSS_COLOROP, D3DTOP_DISABLE);
 		mDevice9->SetTextureStageState(i, D3DTSS_ALPHAOP, D3DTOP_DISABLE);
 	}
 
-	// 纹理平滑
+	// 纹理过滤
 	if (mIsTexFilter)
 	{
 		mDevice9->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
@@ -1119,6 +1133,8 @@ inline void KDxRender::ResetRenderState()
 		mDevice9->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
 		mDevice9->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
 	}
+
+	// 多重采样
 	if (mIsSmooth)
 		mDevice9->SetRenderState(D3DRS_MULTISAMPLEANTIALIAS, TRUE);
 	else
@@ -1219,13 +1235,14 @@ inline void KDxRender::DrawLine(FLOAT x1, FLOAT y1, FLOAT x2, FLOAT y2, D3DCOLOR
 	if (!mPtrVertex)
 		return;
 
+	KDxBlendMode blendMode = (D3DCOLOR_A(color) == 0xFF) ? bmNone : bmAlpha;
 	if ((mCurPrimType != D3DPT_LINELIST) || 
 		(mVtxOffset + mVtxNum + 2 > VERTEX_BUF_SIZE) ||
 		(mCurTexture != NULL) || 
-		(mCurBlendMode != bmAlpha))
+		(mCurBlendMode != blendMode))
 	{
 		BatchPaint(2);
-		SetBlendMode(bmAlpha);
+		SetBlendMode(blendMode);
 		mCurPrimType = D3DPT_LINELIST;
 		if (mCurTexture)
 		{
@@ -1250,13 +1267,14 @@ inline void KDxRender::FillTriangle(FLOAT x1, FLOAT y1, FLOAT x2, FLOAT y2, FLOA
 	if (!mPtrVertex)
 		return;
 
+	KDxBlendMode blendMode = (D3DCOLOR_A(color) == 0xFF) ? bmNone : bmAlpha;
 	if ((mCurPrimType != D3DPT_TRIANGLELIST) || 
 		(mVtxOffset + mVtxNum + 3 > VERTEX_BUF_SIZE) ||
 		(mCurTexture != NULL) || 
-		(mCurBlendMode != bmAlpha))
+		(mCurBlendMode != blendMode))
 	{
 		BatchPaint(3);
-		SetBlendMode(bmAlpha);
+		SetBlendMode(blendMode);
 		mCurPrimType = D3DPT_TRIANGLELIST;
 		if (mCurTexture)
 		{
@@ -1296,13 +1314,14 @@ inline void KDxRender::FillRect(FLOAT left, FLOAT top, FLOAT right, FLOAT bottom
 	if (!mPtrVertex)
 		return;
 
+	KDxBlendMode blendMode = (D3DCOLOR_A(color) == 0xFF) ? bmNone : bmAlpha;
 	if ((mCurPrimType != D3DPT_TRIANGLELIST) || 
 		(mVtxOffset + mVtxNum + 6 > VERTEX_BUF_SIZE) ||
 		(mCurTexture != NULL) || 
-		(mCurBlendMode != bmAlpha))
+		(mCurBlendMode != blendMode))
 	{
 		BatchPaint(6);
-		SetBlendMode(bmAlpha);
+		SetBlendMode(blendMode);
 		mCurPrimType = D3DPT_TRIANGLELIST;
 		if (mCurTexture)
 		{
@@ -1324,13 +1343,18 @@ inline void KDxRender::FillGradienRect(FLOAT left, FLOAT top, FLOAT right, FLOAT
 	if (!mPtrVertex)
 		return;
 
+	KDxBlendMode blendMode;
+	if ((D3DCOLOR_A(color1) == 0xFF) && (D3DCOLOR_A(color2) == 0xFF))
+		blendMode = bmNone;
+	else
+		blendMode = bmAlpha;
 	if ((mCurPrimType != D3DPT_TRIANGLELIST) || 
 		(mVtxOffset + mVtxNum + 6 > VERTEX_BUF_SIZE) ||
 		(mCurTexture != NULL) || 
-		(mCurBlendMode != bmAlpha))
+		(mCurBlendMode != blendMode))
 	{
 		BatchPaint(6);
-		SetBlendMode(bmAlpha);
+		SetBlendMode(blendMode);
 		mCurPrimType = D3DPT_TRIANGLELIST;
 		if (mCurTexture)
 		{
@@ -1363,14 +1387,14 @@ inline void KDxRender::SetBlendMode(KDxBlendMode blendMode)
 	if (mCurBlendMode == blendMode)
 		return;
 
+	// TODO(Tramper-2010/01/04): 好好试验一下效果
 	mCurBlendMode = blendMode;
+	mDevice9->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
 	switch (mCurBlendMode)
 	{
 	case bmNone:
 		{
 			mDevice9->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
-			mDevice9->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
-			mDevice9->SetRenderState(D3DRS_DESTBLEND,D3DBLEND_ZERO);
 			break;
 		}
 	case bmAlpha:
@@ -1379,6 +1403,58 @@ inline void KDxRender::SetBlendMode(KDxBlendMode blendMode)
 			mDevice9->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
 			mDevice9->SetRenderState(D3DRS_DESTBLEND,D3DBLEND_INVSRCALPHA);
 			break;
+		}
+	case bmMagic:
+		{
+			mDevice9->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+			mDevice9->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
+			mDevice9->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCCOLOR);
+			break;
+		}
+	case bmInvert:
+		{
+			mDevice9->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_INVDESTCOLOR);
+			mDevice9->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ZERO);
+			break;
+		}
+	case bmSrcBright:
+		{
+			mDevice9->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCCOLOR);
+			mDevice9->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_SRCCOLOR);
+			break;
+		}
+	case bmDestBright:
+		{
+			mDevice9->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_DESTCOLOR);
+			mDevice9->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_DESTCOLOR);
+			break;
+		}
+	case bmAlphaBright:
+		{
+			mDevice9->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+			mDevice9->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+			mDevice9->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE2X);
+			break;
+		}
+	case bmLight:
+		{
+			mDevice9->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_DESTCOLOR);
+			mDevice9->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
+			mDevice9->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE2X);
+			break;
+		}
+	case bmOneColor:
+		{
+			mDevice9->SetRenderState(D3DRS_SRCBLEND,  D3DBLEND_SRCALPHA);
+			mDevice9->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+			mDevice9->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MULTIPLYADD);;
+		}
+	case bmGrayScale:
+		{
+			mDevice9->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+			mDevice9->SetRenderState(D3DRS_TEXTUREFACTOR, 0xFFFF9B9B);
+			mDevice9->SetTextureStageState(0, D3DTSS_COLOROP,D3DTOP_DOTPRODUCT3);
+			mDevice9->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_TFACTOR);
 		}
 	}
 }
@@ -1638,7 +1714,8 @@ inline void KDxRender::DrawRoundRect(FLOAT left, FLOAT top, FLOAT right, FLOAT b
 	DrawLine(x1, y1, x2, y2, color);
 }
 
-inline void KDxRender::Draw(FLOAT x, FLOAT y, KDxTexture* tex, KDxBlendMode blendMode /* = bmNone */)
+inline void KDxRender::Draw(FLOAT x, FLOAT y, KDxTexture* tex, 
+	KDxBlendMode blendMode /* = bmNone */, D3DCOLOR color /* = 0xFFFFFFFF */)
 {
 	if (!mPtrVertex || !tex)
 		return;
@@ -1661,7 +1738,6 @@ inline void KDxRender::Draw(FLOAT x, FLOAT y, KDxTexture* tex, KDxBlendMode blen
 		}
 	}
 	
-	D3DCOLOR color = 0xFFFFFFFF;
 	FLOAT left = x;
 	FLOAT top = y;
 	FLOAT right = left + tex->DesireWidth();
@@ -1677,7 +1753,8 @@ inline void KDxRender::Draw(FLOAT x, FLOAT y, KDxTexture* tex, KDxBlendMode blen
 	mPrimCount += 2;
 }
 
-inline void KDxRender::StretchDraw(FLOAT x, FLOAT y, FLOAT w, FLOAT h, KDxTexture* tex, KDxBlendMode blendMode /* = bmNone */)
+inline void KDxRender::StretchDraw(FLOAT x, FLOAT y, FLOAT w, FLOAT h, KDxTexture* tex, 
+	KDxBlendMode blendMode /* = bmNone */, D3DCOLOR color /* = 0xFFFFFFFF */)
 {
 	if (!mPtrVertex || !tex)
 		return;
@@ -1700,7 +1777,6 @@ inline void KDxRender::StretchDraw(FLOAT x, FLOAT y, FLOAT w, FLOAT h, KDxTextur
 		}
 	}
 
-	D3DCOLOR color = 0xFFFFFFFF;
 	AddVertex(x, y, color, 0, 0);
 	AddVertex(x + w, y + h, color, 1, 1);
 	AddVertex(x, y + h, color, 0, 1);
