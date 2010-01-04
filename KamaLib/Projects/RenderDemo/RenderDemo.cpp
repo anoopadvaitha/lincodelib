@@ -22,20 +22,20 @@ public:
 		Render.SetWindow(mMainFrame.Handle());
 		Render.SetFullScreen(FALSE);
 		Render.SetSmooth(FALSE);
-		Render.SetVerticalSync(FALSE);
+		Render.SetVerticalSync(TRUE);
+		Render.SetTexFilter(FALSE);
 		Render.Initialize();
 
-		kstring path = gAppPath + L"fig6.bmp";
-		mTexture = Render.NewTextureFormFile(path, D3DFMT_UNKNOWN, 0);
+		kstring path = gAppPath + L"126216183933.bmp";
+		mTexture.LoadFromFile(&Render, path, D3DFMT_UNKNOWN, 0);
 		KDxApp::Initialize();
 	}
 
 	virtual void Finalize()
 	{
 		mMainFrame.SetEvent(NULL);
+		mTexture.FreeTexture();
 		Render.Finalize();
-		delete mTexture;
-
 		KDxApp::Finalize();
 	}
 protected:
@@ -60,7 +60,6 @@ protected:
 			Render.DrawRect(150, 150, 320, 320, D3DCOLOR_ARGB(255, 100, 100, 0));
 			Render.DrawRect(140, 140, 340, 350, D3DCOLOR_ARGB(255, 100, 100, 0));
 			Render.DrawRect(120, 120, 330, 330, D3DCOLOR_ARGB(255, 100, 100, 0));
-			
 			//Render.FillRect(120, 120, 500, 400, D3DCOLOR_ARGB(125, 200, 200, 0));
 
 			Render.FillGradienRect(120, 120, 300, 300, 
@@ -73,19 +72,13 @@ protected:
 
 			Render.DrawTriangle(150, 19, 340, 290, 80, 200, 0xFF000000);
 
- 			Render.FillEllipse(400, 10, 700, 250, 0xFFFF0000);
- 			Render.DrawEllipse(400, 10, 700, 250, 0xFF000000);
+// 			Render.FillEllipse(400, 10, 700, 250, 0xFFFF0000);
+//  		Render.DrawEllipse(400, 10, 700, 250, 0xFF000000);
 
 			Render.DrawRoundRect(400, 300, 600, 500, 30, 30, 0xFF000000);
 
-			Render.Draw(200, 210, mTexture);
-
-// 			for (int i = 0; i < 15; i++)
-// 				for (int j = 0; j < 7; j++)
-// 				{
-// 					Render.Draw(60 * i, 71 * j, &mTexture);
-// 				}
-// 			Render.StretchDraw(200, 210, 100, 140, &mTexture);
+			Render.Draw(10, 10, &mTexture);
+			Render.StretchDraw(200, 210, 200, 140, &mTexture);
 		}
 		Render.EndPaint();
 	}
@@ -95,7 +88,7 @@ protected:
 	}
 private:
 	KDxMainFrame mMainFrame;	
-	KDxTexture* mTexture;
+	KDxTexture mTexture;
 	KDxRender Render;
 	KD3DTexture9Ptr	mFontTex;
 };
