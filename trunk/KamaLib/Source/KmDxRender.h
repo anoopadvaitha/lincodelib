@@ -145,7 +145,6 @@ public:
 		mWidth(0),
 		mHeight(0),
 		mWndFormat(D3DFMT_UNKNOWN),
-		mIsDevLost(FALSE),
 		mPtrVertex(NULL),
 		mPrimCount(0),
 		mVertexBuf(0),
@@ -296,12 +295,9 @@ public:
 	{
 		if (isFullScreen != mIsFullScreen)
 		{
-			// 从窗口化到全屏切换时，保存窗口是否置顶，以及位置
+			// 从窗口化到全屏切换时，保存窗口是否置顶
 			if (mHwnd && !mIsFullScreen)
-			{
 				mIsTopMost = HAS_FLAG(GetWindowLongW(mHwnd, GWL_EXSTYLE), WS_EX_TOPMOST);
-				GetWindowRect(mHwnd, &mWndRect);
-			}
 
 			mIsFullScreen = isFullScreen;
 			BOOL ret = ResetDevice();
@@ -311,10 +307,7 @@ public:
 			if (mHwnd && !mIsFullScreen)
 			{
 				SetWindowPos(mHwnd, mIsTopMost ? HWND_TOPMOST : HWND_NOTOPMOST, 
-					mWndRect.left, mWndRect.top, 
-					mWndRect.right - mWndRect.left, 
-					mWndRect.bottom - mWndRect.top, 
-					SWP_NOACTIVATE);
+					0, 0, 0, 0, SWP_NOACTIVATE | SWP_NOSIZE | SWP_NOMOVE);
 			}
 			return ret;
 		}
@@ -389,12 +382,7 @@ public:
 		if (mIsSmooth != isSmooth)
 		{
 			mIsSmooth = isSmooth;
-			if (!mInited)
-				return;
-			if (mIsSmooth)
-				mDevice9->SetRenderState(D3DRS_MULTISAMPLEANTIALIAS, TRUE);
-			else
-				mDevice9->SetRenderState(D3DRS_MULTISAMPLEANTIALIAS, FALSE);
+			ResetDevice();
 		}
 	}
 
@@ -630,7 +618,6 @@ private:
 	D3DCAPS9				mDeviceCaps;		// 设备兼容性
 	D3DPRESENT_PARAMETERS	mPresentParams;		// 显示参数
 	D3DFORMAT				mWndFormat;			// 窗口模式下的格式
-	BOOL					mIsDevLost;			// 设备处于丢失状态
 	KD3DVertxBuf9Ptr		mVertexBuf;			// 顶点缓存
 	KDxVertex*				mPtrVertex;			// 顶点数组
 	DWORD					mCurPrimType;		// 当前图元类型
@@ -839,13 +826,11 @@ inline BOOL KDxRender::ResetDevice()
 		if (SUCCEEDED(mDevice9->Reset(&mPresentParams)))
 		{
 			ResetRenderState();
-			mIsDevLost = FALSE;
 			// 通知设备重置成功，重建非托管资源
 			DoDeviceReset();
 		}
 		else
 		{
-			mIsDevLost = TRUE;
 			return FALSE;
 		}
 	}
@@ -1055,17 +1040,16 @@ inline void KDxRender::ResetPresentParams()
 	mPresentParams.PresentationInterval = mIsVSync ? 
 		D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
 
-	// 多重采样支持
-	if (SUCCEEDED(mDirect3D9->CheckDeviceMultiSampleType(
+	// 多重采样支持, 慎用，会明显降低帧数
+	if (mIsSmooth &&
+		SUCCEEDED(mDirect3D9->CheckDeviceMultiSampleType(
 		D3DADAPTER_DEFAULT, 
 		D3DDEVTYPE_HAL, 
 		mPresentParams.BackBufferFormat,
 		mPresentParams.Windowed,
 		D3DMULTISAMPLE_2_SAMPLES,
 		NULL)))
-	{
 		mPresentParams.MultiSampleType = D3DMULTISAMPLE_2_SAMPLES;
-	}
 }
 
 inline void KDxRender::ResetResource()
@@ -1150,38 +1134,36 @@ inline BOOL KDxRender::BeginPaint()
 {
 	KASSERT(mInited);
 
-	if (mIsDevLost)
-		return FALSE;
-	else
+	// 设备丢失与重置
+	HRESULT hr = mDevice9->TestCooperativeLevel();
+	if (hr == D3DERR_DEVICELOST)
 	{
-		if (mPtrVertex)
-			return FALSE;
-		if (!mVertexBuf)
-			return FALSE;
-		mDevice9->Clear(0, NULL, D3DCLEAR_TARGET, mBkColor, 1.0f, 0);
-		mDevice9->BeginScene();
-		mVertexBuf->Lock(0, 0, (void**)&mPtrVertex, D3DLOCK_DISCARD);
-		return TRUE;
+		KTRACE(L"Device Lost");	
+		return FALSE;
 	}
+	else if (hr == D3DERR_DEVICENOTRESET)
+	{
+		if (!ResetDevice())
+			return FALSE;
+	}
+
+	if (mPtrVertex)
+		return FALSE;
+	if (!mVertexBuf)
+		return FALSE;
+	mDevice9->Clear(0, NULL, D3DCLEAR_TARGET, mBkColor, 1.0f, 0);
+	mDevice9->BeginScene();
+	mVertexBuf->Lock(0, 0, (void**)&mPtrVertex, D3DLOCK_DISCARD);
+	return TRUE;
 }
 
 inline void KDxRender::EndPaint()
 {
 	KASSERT(mInited);
 
-	if (mIsDevLost)
-	{
-		// 如果设备丢失，尝试恢复设备
-		if (D3DERR_DEVICENOTRESET == mDevice9->TestCooperativeLevel())
-			ResetDevice();
-	}
-	else
-	{	
-		BatchPaint(0, TRUE);
-		mDevice9->EndScene();
-		// 设备丢失
-		mIsDevLost = (D3DERR_DEVICELOST == mDevice9->Present(NULL, NULL, NULL, NULL));
-	}
+	BatchPaint(0, TRUE);
+	mDevice9->EndScene();
+	mDevice9->Present(NULL, NULL, NULL, NULL);
 }
 
 inline void KDxRender::BatchPaint(int nextNum, BOOL IsEndPaint)
@@ -1191,15 +1173,7 @@ inline void KDxRender::BatchPaint(int nextNum, BOOL IsEndPaint)
 		mVertexBuf->Unlock();
 		mDevice9->DrawPrimitive((D3DPRIMITIVETYPE)mCurPrimType, mVtxOffset, mPrimCount);
 		
-		if (IsEndPaint)
-		{
-			mCurPrimType = 0;
-			mVtxOffset = 0;
-			mPrimCount = 0;
-			mVtxNum = 0;
-			mPtrVertex = NULL;
-		}
-		else
+		if (!IsEndPaint)
 		{
 			mPrimCount = 0;
 			mCurPrimType = 0;
@@ -1218,6 +1192,15 @@ inline void KDxRender::BatchPaint(int nextNum, BOOL IsEndPaint)
 			UINT dataSize = (VERTEX_BUF_SIZE - mVtxOffset) * sizeof(KDxVertex);
 			mVertexBuf->Lock((UINT)mVtxOffset * sizeof(KDxVertex), dataSize, (void**)&mPtrVertex, dwFlag);
 		}
+	}
+
+	if (IsEndPaint)
+	{
+		mCurPrimType = 0;
+		mVtxOffset = 0;
+		mPrimCount = 0;
+		mVtxNum = 0;
+		mPtrVertex = NULL;
 	}
 }
 
@@ -1962,11 +1945,8 @@ inline void KDxApp::Idle()
 	if (tick - mLastTick >= mFrameTime)
 	{
 		mLastTick = tick;
-		if (mLastTick - mLastSecTick <= 1000)
-		{
-			++mFPSCount;
-		}
-		else
+		++mFPSCount;
+		if (mLastTick - mLastSecTick >= 1000)
 		{
 			// 更新FPS
 			mFPS = mFPSCount * 1000 / (mLastTick - mLastSecTick);

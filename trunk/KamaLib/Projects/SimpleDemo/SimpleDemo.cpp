@@ -191,8 +191,12 @@ int _tmain(int argc, _TCHAR* argv[])
 	//TestStringList();
 	//TestWndUtils();
 	//TestKString();
-	TestFileUtils();
+	//TestFileUtils();
 	//TestIniUtuils();
+
+	WCHAR* str = L"Helloo0";
+	DWORD code = GetHashCode((BYTE*)str, wcslen(str) * 2);
+	KTRACE(L"%d", code);
 	return 0;
 }
 
