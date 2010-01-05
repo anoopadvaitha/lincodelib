@@ -2924,9 +2924,67 @@ private:
 //------------------------------------------------------------------------------
 // 数学函数支持
 
+/*
+	通过4舍5入的方式取整数
+*/
 inline int Round(FLOAT x)
 {
 	return x >= 0 ? (int)(x + 0.5f) : (int)(x - 0.5f);
+}
+
+/*
+	随机数种子
+*/
+inline void RandSeed()
+{
+	srand((unsigned)time(NULL) * 2346576u);
+}
+
+/*
+	浮点随机数，取minFloat到maxFloat之间的随机数
+*/
+inline FLOAT RandFloat(FLOAT minFloat, FLOAT maxFloat)
+{
+	return minFloat + (rand() / (FLOAT)RAND_MAX) * (maxFloat - minFloat);
+}
+
+/*
+	浮点随机数，取0到maxFloat之间的随机数
+*/
+inline FLOAT RandFloat(FLOAT maxFloat)
+{
+	return RandFloat(0, maxFloat);
+}
+
+/*
+	整数的Ceil实现
+*/
+inline int CeilInt(int dividend, int divisor)
+{
+	int ret = dividend / divisor;
+	if (dividend % divisor > 0) 
+		++ret;
+	return ret;
+}
+
+//------------------------------------------------------------------------------
+// 编码实现
+
+/*
+	简单HASH码实现  BKDR Hash
+*/
+inline DWORD GetHashCode(BYTE* data, int size)
+{
+	DWORD seed = 131;
+	DWORD hash = 0;
+
+	while (size--)
+	{
+		hash = hash * seed + (*data);
+		++data;
+	}
+
+	return (hash & 0x7FFFFFFF);
 }
 
 }
