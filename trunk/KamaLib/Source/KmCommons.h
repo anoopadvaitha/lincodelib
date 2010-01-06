@@ -165,6 +165,47 @@ STDMETHODIMP_(ULONG) Release()											\
 }
 
 /*
+	释放接口
+*/
+#define INTF_RELEASE(intf)												\
+	do {																\
+		if (intf)														\
+		{																\
+			intf->Release();											\
+			intf = NULL;												\
+		}																\
+	} while (0)
+
+/*
+	接口赋值，有引用计数增减
+*/
+#define INTF_ASSIGN(dest, src)											\
+	do{																	\
+		if (src) src->AddRef();											\
+		if (dest) dest->Release();										\
+		dest = src														\
+	} while (0)
+
+/*
+	接口赋值，src不加引用计数
+*/
+#define INTF_ATTACH(dest, src)											\
+	do{																	\
+		if (dest) dest->Release();										\
+		dest = src;														\
+	} while (0)
+
+/*
+	接口赋值，src赋给dest，src置空
+*/
+#define INTF_DETACH(dest, src)											\
+	do{																	\
+		if (dest) dest->Release();										\
+		dest = src;														\
+		src = NULL;														\
+	} while (0)
+
+/*
    接口智能指针，用法与ATL的CComPtr基本一致	
 */
 template <class T>

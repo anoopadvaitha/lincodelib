@@ -28,6 +28,8 @@ public:
 		Render.SetTexFilter(FALSE);
 		Render.Initialize();
 
+		Render.SetFontOptions(20, fsBold, L"ºÚÌå");
+
 		kstring path = gAppPath + L"test.png";
 		mTexture.LoadFromFile(&Render, path, D3DFMT_UNKNOWN);
 		KDxApp::Initialize();
@@ -103,6 +105,8 @@ protected:
 			Render.DrawRect(200, 200, 400, 400, 0x7F00FFFF);
 			Render.FillTriangle(20, 20, 250, 20, 200, 200, 0x7F000000);
 			Render.DrawTriangle(20, 20, 250, 20, 200, 200, 0x7F00FFFF);
+
+			Render.TextOut(10, 10, L"Hello World", 0xFFFFFFFF);
 			
 			//Render.StretchDraw(10, 200, 200, 200, &mTexture, bmNone);
 

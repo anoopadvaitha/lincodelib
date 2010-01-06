@@ -15,6 +15,9 @@
 #ifndef __KAMA_KMBASE_H__
 #define __KAMA_KMBASE_H__
 
+// C Runtime
+#include <time.h>
+
 // Windows µº»Î
 #include <Windows.h>
 #include <ShellAPI.h>
