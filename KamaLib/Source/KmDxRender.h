@@ -77,6 +77,25 @@ struct POINTF
 	FLOAT y;
 };
 
+/*
+	字体风格
+*/
+typedef DWORD KDxFontStyle;
+#define fsBold			1
+#define fsItalic		2
+#define fsUnderline		4
+#define fsStrikeOut		8
+
+/*
+	字体选项
+*/
+struct KDxFontOptions
+{
+	int				Height;
+	KDxFontStyle	Style;
+	WCHAR			FontName[LF_FACESIZE];
+};
+
 // PI
 #define DX_PI  ((FLOAT)3.141592654f)
 // 半PI
@@ -95,6 +114,10 @@ struct POINTF
 // 取B通道
 #define D3DCOLOR_B(color) (BYTE)(LOBYTE(LOWORD(color)))
 
+// 默认字体名
+#define DEF_FONT_NAME		L"Tahoma"
+// 默认字体高
+#define DEF_FONT_HEIGHT		12
 
 class KDxRender;
 class KDxTexture;
@@ -113,7 +136,7 @@ enum KDxNotifyType
 /*
 	渲染器通知接口
 */
-interface IDxNotify
+interface IDxDeviceNotify
 {
 	/*
 		设备通知
@@ -123,12 +146,75 @@ interface IDxNotify
 };
 
 /*
+	文本输出辅助类， 目前先使用ID3DXFont实现，不支持下划线和删除线风格
+*/
+class KDxTextHelper: public IDxDeviceNotify
+{
+	typedef std::map<DWORD, ID3DXFont*> KDxD3DFontMap;
+public:
+	KDxTextHelper(): mD3DFont(NULL), mD3DSprite(NULL), mRender(NULL)
+	{
+	}
+
+	/*
+		初始化
+	*/
+	void Initialize(KDxRender* render);
+
+	/*
+		结束
+	*/
+	void Finalize();
+
+	/*
+		设置字体选项
+	*/
+	void SetFontOptions(int height, KDxFontStyle style, WCHAR* fontName);
+
+	/*
+		取字体选项
+	*/
+	KDxFontOptions* FontOptions();
+
+	/*
+		简单的输出文本, drawBorder指明是否给文本加外框， borderColor指定外框的颜色
+	*/
+	void TextOut(int x, int y, WCHAR* text, D3DCOLOR textColor = 0xFF000000, 
+		BOOL drawBorder = FALSE, D3DCOLOR borderColor = 0xFFFFFFFF);
+
+	/*
+		支持复杂格式的输出文本, drawBorder指明是否给文本加外框， borderColor指定外框的颜色
+	*/
+	void DrawText(RECT* rc, WCHAR* text, DWORD format, D3DCOLOR textColor = 0xFF000000, 
+		BOOL drawBorder = FALSE, D3DCOLOR borderColor = 0xFFFFFFFF);
+
+	/*
+		取得文本尺寸
+	*/
+	SIZE TextSize(WCHAR* text);
+
+protected:
+	virtual void OnDeviceNotify(KDxRender* render, KDxNotifyType type);
+
+	void FreeD3DFonts();
+
+	ID3DXFont* GetFont(KDxFontOptions& fontOpt);
+
+private:
+	KDxD3DFontMap	mFontMap;
+	KDxFontOptions	mFontOpts;
+	ID3DXFont*		mD3DFont;
+	ID3DXSprite*	mD3DSprite;
+	KDxRender*		mRender;
+};
+
+/*
 	Dx渲染器
 */
 class KDxRender
 {
 	typedef std::vector<D3DDISPLAYMODE> KDispModeVector;
-	typedef std::vector<IDxNotify*> KDxNotifyVector;
+	typedef std::vector<IDxDeviceNotify*> KDxNotifyVector;
 public:
 	//------------------------------------------------------------------------------
 	// 初始化和结束处理
@@ -177,12 +263,12 @@ public:
 	/*
 		增加通知接口
 	*/
-	void AddNotify(IDxNotify* notify);
+	void AddNotify(IDxDeviceNotify* notify);
 
 	/*
 		删除通知接口
 	*/
-	void DelNotify(IDxNotify* notify);
+	void DelNotify(IDxDeviceNotify* notify);
 
 	/*
 		通知
@@ -535,6 +621,46 @@ public:
 
 	// TODO(Tramper-2010/01/04): 旋转，画一部分，Mask纹理，待实现
 
+	//------------------------------------------------------------------------------
+	// 字体与文本
+
+	/*
+		设置字体选项
+	*/
+	void SetFontOptions(int height, KDxFontStyle style, WCHAR* fontName);
+
+	/*
+		取字体高度
+	*/
+	int FontHeight();
+
+	/*
+		取字体风格
+	*/
+	KDxFontStyle FontStyle();
+
+	/*
+		取字体名称
+	*/
+	void FontName(WCHAR* fontName, int size);
+
+	/*
+		简单的输出文本, drawBorder指明是否给文本加外框， borderColor指定外框的颜色
+	*/
+	void TextOut(int x, int y, WCHAR* text, D3DCOLOR textColor = 0xFF000000, 
+		BOOL drawBorder = FALSE, D3DCOLOR borderColor = 0xFFFFFFFF);
+
+	/*
+		支持复杂格式的输出文本, drawBorder指明是否给文本加外框， borderColor指定外框的颜色
+	*/
+	void DrawText(RECT* rc, WCHAR* text, DWORD format, D3DCOLOR textColor = 0xFF000000, 
+		BOOL drawBorder = FALSE, D3DCOLOR borderColor = 0xFFFFFFFF);
+
+	/*
+		取得文本尺寸
+	*/
+	SIZE TextSize(WCHAR* text);
+
 protected:
 	/*
 		重置设备
@@ -629,6 +755,7 @@ private:
 	RECT					mWndRect;			// 窗口尺寸
 	BOOL					mIsTopMost;			// 是否置顶
 	KDxNotifyVector			mNotifyVector;		// 通知列表
+	KDxTextHelper			mTextHelper;		// 文本辅助类
 };
 
 /*
@@ -958,8 +1085,11 @@ inline BOOL KDxRender::Initialize()
 
 	// 重置渲染状态
 	ResetRenderState();
-	mInited = TRUE;
 
+	// 字体
+	mTextHelper.Initialize(this);
+
+	mInited = TRUE;
 	DoNotify(ntDeviceInit);
 
 	return TRUE;
@@ -970,6 +1100,7 @@ inline void KDxRender::Finalize()
 	DoNotify(ntDeviceTerm);
 	mVertexBuf.Release();
 	mDevice9.Release();
+	mTextHelper.Finalize();
 }
 
 inline BOOL KDxRender::CheckSystemCaps()
@@ -1749,14 +1880,14 @@ inline BOOL KDxRender::TexFormatAvailable(D3DFORMAT format)
 
 }
 
-inline void KDxRender::AddNotify(IDxNotify* notify)
+inline void KDxRender::AddNotify(IDxDeviceNotify* notify)
 {
 	KDxNotifyVector::iterator itr = std::find(mNotifyVector.begin(), mNotifyVector.end(), notify);
 	if (itr == mNotifyVector.end())
 		mNotifyVector.push_back(notify);
 }
 
-inline void KDxRender::DelNotify(IDxNotify* notify)
+inline void KDxRender::DelNotify(IDxDeviceNotify* notify)
 {
 	KDxNotifyVector::iterator itr = std::find(mNotifyVector.begin(), mNotifyVector.end(), notify);
 	if (itr != mNotifyVector.end())
@@ -1766,12 +1897,163 @@ inline void KDxRender::DelNotify(IDxNotify* notify)
 inline void KDxRender::DoNotify(KDxNotifyType type)
 {
 	KDxNotifyVector::iterator itr = mNotifyVector.begin();
-	IDxNotify* notify;
+	IDxDeviceNotify* notify;
 	while (itr != mNotifyVector.end())
 	{
 		notify = *itr;
 		itr++;
 		notify->OnDeviceNotify(this, type);
+	}
+}
+
+inline void KDxRender::SetFontOptions(int height, KDxFontStyle style, WCHAR* fontName)
+{
+	mTextHelper.SetFontOptions(height, style, fontName);
+}
+
+inline int KDxRender::FontHeight()
+{
+	return mTextHelper.FontOptions()->Height;
+}
+
+inline KDxFontStyle KDxRender::FontStyle()
+{
+	return mTextHelper.FontOptions()->Style;
+}
+
+inline void KDxRender::FontName(WCHAR* fontName, int size)
+{
+	wcsncpy(fontName, mTextHelper.FontOptions()->FontName, size);
+}
+
+inline void KDxRender::TextOut(int x, int y, WCHAR* text, D3DCOLOR textColor /* = 0xFF000000 */, 
+	BOOL drawBorder /* = FALSE */, D3DCOLOR borderColor /* = 0xFFFFFFFF */)
+{
+	BatchPaint(0);
+	mTextHelper.TextOut(x, y, text, textColor, drawBorder, borderColor);
+}
+
+inline void KDxRender::DrawText(RECT* rc, WCHAR* text, DWORD format, D3DCOLOR textColor /* = 0xFF000000 */, 
+	BOOL drawBorder /* = FALSE */, D3DCOLOR borderColor /* = 0xFFFFFFFF */)
+{
+	mTextHelper.DrawText(rc, text, format, textColor, drawBorder, borderColor);
+}
+
+inline SIZE KDxRender::TextSize(WCHAR* text)
+{
+	mTextHelper.TextSize(text);
+}
+
+//------------------------------------------------------------------------------
+// KDxTextHelper
+
+inline void KDxTextHelper::Initialize(KDxRender* render)
+{
+	KASSERT(render != NULL);
+
+	mRender = render;
+	
+	HRESULT hr = D3DXCreateSprite(mRender->Device9(), &mD3DSprite);
+	KASSERT(hr == S_OK);
+
+	SetFontOptions(DEF_FONT_HEIGHT, 0, DEF_FONT_NAME);
+}
+
+inline void KDxTextHelper::Finalize()
+{
+	mD3DFont = NULL;
+	FreeD3DFonts();
+	INTF_RELEASE(mD3DSprite);
+	mRender = NULL;
+}
+
+inline void KDxTextHelper::FreeD3DFonts()
+{
+	KDxD3DFontMap::iterator itr;
+	for (itr = mFontMap.begin(); itr != mFontMap.end(); ++itr)
+		INTF_RELEASE(itr->second);
+	mFontMap.clear();
+}
+
+inline ID3DXFont* KDxTextHelper::GetFont(KDxFontOptions& fontOpt)
+{
+	DWORD code = GetHashCode((BYTE*)(&fontOpt), sizeof(fontOpt));
+	KDxD3DFontMap::iterator itr = mFontMap.find(code);
+	if (itr != mFontMap.end())
+	{
+		return itr->second;
+	}
+	else
+	{
+		ID3DXFont* font;
+		HRESULT hr = D3DXCreateFontW(
+			mRender->Device9(), 
+			fontOpt.Height, 
+			0, 
+			HAS_FLAG(fontOpt.Style, fsBold) ? FW_BOLD : FW_NORMAL,
+			1,
+			HAS_FLAG(fontOpt.Style, fsItalic) ? TRUE : FALSE,
+			DEFAULT_CHARSET,
+			0, 0, 0,
+			fontOpt.FontName, &font);
+		if (hr == S_OK)
+		{
+			mFontMap.insert(std::make_pair(code, font));
+			return font;
+		}
+	}
+
+	return NULL;
+}
+
+inline void KDxTextHelper::SetFontOptions(int height, KDxFontStyle style, WCHAR* fontName)
+{
+	mFontOpts.Height = -height;
+	mFontOpts.Style = style;
+	wcsncpy(mFontOpts.FontName, fontName, LF_FACESIZE);
+	mD3DFont = GetFont(mFontOpts);
+}
+
+inline KDxFontOptions* KDxTextHelper::FontOptions()
+{
+	return &mFontOpts;
+}
+
+inline void KDxTextHelper::TextOut(int x, int y, WCHAR* text, D3DCOLOR textColor /* = 0xFF000000 */, 
+	BOOL drawBorder /* = FALSE */, D3DCOLOR borderColor /* = 0xFFFFFFFF */)
+{
+	KASSERT(mD3DFont);
+	RECT rc;
+	SetRect(&rc, x, y, 0, 0);
+	mD3DFont->DrawTextW(NULL, text, -1, &rc, DT_NOCLIP | DT_SINGLELINE, textColor);
+}
+
+inline void KDxTextHelper::DrawText(RECT* rc, WCHAR* text, DWORD format, D3DCOLOR textColor /* = 0xFF000000 */, 
+	BOOL drawBorder /* = FALSE */, D3DCOLOR borderColor /* = 0xFFFFFFFF */)
+{
+
+}
+
+inline SIZE KDxTextHelper::TextSize(WCHAR* text)
+{
+
+}
+
+inline void KDxTextHelper::OnDeviceNotify(KDxRender* render, KDxNotifyType type)
+{
+	if (type == ntDeviceLost)
+	{
+		mD3DSprite->OnLostDevice();
+		KDxD3DFontMap::iterator itr;
+		for (itr = mFontMap.begin(); itr != mFontMap.end(); ++itr)
+			itr->second->OnLostDevice();
+	}
+	else if (type == ntDeviceReset)
+	{
+		mD3DSprite->OnResetDevice();
+		KDxD3DFontMap::iterator itr;
+		for (itr = mFontMap.begin(); itr != mFontMap.end(); ++itr)
+			itr->second->OnResetDevice();
 	}
 }
 
