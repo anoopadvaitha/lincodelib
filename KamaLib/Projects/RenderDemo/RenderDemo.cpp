@@ -19,7 +19,8 @@ public:
 		mMainFrame.Create();
 		mMainFrame.AlignWindow();
 		mMainFrame.Show();
-		Render.SetBkColor(0xFF000080);
+		//Render.SetBkColor(0xFF000080);
+		Render.SetBkColor(0xFFFFFFFF);
 		Render.SetSize(mMainFrame.Width(), mMainFrame.Height());
 		Render.SetWindow(mMainFrame.Handle());
 		Render.SetFullScreen(FALSE);
@@ -28,7 +29,7 @@ public:
 		Render.SetTexFilter(FALSE);
 		Render.Initialize();
 
-		Render.SetFontOptions(20, fsBold, L"黑体");
+		//Render.SetFontOptions(20, fsBold, L"黑体");
 
 		kstring path = gAppPath + L"test.png";
 		mTexture.LoadFromFile(&Render, path, D3DFMT_UNKNOWN);
@@ -106,8 +107,18 @@ protected:
 			Render.FillTriangle(20, 20, 250, 20, 200, 200, 0x7F000000);
 			Render.DrawTriangle(20, 20, 250, 20, 200, 200, 0x7F00FFFF);
 
-			Render.TextOut(10, 10, L"Hello World", 0xFFFFFFFF);
-			
+			Render.TextOut(10, 10, L"Hello World", 0xFFFFFFFF, TRUE, 0xFF000000);
+
+			RECT rc;
+			SetRect(&rc, 100, 10, 200, 60);
+			Render.DrawText(&rc, L"世界，你好啊！你知道我是谁吗？", DT_WORDBREAK, 0xFFFFFFFF, TRUE, 0xFF000000);
+
+			SIZE sz = Render.TextSize(L"Hello World");
+			KLOG(L"size: %d, %d", sz.cx, sz.cy);
+
+			SetRect(&rc, 0, 0, 100, 1);
+			Render.TextSize(&rc, L"世界，你好啊！你知道我是谁吗？", DT_WORDBREAK);
+			KLOG(L"size: %d, %d", rc.right, rc.bottom);
 			//Render.StretchDraw(10, 200, 200, 200, &mTexture, bmNone);
 
 		}

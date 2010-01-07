@@ -56,7 +56,7 @@ namespace kama
 	每次调用都将自动换行，且最大字符数为512
 	可调用SETLOGPATH设置日志文件的路径
 */
-#ifdef USE_LOG
+#if defined(USE_LOG) || defined(_DEBUG)
 	_declspec(selectany) HANDLE _gLogFile = INVALID_HANDLE_VALUE;
 
 	/*
