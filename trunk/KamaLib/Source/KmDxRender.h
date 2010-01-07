@@ -117,7 +117,7 @@ struct KDxFontOptions
 // 默认字体名
 #define DEF_FONT_NAME		L"Tahoma"
 // 默认字体高
-#define DEF_FONT_HEIGHT		12
+#define DEF_FONT_HEIGHT		-13
 
 class KDxRender;
 class KDxTexture;
@@ -146,13 +146,19 @@ interface IDxDeviceNotify
 };
 
 /*
-	文本输出辅助类， 目前先使用ID3DXFont实现，不支持下划线和删除线风格
+	文本输—出辅助类， 使用三种解决方案：
+	1.  USE_D3DXFONT: 用ID3DXFont实现，不支持下划线和删除线风格，同时也是一种慢速的字体渲染
+	2.  USE_GDICACHE: 用GDI绘制到内存DC，再复制到纹理，对纹理进行缓存
+	3.  USE_GLYPHCACHE: 直接取字体图元数据，复制到纹理，对纹理进行缓存	 TODO
 */
+#ifdef USE_D3DXFONT
+
 class KDxTextHelper: public IDxDeviceNotify
 {
 	typedef std::map<DWORD, ID3DXFont*> KDxD3DFontMap;
 public:
-	KDxTextHelper(): mD3DFont(NULL), mD3DSprite(NULL), mRender(NULL)
+	KDxTextHelper():
+	  mD3DFont(NULL), mD3DSprite(NULL), mRender(NULL)
 	{
 	}
 
@@ -169,7 +175,7 @@ public:
 	/*
 		设置字体选项
 	*/
-	void SetFontOptions(int height, KDxFontStyle style, WCHAR* fontName);
+	void SetFontOptions(int height, KDxFontStyle style, LPCWSTR fontName);
 
 	/*
 		取字体选项
@@ -179,25 +185,28 @@ public:
 	/*
 		简单的输出文本, drawBorder指明是否给文本加外框， borderColor指定外框的颜色
 	*/
-	void TextOut(int x, int y, WCHAR* text, D3DCOLOR textColor = 0xFF000000, 
+	void TextOut(int x, int y, LPCWSTR text, D3DCOLOR textColor = 0xFF000000, 
 		BOOL drawBorder = FALSE, D3DCOLOR borderColor = 0xFFFFFFFF);
 
 	/*
 		支持复杂格式的输出文本, drawBorder指明是否给文本加外框， borderColor指定外框的颜色
 	*/
-	void DrawText(RECT* rc, WCHAR* text, DWORD format, D3DCOLOR textColor = 0xFF000000, 
+	void DrawText(RECT* rc, LPCWSTR text, DWORD format, D3DCOLOR textColor = 0xFF000000, 
 		BOOL drawBorder = FALSE, D3DCOLOR borderColor = 0xFFFFFFFF);
 
 	/*
-		取得文本尺寸
+		取得单行文本尺寸
 	*/
-	SIZE TextSize(WCHAR* text);
+	SIZE TextSize(LPCWSTR text);
+
+	/*
+		取得复杂格式的文本尺寸
+	*/
+	int TextSize(RECT* rc, LPCWSTR text, DWORD format);
 
 protected:
 	virtual void OnDeviceNotify(KDxRender* render, KDxNotifyType type);
-
 	void FreeD3DFonts();
-
 	ID3DXFont* GetFont(KDxFontOptions& fontOpt);
 
 private:
@@ -207,6 +216,75 @@ private:
 	ID3DXSprite*	mD3DSprite;
 	KDxRender*		mRender;
 };
+
+#else
+
+struct KDxTextInfo
+{
+
+};
+
+class KDxTextHelper: public IDxDeviceNotify
+{
+	typedef std::map<DWORD, KDxTextInfo> KDxTextInfoMap;
+public:
+	KDxTextHelper():
+	mD3DFont(NULL), mD3DSprite(NULL), mRender(NULL)
+	{
+	}
+
+	/*
+		初始化
+	*/
+	void Initialize(KDxRender* render);
+
+	/*
+		结束
+	*/
+	void Finalize();
+
+	/*
+		设置字体选项
+	*/
+	void SetFontOptions(int height, KDxFontStyle style, LPCWSTR fontName);
+
+	/*
+		取字体选项
+	*/
+	KDxFontOptions* FontOptions();
+
+	/*
+		简单的输出文本, drawBorder指明是否给文本加外框， borderColor指定外框的颜色
+	*/
+	void TextOut(int x, int y, LPCWSTR text, D3DCOLOR textColor = 0xFF000000, 
+		BOOL drawBorder = FALSE, D3DCOLOR borderColor = 0xFFFFFFFF);
+
+	/*
+		支持复杂格式的输出文本, drawBorder指明是否给文本加外框， borderColor指定外框的颜色
+	*/
+	void DrawText(RECT* rc, LPCWSTR text, DWORD format, D3DCOLOR textColor = 0xFF000000, 
+		BOOL drawBorder = FALSE, D3DCOLOR borderColor = 0xFFFFFFFF);
+
+	/*
+		取得单行文本尺寸
+	*/
+	SIZE TextSize(LPCWSTR text);
+
+	/*
+		取得复杂格式的文本尺寸
+	*/
+	int TextSize(RECT* rc, LPCWSTR text, DWORD format);
+
+protected:
+	virtual void OnDeviceNotify(KDxRender* render, KDxNotifyType type);
+
+private:
+	KDxFontOptions	mFontOpts;
+	KDxRender*		mRender;
+	HDC				dc;
+};
+
+#endif // USE_D3DXFONT
 
 /*
 	Dx渲染器
@@ -627,7 +705,7 @@ public:
 	/*
 		设置字体选项
 	*/
-	void SetFontOptions(int height, KDxFontStyle style, WCHAR* fontName);
+	void SetFontOptions(int height, KDxFontStyle style, LPCWSTR fontName);
 
 	/*
 		取字体高度
@@ -642,24 +720,29 @@ public:
 	/*
 		取字体名称
 	*/
-	void FontName(WCHAR* fontName, int size);
+	void FontName(LPWSTR fontName, int size);
 
 	/*
 		简单的输出文本, drawBorder指明是否给文本加外框， borderColor指定外框的颜色
 	*/
-	void TextOut(int x, int y, WCHAR* text, D3DCOLOR textColor = 0xFF000000, 
+	void TextOut(int x, int y, LPCWSTR text, D3DCOLOR textColor = 0xFF000000, 
 		BOOL drawBorder = FALSE, D3DCOLOR borderColor = 0xFFFFFFFF);
 
 	/*
 		支持复杂格式的输出文本, drawBorder指明是否给文本加外框， borderColor指定外框的颜色
 	*/
-	void DrawText(RECT* rc, WCHAR* text, DWORD format, D3DCOLOR textColor = 0xFF000000, 
+	void DrawText(RECT* rc, LPCWSTR text, DWORD format, D3DCOLOR textColor = 0xFF000000, 
 		BOOL drawBorder = FALSE, D3DCOLOR borderColor = 0xFFFFFFFF);
 
 	/*
 		取得文本尺寸
 	*/
-	SIZE TextSize(WCHAR* text);
+	SIZE TextSize(LPCWSTR text);
+
+	/*
+		取得文本尺寸
+	*/
+	int TextSize(RECT*rc, LPWSTR text, DWORD format);
 
 protected:
 	/*
@@ -1906,7 +1989,7 @@ inline void KDxRender::DoNotify(KDxNotifyType type)
 	}
 }
 
-inline void KDxRender::SetFontOptions(int height, KDxFontStyle style, WCHAR* fontName)
+inline void KDxRender::SetFontOptions(int height, KDxFontStyle style, LPCWSTR fontName)
 {
 	mTextHelper.SetFontOptions(height, style, fontName);
 }
@@ -1921,32 +2004,37 @@ inline KDxFontStyle KDxRender::FontStyle()
 	return mTextHelper.FontOptions()->Style;
 }
 
-inline void KDxRender::FontName(WCHAR* fontName, int size)
+inline void KDxRender::FontName(LPWSTR fontName, int size)
 {
 	wcsncpy(fontName, mTextHelper.FontOptions()->FontName, size);
 }
 
-inline void KDxRender::TextOut(int x, int y, WCHAR* text, D3DCOLOR textColor /* = 0xFF000000 */, 
+inline void KDxRender::TextOut(int x, int y, LPCWSTR text, D3DCOLOR textColor /* = 0xFF000000 */, 
 	BOOL drawBorder /* = FALSE */, D3DCOLOR borderColor /* = 0xFFFFFFFF */)
 {
-	BatchPaint(0);
 	mTextHelper.TextOut(x, y, text, textColor, drawBorder, borderColor);
 }
 
-inline void KDxRender::DrawText(RECT* rc, WCHAR* text, DWORD format, D3DCOLOR textColor /* = 0xFF000000 */, 
+inline void KDxRender::DrawText(RECT* rc, LPCWSTR text, DWORD format, D3DCOLOR textColor /* = 0xFF000000 */, 
 	BOOL drawBorder /* = FALSE */, D3DCOLOR borderColor /* = 0xFFFFFFFF */)
 {
 	mTextHelper.DrawText(rc, text, format, textColor, drawBorder, borderColor);
 }
 
-inline SIZE KDxRender::TextSize(WCHAR* text)
+inline SIZE KDxRender::TextSize(LPCWSTR text)
 {
 	mTextHelper.TextSize(text);
+}
+
+inline int KDxRender::TextSize(RECT*rc, LPWSTR text, DWORD format)
+{
+	return mTextHelper.TextSize(rc, text, format);
 }
 
 //------------------------------------------------------------------------------
 // KDxTextHelper
 
+#ifdef USE_D3DXFONT
 inline void KDxTextHelper::Initialize(KDxRender* render)
 {
 	KASSERT(render != NULL);
@@ -2006,9 +2094,9 @@ inline ID3DXFont* KDxTextHelper::GetFont(KDxFontOptions& fontOpt)
 	return NULL;
 }
 
-inline void KDxTextHelper::SetFontOptions(int height, KDxFontStyle style, WCHAR* fontName)
+inline void KDxTextHelper::SetFontOptions(int height, KDxFontStyle style, LPCWSTR fontName)
 {
-	mFontOpts.Height = -height;
+	mFontOpts.Height = height;
 	mFontOpts.Style = style;
 	wcsncpy(mFontOpts.FontName, fontName, LF_FACESIZE);
 	mD3DFont = GetFont(mFontOpts);
@@ -2019,24 +2107,77 @@ inline KDxFontOptions* KDxTextHelper::FontOptions()
 	return &mFontOpts;
 }
 
-inline void KDxTextHelper::TextOut(int x, int y, WCHAR* text, D3DCOLOR textColor /* = 0xFF000000 */, 
+inline void KDxTextHelper::TextOut(int x, int y, LPCWSTR text, D3DCOLOR textColor /* = 0xFF000000 */, 
 	BOOL drawBorder /* = FALSE */, D3DCOLOR borderColor /* = 0xFFFFFFFF */)
 {
 	KASSERT(mD3DFont);
+	KASSERT(mD3DSprite);
 	RECT rc;
-	SetRect(&rc, x, y, 0, 0);
-	mD3DFont->DrawTextW(NULL, text, -1, &rc, DT_NOCLIP | DT_SINGLELINE, textColor);
+	if (!drawBorder)
+	{
+		SetRect(&rc, x, y, 0, 0);
+		mD3DFont->DrawTextW(NULL, text, -1, &rc, DT_NOCLIP | DT_SINGLELINE, textColor);
+	}
+	else
+	{
+		mD3DSprite->Begin(D3DXSPRITE_ALPHABLEND | D3DXSPRITE_SORT_TEXTURE);
+		SetRect(&rc, x-1, y, 0, 0);
+		mD3DFont->DrawTextW(mD3DSprite, text, -1, &rc, DT_NOCLIP | DT_SINGLELINE, borderColor);
+		SetRect(&rc, x+1, y, 0, 0);
+		mD3DFont->DrawTextW(mD3DSprite, text, -1, &rc, DT_NOCLIP | DT_SINGLELINE, borderColor);
+		SetRect(&rc, x, y-1, 0, 0);
+		mD3DFont->DrawTextW(mD3DSprite, text, -1, &rc, DT_NOCLIP | DT_SINGLELINE, borderColor);
+		SetRect(&rc, x, y+1, 0, 0);
+		mD3DFont->DrawTextW(mD3DSprite, text, -1, &rc, DT_NOCLIP | DT_SINGLELINE, borderColor);
+		SetRect(&rc, x, y, 0, 0);
+		mD3DFont->DrawTextW(mD3DSprite, text, -1, &rc, DT_NOCLIP | DT_SINGLELINE, textColor);
+		mD3DSprite->End();
+	}
 }
 
-inline void KDxTextHelper::DrawText(RECT* rc, WCHAR* text, DWORD format, D3DCOLOR textColor /* = 0xFF000000 */, 
+inline void KDxTextHelper::DrawText(RECT* rc, LPCWSTR text, DWORD format, D3DCOLOR textColor /* = 0xFF000000 */, 
 	BOOL drawBorder /* = FALSE */, D3DCOLOR borderColor /* = 0xFFFFFFFF */)
 {
-
+	KASSERT(mD3DFont);
+	KASSERT(mD3DSprite);
+	DEL_FLAG(format, DT_CALCRECT);
+	if (!drawBorder)
+	{
+		mD3DFont->DrawTextW(NULL, text, -1, rc, format, textColor);
+	}
+	else
+	{
+		mD3DSprite->Begin(D3DXSPRITE_ALPHABLEND | D3DXSPRITE_SORT_TEXTURE);
+		OffsetRect(rc, -1, 0);
+		mD3DFont->DrawTextW(mD3DSprite, text, -1, rc, format, borderColor);
+		OffsetRect(rc, 2, 0);
+		mD3DFont->DrawTextW(mD3DSprite, text, -1, rc, format, borderColor);
+		OffsetRect(rc, -1, -1);
+		mD3DFont->DrawTextW(mD3DSprite, text, -1, rc, format, borderColor);
+		OffsetRect(rc, 0, 2);
+		mD3DFont->DrawTextW(mD3DSprite, text, -1, rc, format, borderColor);
+		OffsetRect(rc, 0, -1);
+		mD3DFont->DrawTextW(mD3DSprite, text, -1, rc, format, textColor);
+		mD3DSprite->End();
+	}
 }
 
-inline SIZE KDxTextHelper::TextSize(WCHAR* text)
+inline SIZE KDxTextHelper::TextSize(LPCWSTR text)
 {
+	KASSERT(mD3DFont);
+	RECT rc;
+	SetRect(&rc, 0, 0, 0, 0);
+	mD3DFont->DrawTextW(NULL, text, -1, &rc, DT_SINGLELINE | DT_CALCRECT, 0);
+	SIZE sz;
+	sz.cx = rc.right;
+	sz.cy = rc.bottom;
+	return sz;
+}
 
+inline int KDxTextHelper::TextSize(RECT* rc, LPCWSTR text, DWORD format)
+{
+	ADD_FLAG(format, DT_CALCRECT);
+	return mD3DFont->DrawTextW(NULL, text, -1, rc, format, 0);
 }
 
 inline void KDxTextHelper::OnDeviceNotify(KDxRender* render, KDxNotifyType type)
@@ -2056,6 +2197,12 @@ inline void KDxTextHelper::OnDeviceNotify(KDxRender* render, KDxNotifyType type)
 			itr->second->OnResetDevice();
 	}
 }
+
+#else
+
+
+
+#endif
 
 //------------------------------------------------------------------------------
 // KDxTexture
