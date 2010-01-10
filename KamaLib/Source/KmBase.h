@@ -35,5 +35,6 @@
 #include <vector>
 #include <list>
 #include <algorithm>
+#include <hash_set>
 
 #endif // __KAMA_KMBASE_H__

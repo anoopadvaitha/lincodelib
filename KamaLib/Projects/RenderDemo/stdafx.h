@@ -15,7 +15,7 @@
 #include <tchar.h>
 
 #define USE_LOG
-#define USE_D3DXFONT
+//#define USE_D3DXFONT
 
 #include "KmBase.h"
 
