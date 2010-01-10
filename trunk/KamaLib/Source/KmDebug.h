@@ -52,8 +52,10 @@ namespace kama
 #endif
 
 /*
-	日志记录: KLOG
-	每次调用都将自动换行，且最大字符数为512
+	日志记录: 
+	KLOG: 自动换行
+	KLOG2: 不自动换行
+	最大字符数为512
 	可调用SETLOGPATH设置日志文件的路径
 */
 #if defined(USE_LOG) || defined(_DEBUG)
@@ -104,14 +106,13 @@ namespace kama
 		}
 	}
 
-	inline void __cdecl _KLog(LPCWSTR szFormat, ...)
+	inline void __cdecl _KLogEx(BOOL oneLine, LPCWSTR szFormat, va_list args)
 	{
-		va_list args;
-		va_start(args, szFormat);
+		
 		WCHAR szBuf[512] = {0};
 		_vsnwprintf(szBuf, 512, szFormat, args);
-		wcscat(szBuf, L"\r\n");
-		va_end(args);	
+		if (oneLine)
+			wcscat(szBuf, L"\r\n");
 
 		DWORD writeSize;
 		if (INVALID_HANDLE_VALUE == _gLogFile)
@@ -119,11 +120,28 @@ namespace kama
 		if (INVALID_HANDLE_VALUE != _gLogFile)
 			WriteFile(_gLogFile, szBuf, (DWORD)wcslen(szBuf) * sizeof(WCHAR), &writeSize, NULL);
 	}
-	#define KLOG _KLog
-	#define SETLOGPATH _SetLogPath
+	inline void _cdecl _KLog(LPCWSTR szFormat, ...)
+	{
+		va_list args;
+		va_start(args, szFormat);
+		_KLogEx(TRUE, szFormat, args);
+		va_end(args);	
+	}
+	inline void _cdecl _KLog2(LPCWSTR szFormat, ...)
+	{
+		va_list args;
+		va_start(args, szFormat);
+		_KLogEx(FALSE, szFormat, args);
+		va_end(args);	
+	}
+
+	#define KLOG		_KLog
+	#define KLOG2		_KLog2
+	#define SETLOGPATH	_SetLogPath
 #else
-	#define KLOG __noop
-	#define SETLOGPATH __noop
+	#define KLOG		__noop
+	#define KLOG2		__noop
+	#define SETLOGPATH	__noop
 #endif
 
 //------------------------------------------------------------------------------

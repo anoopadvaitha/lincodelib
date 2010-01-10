@@ -50,7 +50,7 @@ KamaLib是一个主要面向游戏开发，同时也包含一些实用的基础功能的代码库。KamaLib有
   |-Draw Primitive      画图元                  OK
   |-Font and Text       字体和文本              OK
   |-Draw Texture        画纹理                  OK
-  |-Clip                剪裁                    
+  |-Clip                剪裁                    OK
 |-KmViews               视图控件库
   |-View Framework      视图框架                OK
   |-View Controls       视图控件集

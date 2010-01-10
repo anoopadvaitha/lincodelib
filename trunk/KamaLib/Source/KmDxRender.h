@@ -8,12 +8,23 @@
 				请自由使用！
  -------------------------------------------------------------------------------
   Description:
-	DirectX 2D渲染引擎，封装D3D9，提供简洁的渲染接口  
+	DirectX 2D渲染引擎，封装D3D9，提供简洁的渲染接口 
+	KDxRender:  渲染器，支持如下特性：
+		1.  图元绘制，只支持一部分。
+		2.  图像绘制。
+		3.  文本绘制。
+		4.  剪裁
+	KDxTexture: 纹理包装类。
+	KDxTextHelper: 文本输出辅助类。
+	KDxMainFrame: 主窗口类
+	KDxApp: 主程序类，提供消息循环，及FPS计算。
 
 *******************************************************************************/
 #ifndef __KAMA_KMDXRENDER_H__
 #define __KAMA_KMDXRENDER_H__
 #include "KmCommons.h"
+
+#pragma warning(disable: 4244)
 
 // d3d9 的库文件和头文件导入
 // 注意设置相应的搜索路径
@@ -69,15 +80,6 @@ enum KDxBlendMode
 };
 
 /*
-	浮点数的点结构
-*/
-struct POINTF
-{
-	FLOAT x;
-	FLOAT y;
-};
-
-/*
 	字体风格
 */
 typedef DWORD KDxFontStyle;
@@ -115,9 +117,9 @@ struct KDxFontOptions
 #define D3DCOLOR_B(color) (BYTE)(LOBYTE(LOWORD(color)))
 
 // 默认字体名
-#define DEF_FONT_NAME		L"Tahoma"
+#define DEF_FONT_NAME		L"Fixedsys"
 // 默认字体高
-#define DEF_FONT_HEIGHT		-13
+#define DEF_FONT_HEIGHT		-16
 
 class KDxRender;
 class KDxTexture;
@@ -146,13 +148,14 @@ interface IDxDeviceNotify
 };
 
 /*
-	文本输—出辅助类， 使用三种解决方案：
-	1.  USE_D3DXFONT: 用ID3DXFont实现，不支持下划线和删除线风格，同时也是一种慢速的字体渲染
-	2.  USE_GDICACHE: 用GDI绘制到内存DC，再复制到纹理，对纹理进行缓存
-	3.  USE_GLYPHCACHE: 直接取字体图元数据，复制到纹理，对纹理进行缓存	 TODO
+	1.  USE_D3DXFONT: 用ID3DXFont实现，不支持下划线和删除线风格，同时也是一种超慢速的字体渲染
+	2.  默认用GDI绘制到内存DC，再复制到纹理，对纹理进行缓存的方式
 */
 #ifdef USE_D3DXFONT
 
+/*
+	文字输出辅助类
+*/
 class KDxTextHelper: public IDxDeviceNotify
 {
 	typedef std::map<DWORD, ID3DXFont*> KDxD3DFontMap;
@@ -189,20 +192,9 @@ public:
 		BOOL drawBorder = FALSE, D3DCOLOR borderColor = 0xFFFFFFFF);
 
 	/*
-		支持复杂格式的输出文本, drawBorder指明是否给文本加外框， borderColor指定外框的颜色
-	*/
-	void DrawText(RECT* rc, LPCWSTR text, DWORD format, D3DCOLOR textColor = 0xFF000000, 
-		BOOL drawBorder = FALSE, D3DCOLOR borderColor = 0xFFFFFFFF);
-
-	/*
 		取得单行文本尺寸
 	*/
-	SIZE TextSize(LPCWSTR text);
-
-	/*
-		取得复杂格式的文本尺寸
-	*/
-	int TextSize(RECT* rc, LPCWSTR text, DWORD format);
+	SIZE TextSize(LPCWSTR text, BOOL hasBorder = FALSE);
 
 protected:
 	virtual void OnDeviceNotify(KDxRender* render, KDxNotifyType type);
@@ -219,17 +211,23 @@ private:
 
 #else
 
-struct KDxTextInfo
-{
+#define MAX_TEXT_CACHE 512
 
-};
+// 黑白位图信息
+typedef struct tagBITMAPINFO2 {
+	BITMAPINFOHEADER    bmiHeader;
+	RGBQUAD             bmiColors[2];
+} BITMAPINFO2, FAR *LPBITMAPINFO2, *PBITMAPINFO2;
 
+/*
+	文字输出辅助类
+*/
 class KDxTextHelper: public IDxDeviceNotify
 {
-	typedef std::map<DWORD, KDxTextInfo> KDxTextInfoMap;
+	typedef std::map<DWORD, KDxTexture*> KDxTexCache;
 public:
 	KDxTextHelper():
-	mD3DFont(NULL), mD3DSprite(NULL), mRender(NULL)
+		mMemDC(NULL), mOrgFont(NULL), mRender(NULL)
 	{
 	}
 
@@ -260,28 +258,32 @@ public:
 		BOOL drawBorder = FALSE, D3DCOLOR borderColor = 0xFFFFFFFF);
 
 	/*
-		支持复杂格式的输出文本, drawBorder指明是否给文本加外框， borderColor指定外框的颜色
-	*/
-	void DrawText(RECT* rc, LPCWSTR text, DWORD format, D3DCOLOR textColor = 0xFF000000, 
-		BOOL drawBorder = FALSE, D3DCOLOR borderColor = 0xFFFFFFFF);
-
-	/*
 		取得单行文本尺寸
 	*/
-	SIZE TextSize(LPCWSTR text);
-
-	/*
-		取得复杂格式的文本尺寸
-	*/
-	int TextSize(RECT* rc, LPCWSTR text, DWORD format);
+	SIZE TextSize(LPCWSTR text, BOOL hasBorder = FALSE);
 
 protected:
+	/*
+		设备通知
+	*/
 	virtual void OnDeviceNotify(KDxRender* render, KDxNotifyType type);
+
+	/*
+		取文本纹理
+	*/
+	KDxTexture* GetTexture(KDxFontOptions* fontOpt, LPCWSTR text);
+
+	/*
+		取得文本与字体的唯一标识码
+	*/
+	DWORD GetTextCode(KDxFontOptions* fontOpt, LPCWSTR text, int size);
 
 private:
 	KDxFontOptions	mFontOpts;
 	KDxRender*		mRender;
-	HDC				dc;
+	HDC				mMemDC;
+	HFONT			mOrgFont;
+	KDxTexCache		mTexCache;
 };
 
 #endif // USE_D3DXFONT
@@ -291,8 +293,9 @@ private:
 */
 class KDxRender
 {
-	typedef std::vector<D3DDISPLAYMODE> KDispModeVector;
+	typedef std::vector<D3DDISPLAYMODE> KDxDispModeVector;
 	typedef std::vector<IDxDeviceNotify*> KDxNotifyVector;
+	typedef std::list<RECT> KDxClipList;
 public:
 	//------------------------------------------------------------------------------
 	// 初始化和结束处理
@@ -631,70 +634,71 @@ public:
 	/*
 		绘线条
 	*/
-	void DrawLine(FLOAT x1, FLOAT y1, FLOAT x2, FLOAT y2, D3DCOLOR color);
+	void DrawLine(int x1, int y1, int x2, int y2, D3DCOLOR color);
 
 	/*
 		绘三角形
 	*/
-	void DrawTriangle(FLOAT x1, FLOAT y1, FLOAT x2, FLOAT y2, FLOAT x3, FLOAT y3, D3DCOLOR color);
+	void DrawTriangle(int x1, int y1, int x2, int y2, int x3, int y3, D3DCOLOR color);
 
 	/*
 		填充三角形
 	*/
-	void FillTriangle(FLOAT x1, FLOAT y1, FLOAT x2, FLOAT y2, FLOAT x3, FLOAT y3, D3DCOLOR color);
+	void FillTriangle(int x1, int y1, int x2, int y2, int x3, int y3, D3DCOLOR color);
+
 
 	/*
 		绘矩形
 	*/
-	void DrawRect(FLOAT left, FLOAT top, FLOAT right, FLOAT bottom, D3DCOLOR color, int width = 1);
+	void DrawRect(int left, int top, int right, int bottom, D3DCOLOR color);
 
 	/*
 		填充矩形
 	*/
-	void FillRect(FLOAT left, FLOAT top, FLOAT right, FLOAT bottom, D3DCOLOR color);
+	void FillRect(int left, int top, int right, int bottom, D3DCOLOR color);
 
 	/*
 		填充渐变矩形
 	*/
-	void FillGradienRect(FLOAT left, FLOAT top, FLOAT right, FLOAT bottom, 
+	void FillGradienRect(int left, int top, int right, int bottom, 
 		D3DCOLOR color1, D3DCOLOR color2, BOOL isHoriz);
 
 	/*
 		画多边形, lpPoints为多边形的点数组，color为点数组的大小，isClosed指定是否闭包
 	*/
-	void DrawPolygon(const POINTF* lpPoints, FLOAT count, D3DCOLOR color, bool isClosed);
+	void DrawPolygon(const POINT* lpPoints, int count, D3DCOLOR color, bool isClosed);
 
 	/*
 		填充多边形
 	*/
-	void FillPolygon(const POINTF* lpPoints, FLOAT count, D3DCOLOR color);
+	void FillPolygon(const POINT* lpPoints, int count, D3DCOLOR color);
 
 	/*
 		画椭圆
 	*/
-	void DrawEllipse(FLOAT left, FLOAT top, FLOAT right, FLOAT bottom, D3DCOLOR color);
+	void DrawEllipse(int left, int top, int right, int bottom, D3DCOLOR color);
 
 	/*
 		填充椭圆
 	*/
-	void FillEllipse(FLOAT left, FLOAT top, FLOAT right, FLOAT bottom, D3DCOLOR color);
+	void FillEllipse(int left, int top, int right, int bottom, D3DCOLOR color);
 
 	/*
 		画圆角矩形
 	*/
-	void DrawRoundRect(FLOAT left, FLOAT top, FLOAT right, FLOAT bottom, 
-		FLOAT width, FLOAT height, D3DCOLOR color);
+	void DrawRoundRect(int left, int top, int right, int bottom, 
+		int width, int height, D3DCOLOR color);
 
 	/*
 		画纹理
 	*/
-	void Draw(FLOAT x, FLOAT y, KDxTexture* tex, KDxBlendMode blendMode = bmNone, 
+	void Draw(int x, int y, KDxTexture* tex, KDxBlendMode blendMode = bmNone, 
 		D3DCOLOR color = 0xFFFFFFFF);
 
 	/*
 		拉伸画纹理
 	*/
-	void StretchDraw(FLOAT x, FLOAT y, FLOAT w, FLOAT h, KDxTexture* tex, 
+	void StretchDraw(int x, int y, int w, int h, KDxTexture* tex, 
 		KDxBlendMode blendMode = bmNone, D3DCOLOR color = 0xFFFFFFFF);
 
 	// TODO(Tramper-2010/01/04): 旋转，画一部分，Mask纹理，待实现
@@ -729,22 +733,30 @@ public:
 		BOOL drawBorder = FALSE, D3DCOLOR borderColor = 0xFFFFFFFF);
 
 	/*
-		支持复杂格式的输出文本, drawBorder指明是否给文本加外框， borderColor指定外框的颜色
-	*/
-	void DrawText(RECT* rc, LPCWSTR text, DWORD format, D3DCOLOR textColor = 0xFF000000, 
-		BOOL drawBorder = FALSE, D3DCOLOR borderColor = 0xFFFFFFFF);
-
-	/*
 		取得文本尺寸
 	*/
-	SIZE TextSize(LPCWSTR text);
+	SIZE TextSize(LPCWSTR text, BOOL hasBorder);
+
+	//------------------------------------------------------------------------------
+	// 剪裁
 
 	/*
-		取得文本尺寸
+		开始剪裁，必须与EndClip成对使用
 	*/
-	int TextSize(RECT*rc, LPWSTR text, DWORD format);
+	BOOL BeginClip(RECT& rcClip);
+
+	/*
+		结束剪裁
+	*/
+	void EndClip();
 
 protected:
+	/*
+		内部绘制
+	*/
+	void DrawLine(FLOAT x1, FLOAT y1, FLOAT x2, FLOAT y2, D3DCOLOR color);
+	void FillTriangle(FLOAT x1, FLOAT y1, FLOAT x2, FLOAT y2, FLOAT x3, FLOAT y3, D3DCOLOR color);
+
 	/*
 		重置设备
 	*/
@@ -821,7 +833,7 @@ private:
 	KDxBitDepth				mBitDepth;			// 位深
 	D3DCOLOR				mBkColor;			// 背景色
 	BOOL					mIsDispModeInited;	// 显示模式是否已经初始化 
-	KDispModeVector			mDispModeVector;	// 显示模式列表
+	KDxDispModeVector			mDispModeVector;	// 显示模式列表
 	KDirect3D9Ptr			mDirect3D9;			// D3D9接口
 	KD3DDevice9Ptr			mDevice9;			// D3D设备
 	D3DCAPS9				mDeviceCaps;		// 设备兼容性
@@ -839,6 +851,7 @@ private:
 	BOOL					mIsTopMost;			// 是否置顶
 	KDxNotifyVector			mNotifyVector;		// 通知列表
 	KDxTextHelper			mTextHelper;		// 文本辅助类
+	KDxClipList				mClipList;			// 剪裁列表
 };
 
 /*
@@ -1095,7 +1108,7 @@ inline BOOL KDxRender::IsDispModeAvailable(D3DDISPLAYMODE& mode)
 	InitDisplayMode();
 	if (mIsDispModeInited)
 	{
-		KDispModeVector::iterator itr = mDispModeVector.begin();
+		KDxDispModeVector::iterator itr = mDispModeVector.begin();
 		D3DDISPLAYMODE curMode;
 		while (itr != mDispModeVector.end())
 		{
@@ -1418,6 +1431,11 @@ inline void KDxRender::BatchPaint(int nextNum, BOOL IsEndPaint)
 	}
 }
 
+inline void KDxRender::DrawLine(int x1, int y1, int x2, int y2, D3DCOLOR color)
+{
+	DrawLine((FLOAT)x1, (FLOAT)y1, (FLOAT)x2, (FLOAT)y2, color);
+}
+
 inline void KDxRender::DrawLine(FLOAT x1, FLOAT y1, FLOAT x2, FLOAT y2, D3DCOLOR color)
 {
 	if (!mPtrVertex)
@@ -1443,11 +1461,16 @@ inline void KDxRender::DrawLine(FLOAT x1, FLOAT y1, FLOAT x2, FLOAT y2, D3DCOLOR
 	++mPrimCount;
 }
 
-inline void KDxRender::DrawTriangle(FLOAT x1, FLOAT y1, FLOAT x2, FLOAT y2, FLOAT x3, FLOAT y3, D3DCOLOR color)
+inline void KDxRender::DrawTriangle(int x1, int y1, int x2, int y2, int x3, int y3, D3DCOLOR color)
 {
 	DrawLine(x1, y1, x2, y2, color);
 	DrawLine(x2, y2, x3, y3, color);
 	DrawLine(x3, y3, x1, y1, color);
+}
+
+inline void KDxRender::FillTriangle(int x1, int y1, int x2, int y2, int x3, int y3, D3DCOLOR color)
+{
+	FillTriangle((FLOAT)x1, (FLOAT)y1, (FLOAT)x2, (FLOAT)y2, (FLOAT)x3, (FLOAT)y3, color);
 }
 
 inline void KDxRender::FillTriangle(FLOAT x1, FLOAT y1, FLOAT x2, FLOAT y2, FLOAT x3, FLOAT y3, D3DCOLOR color)
@@ -1476,28 +1499,15 @@ inline void KDxRender::FillTriangle(FLOAT x1, FLOAT y1, FLOAT x2, FLOAT y2, FLOA
 	++mPrimCount;
 }
 
-inline void KDxRender::DrawRect(FLOAT left, FLOAT top, FLOAT right, FLOAT bottom, D3DCOLOR color, int width)
+inline void KDxRender::DrawRect(int left, int top, int right, int bottom, D3DCOLOR color)
 {
-	if (width <= 0)
-		return;
-	if (width == 1)
-	{
-		DrawLine(left, top, right, top, color);
-		DrawLine(right, top, right, bottom , color);
-		DrawLine(right, bottom , left , bottom, color);
-		DrawLine(left, bottom , left, top, color);
-	}
-	else
-	{
-		FLOAT half = (FLOAT)width / 2;
-		FillRect(left - half, top - half, right + half, top + half, color);
-		FillRect(right - half, top + half, right + half, bottom - half, color);
-		FillRect(right + half, bottom - half, left - half, bottom + half, color);
-		FillRect(left - half, bottom - half, left + half, top + half, color);
-	}
+	DrawLine(left, top, right, top, color);
+	DrawLine(right, top, right, bottom , color);
+	DrawLine(right, bottom , left , bottom, color);
+	DrawLine(left, bottom , left, top, color);
 }
 
-inline void KDxRender::FillRect(FLOAT left, FLOAT top, FLOAT right, FLOAT bottom, D3DCOLOR color)
+inline void KDxRender::FillRect(int left, int top, int right, int bottom, D3DCOLOR color)
 {
 	if (!mPtrVertex)
 		return;
@@ -1517,16 +1527,16 @@ inline void KDxRender::FillRect(FLOAT left, FLOAT top, FLOAT right, FLOAT bottom
 			mCurTexture = NULL;
 		}
 	}
-	AddVertex(left, top, color);
-	AddVertex(right, bottom, color);
-	AddVertex(left, bottom, color);
-	AddVertex(left, top, color);
-	AddVertex(right, top, color);
-	AddVertex(right, bottom, color);
+	AddVertex((FLOAT)left, (FLOAT)top, color);
+	AddVertex((FLOAT)right, (FLOAT)bottom, color);
+	AddVertex((FLOAT)left, (FLOAT)bottom, color);
+	AddVertex((FLOAT)left, (FLOAT)top, color);
+	AddVertex((FLOAT)right, (FLOAT)top, color);
+	AddVertex((FLOAT)right, (FLOAT)bottom, color);
 	mPrimCount += 2;
 }
 
-inline void KDxRender::FillGradienRect(FLOAT left, FLOAT top, FLOAT right, FLOAT bottom, D3DCOLOR color1, D3DCOLOR color2, BOOL isHoriz)
+inline void KDxRender::FillGradienRect(int left, int top, int right, int bottom, D3DCOLOR color1, D3DCOLOR color2, BOOL isHoriz)
 {
 	if (!mPtrVertex)
 		return;
@@ -1550,20 +1560,20 @@ inline void KDxRender::FillGradienRect(FLOAT left, FLOAT top, FLOAT right, FLOAT
 			mCurTexture = NULL;
 		}
 	}
-	AddVertex(left, top, color1);
-	AddVertex(right, bottom, color2);
-	AddVertex(left, bottom, isHoriz ? color1 : color2);
-	AddVertex(left, top, color1);
-	AddVertex(right, top, isHoriz ? color2 : color1);
-	AddVertex(right, bottom, color2);
+	AddVertex((FLOAT)left, (FLOAT)top, color1);
+	AddVertex((FLOAT)right, (FLOAT)bottom, color2);
+	AddVertex((FLOAT)left, (FLOAT)bottom, isHoriz ? color1 : color2);
+	AddVertex((FLOAT)left, (FLOAT)top, color1);
+	AddVertex((FLOAT)right, (FLOAT)top, isHoriz ? color2 : color1);
+	AddVertex((FLOAT)right, (FLOAT)bottom, color2);
 	mPrimCount += 2;
 }
 
 inline void KDxRender::AddVertex(FLOAT x, FLOAT y, D3DCOLOR color, FLOAT u /* = 0.0f */, FLOAT v /* = 0.0f */)
 {
-	mPtrVertex[mVtxNum].x = x;
-	mPtrVertex[mVtxNum].y = y;
-	mPtrVertex[mVtxNum].z = 1.0f;
+	mPtrVertex[mVtxNum].x = x - 0.5f;
+	mPtrVertex[mVtxNum].y = y - 0.5f;
+	mPtrVertex[mVtxNum].z = 0.0f;
 	mPtrVertex[mVtxNum].tu = u;
 	mPtrVertex[mVtxNum].tv = v;
 	mPtrVertex[mVtxNum].color = color;
@@ -1617,7 +1627,7 @@ inline void KDxRender::SetBlendMode(KDxBlendMode blendMode)
 	}
 }
 
-inline void KDxRender::DrawPolygon(const POINTF* lpPoints, FLOAT count, D3DCOLOR color, bool isClosed)
+inline void KDxRender::DrawPolygon(const POINT* lpPoints, int count, D3DCOLOR color, bool isClosed)
 {
 	if ((!mPtrVertex) | (count <= 1))
 		return;
@@ -1635,7 +1645,7 @@ inline void KDxRender::DrawPolygon(const POINTF* lpPoints, FLOAT count, D3DCOLOR
 	}
 }
 
-inline void KDxRender::FillPolygon(const POINTF* lpPoints, FLOAT count, D3DCOLOR color)
+inline void KDxRender::FillPolygon(const POINT* lpPoints, int count, D3DCOLOR color)
 {
 	if (count < 3)
 		return;
@@ -1652,7 +1662,7 @@ inline void KDxRender::FillPolygon(const POINTF* lpPoints, FLOAT count, D3DCOLOR
 	}
 }
 
-inline void KDxRender::DrawEllipse(FLOAT left, FLOAT top, FLOAT right, FLOAT bottom, D3DCOLOR color)
+inline void KDxRender::DrawEllipse(int left, int top, int right, int bottom, D3DCOLOR color)
 {
 	// 求出中心点
 	FLOAT x0 = FLOAT(right + left) * 0.5f;
@@ -1688,7 +1698,7 @@ inline void KDxRender::DrawEllipse(FLOAT left, FLOAT top, FLOAT right, FLOAT bot
 	}
 }
 
-inline void KDxRender::FillEllipse(FLOAT left, FLOAT top, FLOAT right, FLOAT bottom, D3DCOLOR color)
+inline void KDxRender::FillEllipse(int left, int top, int right, int bottom, D3DCOLOR color)
 {
 	// 求出中心点
 	FLOAT x0 = FLOAT(right + left) * 0.5f;
@@ -1727,7 +1737,7 @@ inline void KDxRender::FillEllipse(FLOAT left, FLOAT top, FLOAT right, FLOAT bot
 	}
 }
 
-inline void KDxRender::DrawRoundRect(FLOAT left, FLOAT top, FLOAT right, FLOAT bottom, FLOAT width, FLOAT height, D3DCOLOR color)
+inline void KDxRender::DrawRoundRect(int left, int top, int right, int bottom, int width, int height, D3DCOLOR color)
 {
 	FLOAT ewr;  // 椭圆宽半径
 	FLOAT ehr;  // 椭圆高半径
@@ -1872,7 +1882,7 @@ inline void KDxRender::DrawRoundRect(FLOAT left, FLOAT top, FLOAT right, FLOAT b
 	DrawLine(x1, y1, x2, y2, color);
 }
 
-inline void KDxRender::Draw(FLOAT x, FLOAT y, KDxTexture* tex, 
+inline void KDxRender::Draw(int x, int y, KDxTexture* tex, 
 	KDxBlendMode blendMode /* = bmNone */, D3DCOLOR color /* = 0xFFFFFFFF */)
 {
 	if (!mPtrVertex || !tex)
@@ -1911,7 +1921,7 @@ inline void KDxRender::Draw(FLOAT x, FLOAT y, KDxTexture* tex,
 	mPrimCount += 2;
 }
 
-inline void KDxRender::StretchDraw(FLOAT x, FLOAT y, FLOAT w, FLOAT h, KDxTexture* tex, 
+inline void KDxRender::StretchDraw(int x, int y, int w, int h, KDxTexture* tex, 
 	KDxBlendMode blendMode /* = bmNone */, D3DCOLOR color /* = 0xFFFFFFFF */)
 {
 	if (!mPtrVertex || !tex)
@@ -2015,20 +2025,66 @@ inline void KDxRender::TextOut(int x, int y, LPCWSTR text, D3DCOLOR textColor /*
 	mTextHelper.TextOut(x, y, text, textColor, drawBorder, borderColor);
 }
 
-inline void KDxRender::DrawText(RECT* rc, LPCWSTR text, DWORD format, D3DCOLOR textColor /* = 0xFF000000 */, 
-	BOOL drawBorder /* = FALSE */, D3DCOLOR borderColor /* = 0xFFFFFFFF */)
+inline SIZE KDxRender::TextSize(LPCWSTR text, BOOL hasBorder)
 {
-	mTextHelper.DrawText(rc, text, format, textColor, drawBorder, borderColor);
+	mTextHelper.TextSize(text, hasBorder);
 }
 
-inline SIZE KDxRender::TextSize(LPCWSTR text)
+inline BOOL KDxRender::BeginClip(RECT& rcClip)
 {
-	mTextHelper.TextSize(text);
+	KASSERT(mInited);
+
+	// 保存老的
+	RECT rcOld;
+	D3DVIEWPORT9 vp;
+	if (SUCCEEDED(mDevice9->GetViewport(&vp)))
+	{
+		rcOld.left = vp.X;
+		rcOld.top = vp.Y;
+		rcOld.right = rcOld.left + vp.Width;
+		rcOld.bottom = rcOld.top + vp.Height;
+	}
+	else
+	{
+		GetClientRect(mHwnd, &rcOld);
+	}
+
+	// 应用新的
+	vp.X = rcClip.left;
+	vp.Y = rcClip.top;
+	vp.Width = rcClip.right - rcClip.left;
+	vp.Height = rcClip.bottom - rcClip.top;
+	vp.MinZ = 0.0f;
+	vp.MaxZ = 1.0f;
+	if (SUCCEEDED(mDevice9->SetViewport(&vp)))
+	{
+		mClipList.push_front(rcOld);
+		return TRUE;
+	}
+
+	// 失败
+	return FALSE;
 }
 
-inline int KDxRender::TextSize(RECT*rc, LPWSTR text, DWORD format)
+inline void KDxRender::EndClip()
 {
-	return mTextHelper.TextSize(rc, text, format);
+	KASSERT(mInited);
+	if (mClipList.size() > 0)
+	{
+		RECT rcClip = mClipList.front();
+		D3DVIEWPORT9 vp;
+		vp.X = rcClip.left;
+		vp.Y = rcClip.top;
+		vp.Width = rcClip.right - rcClip.left;
+		vp.Height = rcClip.bottom - rcClip.top;
+		vp.MinZ = 0.0f;
+		vp.MaxZ = 1.0f;
+		if (SUCCEEDED(mDevice9->SetViewport(&vp)))
+		{
+			// 恢复成功
+			mClipList.pop_front();
+		}
+	}
 }
 
 //------------------------------------------------------------------------------
@@ -2135,49 +2191,24 @@ inline void KDxTextHelper::TextOut(int x, int y, LPCWSTR text, D3DCOLOR textColo
 	}
 }
 
-inline void KDxTextHelper::DrawText(RECT* rc, LPCWSTR text, DWORD format, D3DCOLOR textColor /* = 0xFF000000 */, 
-	BOOL drawBorder /* = FALSE */, D3DCOLOR borderColor /* = 0xFFFFFFFF */)
-{
-	KASSERT(mD3DFont);
-	KASSERT(mD3DSprite);
-	DEL_FLAG(format, DT_CALCRECT);
-	if (!drawBorder)
-	{
-		mD3DFont->DrawTextW(NULL, text, -1, rc, format, textColor);
-	}
-	else
-	{
-		mD3DSprite->Begin(D3DXSPRITE_ALPHABLEND | D3DXSPRITE_SORT_TEXTURE);
-		OffsetRect(rc, -1, 0);
-		mD3DFont->DrawTextW(mD3DSprite, text, -1, rc, format, borderColor);
-		OffsetRect(rc, 2, 0);
-		mD3DFont->DrawTextW(mD3DSprite, text, -1, rc, format, borderColor);
-		OffsetRect(rc, -1, -1);
-		mD3DFont->DrawTextW(mD3DSprite, text, -1, rc, format, borderColor);
-		OffsetRect(rc, 0, 2);
-		mD3DFont->DrawTextW(mD3DSprite, text, -1, rc, format, borderColor);
-		OffsetRect(rc, 0, -1);
-		mD3DFont->DrawTextW(mD3DSprite, text, -1, rc, format, textColor);
-		mD3DSprite->End();
-	}
-}
-
-inline SIZE KDxTextHelper::TextSize(LPCWSTR text)
+inline SIZE KDxTextHelper::TextSize(LPCWSTR text, BOOL hasBorder)
 {
 	KASSERT(mD3DFont);
 	RECT rc;
 	SetRect(&rc, 0, 0, 0, 0);
 	mD3DFont->DrawTextW(NULL, text, -1, &rc, DT_SINGLELINE | DT_CALCRECT, 0);
 	SIZE sz;
-	sz.cx = rc.right;
-	sz.cy = rc.bottom;
+	if (hasBorder)
+	{
+		sz.cx = rc.right + 2;
+		sz.cy = rc.bottom + 2;
+	}
+	else
+	{
+		sz.cx = rc.right;
+		sz.cy = rc.bottom;
+	}
 	return sz;
-}
-
-inline int KDxTextHelper::TextSize(RECT* rc, LPCWSTR text, DWORD format)
-{
-	ADD_FLAG(format, DT_CALCRECT);
-	return mD3DFont->DrawTextW(NULL, text, -1, rc, format, 0);
 }
 
 inline void KDxTextHelper::OnDeviceNotify(KDxRender* render, KDxNotifyType type)
@@ -2200,7 +2231,233 @@ inline void KDxTextHelper::OnDeviceNotify(KDxRender* render, KDxNotifyType type)
 
 #else
 
+inline void KDxTextHelper::Initialize(KDxRender* render)
+{
+	KASSERT(render != NULL);
+	mRender = render;
+	mMemDC = CreateCompatibleDC(0);
+	SetTextColor(mMemDC, 0xFFFFFF);
+	SetBkMode(mMemDC, TRANSPARENT);
+	SetFontOptions(DEF_FONT_HEIGHT, 0, DEF_FONT_NAME);
+}
 
+inline void KDxTextHelper::Finalize()
+{
+	if (mOrgFont)
+	{
+		HFONT hFont = (HFONT)SelectObject(mMemDC, mOrgFont);
+		DeleteObject((HGDIOBJ)hFont);
+	}
+	DeleteDC(mMemDC);
+	mRender = NULL;
+}
+
+inline void KDxTextHelper::SetFontOptions(int height, KDxFontStyle style, LPCWSTR fontName)
+{
+	if ((height == mFontOpts.Height) && (style == mFontOpts.Style) && 
+		(wcscmp(fontName, mFontOpts.FontName) == 0))
+		return;
+	mFontOpts.Height = height;
+	mFontOpts.Style = style;
+	wcsncpy(mFontOpts.FontName, fontName, LF_FACESIZE);
+	
+	// 字体
+	DWORD weight = HAS_FLAG(style, fsBold) ? FW_BOLD : FW_NORMAL;
+	DWORD italic = HAS_FLAG(style, fsItalic) ? TRUE : FALSE;
+	DWORD underline = HAS_FLAG(style, fsUnderline) ? TRUE : FALSE;
+	DWORD strikeout = HAS_FLAG(style, fsStrikeOut) ? TRUE : FALSE;
+	HFONT hFont = CreateFontW(height, 0, 0, 0, weight, italic, underline, strikeout,
+		DEFAULT_CHARSET, 0, 0, 0, 0, mFontOpts.FontName);
+	HFONT hOldFont = (HFONT)SelectObject(mMemDC, (HGDIOBJ)hFont);
+	if (!mOrgFont)
+		mOrgFont = hOldFont;
+	else
+		DeleteObject((HGDIOBJ)hOldFont);
+}
+
+inline KDxFontOptions* KDxTextHelper::FontOptions()
+{
+	return &mFontOpts;
+}
+
+inline void KDxTextHelper::TextOut(int x, int y, LPCWSTR text, D3DCOLOR textColor /* = 0xFF000000 */, 
+	BOOL drawBorder /* = FALSE */, D3DCOLOR borderColor /* = 0xFFFFFFFF */)
+{
+	KDxTexture* tex = GetTexture(&mFontOpts, text);
+	if (!tex) return;
+
+	if (!drawBorder)
+	{
+		mRender->Draw(x, y, tex, bmAlpha, textColor);
+	}
+	else
+	{
+		mRender->Draw(x,   y+1, tex, bmAlpha, borderColor);
+		mRender->Draw(x+2, y+1, tex, bmAlpha, borderColor);
+		mRender->Draw(x+1, y,   tex, bmAlpha, borderColor);
+		mRender->Draw(x+1, y+2, tex, bmAlpha, borderColor);
+		mRender->Draw(x+1, y+1, tex, bmAlpha, textColor);
+	}
+}
+
+inline SIZE KDxTextHelper::TextSize(LPCWSTR text, BOOL hasBorder /* = FALSE */)
+{
+	SIZE sz;
+	memset(&sz, 0, sizeof(sz));
+	int textLen = (int)wcslen(text);
+	if (!textLen)
+		return sz;
+
+	DWORD code = GetTextCode(&mFontOpts, text, textLen);
+	KDxTexture* tex = NULL;
+	KDxTexCache::iterator itr = mTexCache.find(code);
+	if (itr != mTexCache.end())
+		tex = itr->second;
+	
+	if (tex)
+	{
+		sz.cx = tex->ImgWidth();
+		sz.cy = tex->ImgHeight();
+	}
+	else
+	{
+		GetTextExtentPoint32W(mMemDC, text, (int)wcslen(text), &sz);
+		ABCFLOAT abc;
+		if (GetCharABCWidthsFloatW(mMemDC, text[textLen-1], text[textLen-1], &abc))
+			sz.cx -= abc.abcfC;
+	}
+
+	if (hasBorder)
+	{
+		sz.cx += 2;
+		sz.cy += 2;
+	}
+	return sz;
+}
+
+inline KDxTexture* KDxTextHelper::GetTexture(KDxFontOptions* fontOpt, LPCWSTR text)
+{
+	int textLen = (int)wcslen(text);
+	if (!textLen)
+		return NULL;
+
+	DWORD code = GetTextCode(fontOpt, text, textLen);
+	KDxTexCache::iterator itr = mTexCache.find(code);
+	if (itr != mTexCache.end())
+		return itr->second;
+
+	// 字体尺寸
+	SIZE textSize;
+	GetTextExtentPoint32W(mMemDC, text, textLen, &textSize);
+	ABCFLOAT abc;
+	if (GetCharABCWidthsFloatW(mMemDC, text[textLen-1], text[textLen-1], &abc))
+		textSize.cx -= abc.abcfC;
+
+	// 创建纹理, 用A4R4G4B4
+	KDxTexture* tex = new KDxTexture;
+	if (!tex->CreateTexture(mRender, textSize.cx, textSize.cy, D3DFMT_A4R4G4B4))
+	{
+		delete tex;
+		return NULL;
+	}
+
+	// 创建一个黑白位图
+	HBITMAP textBmp = CreateCompatibleBitmap(mMemDC, textSize.cx, textSize.cy);
+	HBITMAP oldBmp = (HBITMAP)SelectObject(mMemDC, (HGDIOBJ)textBmp);
+
+	// 输出文本
+	TextOutW(mMemDC, 0, 0, text, textLen);
+
+	// 取文本位图数据
+	BITMAPINFO2 biInfo = {0};
+	int lineSize = ((textSize.cx + 31) & ~31) >> 3;
+	biInfo.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);;
+	biInfo.bmiHeader.biWidth = textSize.cx;
+	biInfo.bmiHeader.biHeight = -textSize.cy;
+	biInfo.bmiHeader.biPlanes = 1;
+	biInfo.bmiHeader.biBitCount = 1;
+	biInfo.bmiHeader.biSizeImage = lineSize * textSize.cy;
+	BYTE* bmpData = new BYTE[biInfo.bmiHeader.biSizeImage];
+	if (GetDIBits(mMemDC, textBmp, 0, textSize.cy, bmpData, (BITMAPINFO*)&biInfo, DIB_RGB_COLORS))
+	{
+		BYTE* ptrBmp = bmpData;
+		
+		// 写纹理数据
+		int pitch;
+		WORD* ptrTex = (WORD*)tex->Lock(&pitch);
+		if (ptrTex)
+		{
+			static BYTE bitMask[8] = {0x80, 0x40, 0x20, 0x10, 0x8, 0x4, 0x2, 0x1};
+			int b;
+			int i;
+			for (int r = 0; r < textSize.cy; ++r)
+			{
+				b = 0;
+				i = 0;
+				for (int c = 0; c < textSize.cx; ++c)
+				{
+					ptrTex[c] = (ptrBmp[i] & bitMask[b]) ? 0xFFFF : 0;
+					if (++b == 8)
+					{
+						b = 0;
+						++i;
+					}
+				}
+				ptrTex = (WORD*)((BYTE*)ptrTex + pitch);
+				ptrBmp += lineSize;
+			}
+		}
+		tex->UnLock();
+	}
+	delete bmpData;
+
+	// 结束
+	SelectObject(mMemDC, (HGDIOBJ)oldBmp);
+	DeleteObject(textBmp);
+	
+	// 缓存纹理
+	mTexCache.insert(std::make_pair(code, tex));
+
+	// 如果超出最大纹理数，就删掉一个
+	KTRACE(L"Text Textures: %d", mTexCache.size());
+	if (mTexCache.size() > MAX_TEXT_CACHE)
+	{
+		KDxTexCache::iterator itr = mTexCache.begin();
+		KDxTexture* delTex;
+		if (itr->first != code)
+		{
+			delTex = itr->second;
+			mTexCache.erase(itr);
+			delete delTex;
+		}
+		else 
+		{
+			++itr;
+			delTex = itr->second;
+			mTexCache.erase(itr);
+			delete delTex;
+		}
+	}
+	return tex;
+}
+
+DWORD KDxTextHelper::GetTextCode(KDxFontOptions* fontOpt, LPCWSTR text, int size)
+{
+	int len1 = sizeof(KDxFontOptions);
+	int len2 = size * sizeof(WCHAR);
+	int len = len1 + len2;
+	BYTE* ptrData = new BYTE[len];
+	memcpy(ptrData, fontOpt, len1);
+	memcpy((void*)(ptrData + len1), text, len2);
+	DWORD code = GetHashCode(ptrData, len);
+	delete ptrData;
+	return code;
+}
+
+inline void KDxTextHelper::OnDeviceNotify(KDxRender* render, KDxNotifyType type)
+{
+	// nothing
+}
 
 #endif
 
