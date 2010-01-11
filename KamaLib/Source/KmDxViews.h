@@ -13,6 +13,7 @@
 #ifndef __KAMA_KMDXVIEWS_H__
 #define __KAMA_KMDXVIEWS_H__
 #include "KmCommons.h"
+#include "KmDxRender.h"
 
 namespace kama
 {
@@ -296,7 +297,7 @@ interface IDxViewEvent
 		rcPaint	要绘制的区域，为屏幕坐标
 		rcScreen 视图在屏幕中的区域
 	*/
-	virtual void OnPaint(KDxView* view, const RECT& rcPaint, const RECT& rcScreen) 
+	virtual void OnPaint(KDxView* view, KDxRender* render, const RECT& rcPaint, const RECT& rcScreen) 
 	{
 
 	}
@@ -687,7 +688,7 @@ public:
 	/*
 		绘制，具体用什么绘制
 	*/
-	virtual void DoPaint(const RECT& rcPaint, const RECT& rcScreen);
+	virtual void DoPaint(KDxRender* render, const RECT& rcPaint, const RECT& rcScreen);
 
 	/*
 		处理投递事件
@@ -1054,6 +1055,8 @@ private:
 		KDxScreen* screen = NEW_SCREEN(KDxScreen);
 	*.  设宿主窗口
 		screen->SetHostWnd(hwnd);
+	*.  设渲染器
+		screen->SetRender(Render);
 	*.  定时更新和绘制，一般在消息循环的Idle时做
 		screen->Update();
 		// 这里可能要限制帧数
@@ -1079,7 +1082,9 @@ public:
 		mMsgLooper(NULL),
 		mDefMsgLooper(NULL),
 		mFrameTime(30),
-		mHoverView(NULL)
+		mHoverView(NULL),
+		mRender(NULL),
+		mCanClip(FALSE)
 	{
 	}
 
@@ -1092,6 +1097,26 @@ public:
 		取宿主窗口
 	*/
 	HWND HostWnd(); 
+
+	/*
+		设渲染器
+	*/
+	void SetRender(KDxRender* render);
+
+	/*
+		取渲染器
+	*/
+	KDxRender* Render();
+
+	/*
+		是否支持剪裁
+	*/
+	void SetClip(BOOL canClip);
+
+	/*
+		是否支持剪裁
+	*/
+	BOOL CanClip();
 
 	/*
 		取某个子窗口
@@ -1302,6 +1327,8 @@ protected:
 	KDxMsgLooper*		mDefMsgLooper;			// 默认消息循环
 	DWORD				mFrameTime;				// 每更新或绘制一帧的时间(ms)
 	KDxView*			mHoverView;				// 鼠标盘旋的视图
+	KDxRender*			mRender;				// 渲染器
+	BOOL				mCanClip;			// 支持剪裁，可能会明显降低性能，慎用
 };
 
 
@@ -1895,10 +1922,10 @@ inline void KDxView::DoUpdate()
 		mViewEvent->OnUpdate(this);
 }
 
-inline void KDxView::DoPaint(const RECT& rcPaint, const RECT& rcScreen)
+inline void KDxView::DoPaint(KDxRender* render, const RECT& rcPaint, const RECT& rcScreen)
 {
 	if (mViewEvent)
-		mViewEvent->OnPaint(this, rcPaint, rcScreen);
+		mViewEvent->OnPaint(this, render, rcPaint, rcScreen);
 }
 
 inline void KDxView::HandlePostEvent(KDxPostId id, DWORD param1, DWORD param2)
@@ -2765,6 +2792,26 @@ inline HWND KDxScreen::HostWnd()
 	return mHostWnd; 
 }
 
+inline void KDxScreen::SetRender(KDxRender* render)
+{
+	mRender = render;
+}
+
+inline KDxRender* KDxScreen::Render()
+{
+	return mRender;
+}
+
+inline void KDxScreen::SetClip(BOOL canClip)
+{
+	mCanClip = canClip;
+}
+
+inline BOOL KDxScreen::CanClip()
+{
+	return mCanClip;
+}
+
 inline KDxWindow* KDxScreen::ChildWindow(int idx)
 {
 	KDxView* view = ChildView(idx);
@@ -2979,9 +3026,11 @@ inline void KDxScreen::Paint()
 {
 	if(IsVisible())
 	{
+		KASSERT(mRender != NULL);
+
 		RECT rcPaint;
 		ScreenRect(rcPaint);
-		DoPaint(rcPaint, rcPaint);
+		DoPaint(mRender, rcPaint, rcPaint);
 		PaintChilds(this, rcPaint, rcPaint);
 	}
 }
@@ -3026,6 +3075,7 @@ inline void KDxScreen::Finalize()
 		delete mDefMsgLooper;
 
 	SetHostWnd(NULL);
+	mRender = NULL;
 }
 
 inline BOOL KDxScreen::InsertChild(KDxView* childView, int pos , BOOL isCheck)
@@ -3154,7 +3204,13 @@ inline void KDxScreen::PaintChilds(KDxView* parentView, const RECT& rcParentPain
 				::IntersectRect(&rcChildPaint, &rcParentPaint, &rcChildScreen);
 				if (!::IsRectEmpty(&rcChildPaint))
 				{
-					wnd->DoPaint(rcChildPaint, rcChildScreen);
+					BOOL isClip = FALSE;
+					if (mCanClip && mRender->BeginClip(rcChildPaint))
+						isClip = TRUE;
+					wnd->DoPaint(mRender, rcChildPaint, rcChildScreen);
+					if (isClip) 
+						mRender->EndClip();
+
 					PaintChilds(wnd, rcChildPaint, rcChildScreen);
 				}
 			}
@@ -3174,7 +3230,13 @@ inline void KDxScreen::PaintChilds(KDxView* parentView, const RECT& rcParentPain
 				::IntersectRect(&rcChildPaint, &rcParentPaint, &rcChildScreen);
 				if (!::IsRectEmpty(&rcChildPaint))
 				{
-					wnd->DoPaint(rcChildPaint, rcChildScreen);
+					BOOL isClip = FALSE;
+					if (mCanClip && mRender->BeginClip(rcChildPaint))
+						isClip = TRUE;
+					wnd->DoPaint(mRender, rcChildPaint, rcChildScreen);
+					if (isClip) 
+						mRender->EndClip();
+
 					PaintChilds(wnd, rcChildPaint, rcChildScreen);
 				}
 			}
@@ -3195,7 +3257,13 @@ inline void KDxScreen::PaintChilds(KDxView* parentView, const RECT& rcParentPain
 				::IntersectRect(&rcChildPaint, &rcParentPaint, &rcChildScreen);
 				if (!::IsRectEmpty(&rcChildPaint))
 				{
-					view->DoPaint(rcChildPaint, rcChildScreen);
+					BOOL isClip = FALSE;
+					if (mCanClip && mRender->BeginClip(rcChildPaint))
+						isClip = TRUE;
+					view->DoPaint(mRender, rcChildPaint, rcChildScreen);
+					if (isClip)
+						mRender->EndClip();
+					
 					PaintChilds(view, rcChildPaint, rcChildScreen);
 				}
 			}

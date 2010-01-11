@@ -117,9 +117,9 @@ struct KDxFontOptions
 #define D3DCOLOR_B(color) (BYTE)(LOBYTE(LOWORD(color)))
 
 // 默认字体名
-#define DEF_FONT_NAME		L"Fixedsys"
+#define DEF_FONT_NAME		L"宋体"
 // 默认字体高
-#define DEF_FONT_HEIGHT		-16
+#define DEF_FONT_HEIGHT		-13
 
 class KDxRender;
 class KDxTexture;
@@ -127,7 +127,7 @@ class KDxTexture;
 /*
 	设备通知类型
 */
-enum KDxNotifyType
+enum KDxDeviceNotifyType
 {
 	ntDeviceInit,		 // 设备初始化完
 	ntDeviceLost,		 // 设备丢失
@@ -143,7 +143,7 @@ interface IDxDeviceNotify
 	/*
 		设备通知
 	*/
-	virtual void OnDeviceNotify(KDxRender* render, KDxNotifyType type)
+	virtual void OnDeviceNotify(KDxRender* render, KDxDeviceNotifyType type)
 	{}
 };
 
@@ -188,8 +188,8 @@ public:
 	/*
 		简单的输出文本, drawBorder指明是否给文本加外框， borderColor指定外框的颜色
 	*/
-	void TextOut(int x, int y, LPCWSTR text, D3DCOLOR textColor = 0xFF000000, 
-		BOOL drawBorder = FALSE, D3DCOLOR borderColor = 0xFFFFFFFF);
+	void TextOut(int x, int y, LPCWSTR text, D3DCOLOR textColor = 0xFFFFFFFF, 
+		BOOL drawBorder = TRUE, D3DCOLOR borderColor = 0xFF000000);
 
 	/*
 		取得单行文本尺寸
@@ -197,7 +197,7 @@ public:
 	SIZE TextSize(LPCWSTR text, BOOL hasBorder = FALSE);
 
 protected:
-	virtual void OnDeviceNotify(KDxRender* render, KDxNotifyType type);
+	virtual void OnDeviceNotify(KDxRender* render, KDxDeviceNotifyType type);
 	void FreeD3DFonts();
 	ID3DXFont* GetFont(KDxFontOptions& fontOpt);
 
@@ -266,7 +266,7 @@ protected:
 	/*
 		设备通知
 	*/
-	virtual void OnDeviceNotify(KDxRender* render, KDxNotifyType type);
+	virtual void OnDeviceNotify(KDxRender* render, KDxDeviceNotifyType type);
 
 	/*
 		取文本纹理
@@ -277,6 +277,11 @@ protected:
 		取得文本与字体的唯一标识码
 	*/
 	DWORD GetTextCode(KDxFontOptions* fontOpt, LPCWSTR text, int size);
+
+	/*
+		释放纹理缓存
+	*/
+	void FreeTexCache();
 
 private:
 	KDxFontOptions	mFontOpts;
@@ -354,7 +359,7 @@ public:
 	/*
 		通知
 	*/
-	void DoNotify(KDxNotifyType type);
+	void DoNotify(KDxDeviceNotifyType type);
 
 	//------------------------------------------------------------------------------
 	// 属性设置
@@ -729,8 +734,8 @@ public:
 	/*
 		简单的输出文本, drawBorder指明是否给文本加外框， borderColor指定外框的颜色
 	*/
-	void TextOut(int x, int y, LPCWSTR text, D3DCOLOR textColor = 0xFF000000, 
-		BOOL drawBorder = FALSE, D3DCOLOR borderColor = 0xFFFFFFFF);
+	void TextOut(int x, int y, LPCWSTR text, D3DCOLOR textColor = 0xFFFFFFFF, 
+		BOOL drawBorder = TRUE, D3DCOLOR borderColor = 0xFF000000);
 
 	/*
 		取得文本尺寸
@@ -814,7 +819,7 @@ protected:
 	/*
 		增加顶点
 	*/
-	void AddVertex(FLOAT x, FLOAT y, D3DCOLOR color, FLOAT u = 0.0f, FLOAT v = 0.0f);
+	void AddVertex(FLOAT x, FLOAT y, D3DCOLOR color, FLOAT u = 0.0f, FLOAT v = 0.0f, FLOAT shift = 0.0f);
 
 	/*
 		设置绘制效果
@@ -1569,10 +1574,11 @@ inline void KDxRender::FillGradienRect(int left, int top, int right, int bottom,
 	mPrimCount += 2;
 }
 
-inline void KDxRender::AddVertex(FLOAT x, FLOAT y, D3DCOLOR color, FLOAT u /* = 0.0f */, FLOAT v /* = 0.0f */)
+inline void KDxRender::AddVertex(FLOAT x, FLOAT y, D3DCOLOR color, FLOAT u /* = 0.0f */, 
+	FLOAT v /* = 0.0f */, FLOAT shift /* = 0.0f */)
 {
-	mPtrVertex[mVtxNum].x = x - 0.5f;
-	mPtrVertex[mVtxNum].y = y - 0.5f;
+	mPtrVertex[mVtxNum].x = x - shift;
+	mPtrVertex[mVtxNum].y = y - shift;
 	mPtrVertex[mVtxNum].z = 0.0f;
 	mPtrVertex[mVtxNum].tu = u;
 	mPtrVertex[mVtxNum].tv = v;
@@ -1912,12 +1918,12 @@ inline void KDxRender::Draw(int x, int y, KDxTexture* tex,
 	FLOAT bottom = top + tex->ImgHeight();
 	FLOAT u = (FLOAT)tex->ImgWidth() / (FLOAT)tex->TexWidth();
 	FLOAT v = (FLOAT)tex->ImgHeight() / (float)tex->TexHeight();
-	AddVertex(left, top, color, 0, 0);
-	AddVertex(right, bottom, color, u, v);
-	AddVertex(left, bottom, color, 0, v);
-	AddVertex(left, top, color, 0, 0);
-	AddVertex(right, top, color, u, 0);
-	AddVertex(right, bottom, color, u, v);
+	AddVertex(left, top, color, 0, 0, 0.5f);
+	AddVertex(right, bottom, color, u, v, 0.5f);
+	AddVertex(left, bottom, color, 0, v, 0.5f);
+	AddVertex(left, top, color, 0, 0, 0.5f);
+	AddVertex(right, top, color, u, 0, 0.5f);
+	AddVertex(right, bottom, color, u, v, 0.5f);
 	mPrimCount += 2;
 }
 
@@ -1951,12 +1957,12 @@ inline void KDxRender::StretchDraw(int x, int y, int w, int h, KDxTexture* tex,
 	FLOAT bottom = top + h;
 	FLOAT u = (FLOAT)tex->ImgWidth() / (FLOAT)tex->TexWidth();
 	FLOAT v = (FLOAT)tex->ImgHeight() / (float)tex->TexHeight();
-	AddVertex(left, top, color, 0, 0);
-	AddVertex(right, bottom, color, u, v);
-	AddVertex(left, bottom, color, 0, v);
-	AddVertex(left, top, color, 0, 0);
-	AddVertex(right, top, color, u, 0);
-	AddVertex(right, bottom, color, u, v);
+	AddVertex(left, top, color, 0, 0, 0.5f);
+	AddVertex(right, bottom, color, u, v, 0.5f);
+	AddVertex(left, bottom, color, 0, v, 0.5f);
+	AddVertex(left, top, color, 0, 0, 0.5f);
+	AddVertex(right, top, color, u, 0, 0.5f);
+	AddVertex(right, bottom, color, u, v, 0.5f);
 	mPrimCount += 2;
 }
 
@@ -1987,7 +1993,7 @@ inline void KDxRender::DelNotify(IDxDeviceNotify* notify)
 		mNotifyVector.erase(itr);
 }
 
-inline void KDxRender::DoNotify(KDxNotifyType type)
+inline void KDxRender::DoNotify(KDxDeviceNotifyType type)
 {
 	KDxNotifyVector::iterator itr = mNotifyVector.begin();
 	IDxDeviceNotify* notify;
@@ -2019,8 +2025,8 @@ inline void KDxRender::FontName(LPWSTR fontName, int size)
 	wcsncpy(fontName, mTextHelper.FontOptions()->FontName, size);
 }
 
-inline void KDxRender::TextOut(int x, int y, LPCWSTR text, D3DCOLOR textColor /* = 0xFF000000 */, 
-	BOOL drawBorder /* = FALSE */, D3DCOLOR borderColor /* = 0xFFFFFFFF */)
+inline void KDxRender::TextOut(int x, int y, LPCWSTR text, D3DCOLOR textColor /* = 0xFFFFFFFF */, 
+	BOOL drawBorder /* = TRUE */, D3DCOLOR borderColor /* = 0xFF000000 */)
 {
 	mTextHelper.TextOut(x, y, text, textColor, drawBorder, borderColor);
 }
@@ -2163,8 +2169,8 @@ inline KDxFontOptions* KDxTextHelper::FontOptions()
 	return &mFontOpts;
 }
 
-inline void KDxTextHelper::TextOut(int x, int y, LPCWSTR text, D3DCOLOR textColor /* = 0xFF000000 */, 
-	BOOL drawBorder /* = FALSE */, D3DCOLOR borderColor /* = 0xFFFFFFFF */)
+inline void KDxTextHelper::TextOut(int x, int y, LPCWSTR text, D3DCOLOR textColor /* = 0xFFFFFFFF */, 
+	BOOL drawBorder /* = TRUE */, D3DCOLOR borderColor /* = 0xFF000000 */)
 {
 	KASSERT(mD3DFont);
 	KASSERT(mD3DSprite);
@@ -2211,7 +2217,7 @@ inline SIZE KDxTextHelper::TextSize(LPCWSTR text, BOOL hasBorder)
 	return sz;
 }
 
-inline void KDxTextHelper::OnDeviceNotify(KDxRender* render, KDxNotifyType type)
+inline void KDxTextHelper::OnDeviceNotify(KDxRender* render, KDxDeviceNotifyType type)
 {
 	if (type == ntDeviceLost)
 	{
@@ -2249,7 +2255,16 @@ inline void KDxTextHelper::Finalize()
 		DeleteObject((HGDIOBJ)hFont);
 	}
 	DeleteDC(mMemDC);
+	FreeTexCache();
 	mRender = NULL;
+}
+
+inline void KDxTextHelper::FreeTexCache()
+{
+	KDxTexCache::iterator itr;
+	for (itr = mTexCache.begin(); itr != mTexCache.end(); ++itr)
+		delete   itr->second;
+	mTexCache.clear();
 }
 
 inline void KDxTextHelper::SetFontOptions(int height, KDxFontStyle style, LPCWSTR fontName)
@@ -2280,8 +2295,8 @@ inline KDxFontOptions* KDxTextHelper::FontOptions()
 	return &mFontOpts;
 }
 
-inline void KDxTextHelper::TextOut(int x, int y, LPCWSTR text, D3DCOLOR textColor /* = 0xFF000000 */, 
-	BOOL drawBorder /* = FALSE */, D3DCOLOR borderColor /* = 0xFFFFFFFF */)
+inline void KDxTextHelper::TextOut(int x, int y, LPCWSTR text, D3DCOLOR textColor /* = 0xFFFFFFFF */, 
+	BOOL drawBorder /* = TRUE */, D3DCOLOR borderColor /* = 0xFF000000 */)
 {
 	KDxTexture* tex = GetTexture(&mFontOpts, text);
 	if (!tex) return;
@@ -2454,7 +2469,7 @@ DWORD KDxTextHelper::GetTextCode(KDxFontOptions* fontOpt, LPCWSTR text, int size
 	return code;
 }
 
-inline void KDxTextHelper::OnDeviceNotify(KDxRender* render, KDxNotifyType type)
+inline void KDxTextHelper::OnDeviceNotify(KDxRender* render, KDxDeviceNotifyType type)
 {
 	// nothing
 }
