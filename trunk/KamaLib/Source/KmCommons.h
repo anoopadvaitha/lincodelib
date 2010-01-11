@@ -7,7 +7,7 @@
   Brief:    	这是KamaLib代码库的一部分，由Tramper创建并维护，版权没有，
 				请自由使用！
  -------------------------------------------------------------------------------
-  Description:
+  Description:	公共代码，每一种类型都用//-------分隔，可以通过它查找。
 	
 *******************************************************************************/
 #ifndef __KAMA_KMCOMMONS_H__
@@ -52,7 +52,7 @@ typedef std::vector<kstring> KStrings;
 /*
 	点结构转换
 */
-inline POINT SmallPtToPoint(POINTS spt)
+inline POINT SmallPtToPoint(const POINTS& spt)
 {
 	POINT pt;
 	pt.x = spt.x;
@@ -63,7 +63,7 @@ inline POINT SmallPtToPoint(POINTS spt)
 /*
 	点结构转换
 */
-inline POINTS PointToSmallPt(POINT pt)
+inline POINTS PointToSmallPt(const POINT& pt)
 {
 	POINTS spt;
 	spt.x = (SHORT)pt.x;
@@ -1414,7 +1414,7 @@ inline kstring GetAppPath()
 /*
 	应用程序当前路径，静态全局
 */
-inline kstring SGetAppPath()
+inline kstring& SGetAppPath()
 {
 	static kstring sAppPath = GetAppPath();
 	return sAppPath;

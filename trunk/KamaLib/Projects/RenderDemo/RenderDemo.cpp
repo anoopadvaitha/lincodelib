@@ -18,7 +18,6 @@ public:
 		mMainFrame.SetEvent(this);
 		mMainFrame.Create();
 		mMainFrame.AlignWindow();
-		mMainFrame.Show();
 		Render.SetBkColor(0xFF000080);
 		//Render.SetBkColor(0xFFFFFFFF);
 		Render.SetSize(mMainFrame.Width(), mMainFrame.Height());
@@ -28,6 +27,8 @@ public:
 		//Render.SetVerticalSync(FALSE);
 		Render.SetTexFilter(FALSE);
 		Render.Initialize();
+
+		mMainFrame.Show();
 
 		//Render.SetFontOptions(-16, fsItalic, L"Fixedsys");
 

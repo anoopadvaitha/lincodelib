@@ -833,7 +833,7 @@ private:
 	KDxBitDepth				mBitDepth;			// 位深
 	D3DCOLOR				mBkColor;			// 背景色
 	BOOL					mIsDispModeInited;	// 显示模式是否已经初始化 
-	KDxDispModeVector			mDispModeVector;	// 显示模式列表
+	KDxDispModeVector		mDispModeVector;	// 显示模式列表
 	KDirect3D9Ptr			mDirect3D9;			// D3D9接口
 	KD3DDevice9Ptr			mDevice9;			// D3D设备
 	D3DCAPS9				mDeviceCaps;		// 设备兼容性

@@ -42,7 +42,7 @@ struct KStringData
 /*
 	内部使用
 	被清除(Clear)的字符串将指向这里
-	尽量用IsEmpty判断字符串是否为空时
+	尽量用IsEmpty判断字符串是否为空
 */
 _declspec(selectany) int _gInitData[] = { -1, 0, 0, 0 };
 _declspec(selectany) KStringData* _tmpDataNil = (KStringData*)&_gInitData;
