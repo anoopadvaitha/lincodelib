@@ -24,7 +24,7 @@ public:
 		Render.SetWindow(mMainFrame.Handle());
 		Render.SetFullScreen(FALSE);
 		Render.SetSmooth(FALSE);
-		//Render.SetVerticalSync(FALSE);
+		Render.SetVerticalSync(FALSE);
 		Render.SetTexFilter(FALSE);
 		Render.Initialize();
 
@@ -116,9 +116,15 @@ protected:
 
 			Render.TextOut(10, 40, L"Hello, 你好，世界123456", 0xFFFFFFFF, TRUE, 0xFF000000);
 			Render.TextOut(10, 60, L"这个世界到底是怎么了，不是我不明白，是这世界变化太快", 0xFFFFFFFF, TRUE, 0xFF000000);
+			
 			kstring str;
 			str.Format(L"%d", mFPS);
 			Render.TextOut(10, 10, str, 0xFFFFFFFF, TRUE, 0xFF000000);
+
+			SIZE sz = Render.TextSize(L"Hello，这个世界啊");
+			RECT rc;
+			SetRect(&rc, 10, 200, 10 + sz.cx, 200 + sz.cy);
+			Render.TextOut(rc.left, rc.top, L"Hello，这个世界啊");
 		}
 		Render.EndPaint();
 	}
