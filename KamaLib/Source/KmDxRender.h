@@ -117,9 +117,9 @@ struct KDxFontOptions
 #define D3DCOLOR_B(color) (BYTE)(LOBYTE(LOWORD(color)))
 
 // 默认字体名
-#define DEF_FONT_NAME		L"宋体"
+#define DEF_FONT_NAME		L"新宋体"
 // 默认字体高
-#define DEF_FONT_HEIGHT		-13
+#define DEF_FONT_HEIGHT		12
 
 class KDxRender;
 class KDxTexture;
@@ -149,7 +149,8 @@ interface IDxDeviceNotify
 
 /*
 	1.  USE_D3DXFONT: 用ID3DXFont实现，不支持下划线和删除线风格，同时也是一种超慢速的字体渲染
-	2.  默认用GDI绘制到内存DC，再复制到纹理，对纹理进行缓存的方式
+	2.  默认用GDI绘制到内存DC，再复制到纹理，对纹理进行缓存的方式，同时对几种等宽字体进行特殊
+		处理，使取字体尺寸更快速
 */
 #ifdef USE_D3DXFONT
 
@@ -194,7 +195,7 @@ public:
 	/*
 		取得单行文本尺寸
 	*/
-	SIZE TextSize(LPCWSTR text, BOOL hasBorder = FALSE);
+	SIZE TextSize(LPCWSTR text, int len = -1, BOOL hasBorder = FALSE);
 
 protected:
 	virtual void OnDeviceNotify(KDxRender* render, KDxDeviceNotifyType type);
@@ -211,7 +212,8 @@ private:
 
 #else
 
-#define MAX_TEXT_CACHE 512
+#define MAX_TEXT_CACHE	512
+#define MAX_TEXT_MEM	10 * 1024 * 1024
 
 // 黑白位图信息
 typedef struct tagBITMAPINFO2 {
@@ -227,7 +229,7 @@ class KDxTextHelper: public IDxDeviceNotify
 	typedef std::map<DWORD, KDxTexture*> KDxTexCache;
 public:
 	KDxTextHelper():
-		mMemDC(NULL), mOrgFont(NULL), mRender(NULL)
+		mMemDC(NULL), mOrgFont(NULL), mRender(NULL), mTexMemSize(0)
 	{
 	}
 
@@ -258,9 +260,9 @@ public:
 		BOOL drawBorder = FALSE, D3DCOLOR borderColor = 0xFFFFFFFF);
 
 	/*
-		取得单行文本尺寸
+		取得单行文本尺寸, len等于-1表示使用整个字符串
 	*/
-	SIZE TextSize(LPCWSTR text, BOOL hasBorder = FALSE);
+	SIZE TextSize(LPCWSTR text, int len = -1, BOOL hasBorder = FALSE);
 
 protected:
 	/*
@@ -283,12 +285,23 @@ protected:
 	*/
 	void FreeTexCache();
 
+	/*
+		减少纹理缓存
+	*/
+	void ReduceTexCache(DWORD useTexCode);
+
+	/*
+		取字体的优化类型
+	*/
+	BOOL CanSizeOptimize();
+
 private:
 	KDxFontOptions	mFontOpts;
 	KDxRender*		mRender;
 	HDC				mMemDC;
 	HFONT			mOrgFont;
 	KDxTexCache		mTexCache;
+	DWORD			mTexMemSize;
 };
 
 #endif // USE_D3DXFONT
@@ -740,7 +753,7 @@ public:
 	/*
 		取得文本尺寸
 	*/
-	SIZE TextSize(LPCWSTR text, BOOL hasBorder);
+	SIZE TextSize(LPCWSTR text, int len = -1, BOOL hasBorder = FALSE);
 
 	//------------------------------------------------------------------------------
 	// 剪裁
@@ -2031,9 +2044,9 @@ inline void KDxRender::TextOut(int x, int y, LPCWSTR text, D3DCOLOR textColor /*
 	mTextHelper.TextOut(x, y, text, textColor, drawBorder, borderColor);
 }
 
-inline SIZE KDxRender::TextSize(LPCWSTR text, BOOL hasBorder)
+inline SIZE KDxRender::TextSize(LPCWSTR text, int len, BOOL hasBorder)
 {
-	mTextHelper.TextSize(text, hasBorder);
+	return mTextHelper.TextSize(text, len, hasBorder);
 }
 
 inline BOOL KDxRender::BeginClip(RECT& rcClip)
@@ -2197,12 +2210,12 @@ inline void KDxTextHelper::TextOut(int x, int y, LPCWSTR text, D3DCOLOR textColo
 	}
 }
 
-inline SIZE KDxTextHelper::TextSize(LPCWSTR text, BOOL hasBorder)
+inline SIZE KDxTextHelper::TextSize(LPCWSTR text, int len, BOOL hasBorder)
 {
 	KASSERT(mD3DFont);
 	RECT rc;
 	SetRect(&rc, 0, 0, 0, 0);
-	mD3DFont->DrawTextW(NULL, text, -1, &rc, DT_SINGLELINE | DT_CALCRECT, 0);
+	mD3DFont->DrawTextW(NULL, text, len, &rc, DT_SINGLELINE | DT_CALCRECT, 0);
 	SIZE sz;
 	if (hasBorder)
 	{
@@ -2263,7 +2276,7 @@ inline void KDxTextHelper::FreeTexCache()
 {
 	KDxTexCache::iterator itr;
 	for (itr = mTexCache.begin(); itr != mTexCache.end(); ++itr)
-		delete   itr->second;
+		delete itr->second;
 	mTexCache.clear();
 }
 
@@ -2277,13 +2290,19 @@ inline void KDxTextHelper::SetFontOptions(int height, KDxFontStyle style, LPCWST
 	wcsncpy(mFontOpts.FontName, fontName, LF_FACESIZE);
 	
 	// 字体
-	DWORD weight = HAS_FLAG(style, fsBold) ? FW_BOLD : FW_NORMAL;
-	DWORD italic = HAS_FLAG(style, fsItalic) ? TRUE : FALSE;
-	DWORD underline = HAS_FLAG(style, fsUnderline) ? TRUE : FALSE;
-	DWORD strikeout = HAS_FLAG(style, fsStrikeOut) ? TRUE : FALSE;
-	HFONT hFont = CreateFontW(height, 0, 0, 0, weight, italic, underline, strikeout,
-		DEFAULT_CHARSET, 0, 0, 0, 0, mFontOpts.FontName);
+	DWORD weight	= HAS_FLAG(style, fsBold)		? FW_BOLD	: FW_NORMAL;
+	DWORD italic	= HAS_FLAG(style, fsItalic)		? TRUE		: FALSE;
+	DWORD underline	= HAS_FLAG(style, fsUnderline)	? TRUE		: FALSE;
+	DWORD strikeout = HAS_FLAG(style, fsStrikeOut)	? TRUE		: FALSE;
+	
+	HFONT hFont	= CreateFontW(
+		height, 0, 0, 0, 
+		weight, italic, underline, strikeout,
+		DEFAULT_CHARSET, 
+		0, 0, 0, 0, 
+		mFontOpts.FontName);
 	HFONT hOldFont = (HFONT)SelectObject(mMemDC, (HGDIOBJ)hFont);
+
 	if (!mOrgFont)
 		mOrgFont = hOldFont;
 	else
@@ -2315,33 +2334,90 @@ inline void KDxTextHelper::TextOut(int x, int y, LPCWSTR text, D3DCOLOR textColo
 	}
 }
 
-inline SIZE KDxTextHelper::TextSize(LPCWSTR text, BOOL hasBorder /* = FALSE */)
+inline BOOL KDxTextHelper::CanSizeOptimize()
 {
+	if (HAS_FLAG(mFontOpts.Style, fsBold))
+		return FALSE;
+
+	if ((wcscmp(mFontOpts.FontName, L"新宋体") == 0) || 
+		(wcscmp(mFontOpts.FontName, L"隶书")== 0) ||
+		(wcscmp(mFontOpts.FontName, L"幼圆") == 0) ||
+		(wcscmp(mFontOpts.FontName, L"楷体_GB2312") == 0))
+	{
+		return TRUE;
+	}
+	
+	if ((wcscmp(mFontOpts.FontName, L"宋体") == 0) ||
+		(wcscmp(mFontOpts.FontName, L"黑体") == 0))
+	{
+		if ((abs(mFontOpts.Height) % 2) == 0)
+			return TRUE;
+	}
+	
+	return FALSE;
+}
+
+inline SIZE KDxTextHelper::TextSize(LPCWSTR text, int len /* = -1 */, BOOL hasBorder /* = FALSE */)
+{
+/*
+	优化策略：
+	1.  从缓存中查找纹理，找到直接返回纹理尺寸。
+	2.  对几种等宽的中文字体进行优化，其中：
+		宋体，黑体：高度为偶数时优化
+		新宋体，隶书，幼圆，楷体_GB2312：所有高度都优化
+	3.  使用API计算文本尺寸
+*/
+
 	SIZE sz;
 	memset(&sz, 0, sizeof(sz));
-	int textLen = (int)wcslen(text);
-	if (!textLen)
+	if (len == -1)
+		len = (int)wcslen(text);
+	if (!len) 
 		return sz;
 
-	DWORD code = GetTextCode(&mFontOpts, text, textLen);
+	// 先找缓存纹理
+	DWORD code = GetTextCode(&mFontOpts, text, len);
 	KDxTexture* tex = NULL;
 	KDxTexCache::iterator itr = mTexCache.find(code);
 	if (itr != mTexCache.end())
-		tex = itr->second;
-	
-	if (tex)
 	{
+		tex = itr->second;
 		sz.cx = tex->ImgWidth();
 		sz.cy = tex->ImgHeight();
 	}
 	else
 	{
-		GetTextExtentPoint32W(mMemDC, text, (int)wcslen(text), &sz);
-		ABCFLOAT abc;
-		if (GetCharABCWidthsFloatW(mMemDC, text[textLen-1], text[textLen-1], &abc))
-			sz.cx -= abc.abcfC;
+		if (CanSizeOptimize())
+		{
+			// 对特殊字体进行优化
+			sz.cy = abs(mFontOpts.Height);;
+			sz.cx = 0;
+			int w = (sz.cy % 2) ? sz.cy + 1 : sz.cy;
+			int hw = w / 2;
+			const WCHAR* p = text;
+			while (*p)
+			{
+				if (*p <= 0xFF)
+					sz.cx += hw;
+				else
+					sz.cx += w;
+				p++;
+			}
+		}
+		else
+		{
+			// 用API计算文本尺寸
+			GetTextExtentPoint32W(mMemDC, text, len, &sz);
+			if (HAS_FLAG(mFontOpts.Style, fsItalic))
+			{
+				ABCFLOAT abc;
+				if (GetCharABCWidthsFloatW(mMemDC, text[len-1], text[len-1], &abc))
+					sz.cx -= abc.abcfC;
+			}
+		}
 	}
 
+	// 边框
 	if (hasBorder)
 	{
 		sz.cx += 2;
@@ -2353,8 +2429,7 @@ inline SIZE KDxTextHelper::TextSize(LPCWSTR text, BOOL hasBorder /* = FALSE */)
 inline KDxTexture* KDxTextHelper::GetTexture(KDxFontOptions* fontOpt, LPCWSTR text)
 {
 	int textLen = (int)wcslen(text);
-	if (!textLen)
-		return NULL;
+	if (!textLen) return NULL;
 
 	DWORD code = GetTextCode(fontOpt, text, textLen);
 	KDxTexCache::iterator itr = mTexCache.find(code);
@@ -2364,9 +2439,12 @@ inline KDxTexture* KDxTextHelper::GetTexture(KDxFontOptions* fontOpt, LPCWSTR te
 	// 字体尺寸
 	SIZE textSize;
 	GetTextExtentPoint32W(mMemDC, text, textLen, &textSize);
-	ABCFLOAT abc;
-	if (GetCharABCWidthsFloatW(mMemDC, text[textLen-1], text[textLen-1], &abc))
-		textSize.cx -= abc.abcfC;
+	if (HAS_FLAG(mFontOpts.Style, fsItalic))
+	{
+		ABCFLOAT abc;
+		if (GetCharABCWidthsFloatW(mMemDC, text[textLen-1], text[textLen-1], &abc))
+			textSize.cx -= abc.abcfC;
+	}
 
 	// 创建纹理, 用A4R4G4B4
 	KDxTexture* tex = new KDxTexture;
@@ -2431,17 +2509,25 @@ inline KDxTexture* KDxTextHelper::GetTexture(KDxFontOptions* fontOpt, LPCWSTR te
 	DeleteObject(textBmp);
 	
 	// 缓存纹理
+	mTexMemSize += tex->TexWidth() * tex->TexHeight() * 16;
 	mTexCache.insert(std::make_pair(code, tex));
 
-	// 如果超出最大纹理数，就删掉一个
-	KTRACE(L"Text Textures: %d", mTexCache.size());
-	if (mTexCache.size() > MAX_TEXT_CACHE)
+	// 处理纹理缓存过大的情况
+	ReduceTexCache(code);
+	return tex;
+}
+
+inline void KDxTextHelper::ReduceTexCache(DWORD useTexCode)
+{
+	KTRACE(L"Text Texture Num: %d;  Text Texture Memory: %d", mTexCache.size(), mTexMemSize);
+	if ((mTexCache.size() > MAX_TEXT_CACHE) || (mTexMemSize > MAX_TEXT_MEM))
 	{
 		KDxTexCache::iterator itr = mTexCache.begin();
 		KDxTexture* delTex;
-		if (itr->first != code)
+		if (itr->first != useTexCode)
 		{
 			delTex = itr->second;
+			mTexMemSize -= delTex->TexWidth() * delTex->TexHeight() * 16;
 			mTexCache.erase(itr);
 			delete delTex;
 		}
@@ -2449,11 +2535,11 @@ inline KDxTexture* KDxTextHelper::GetTexture(KDxFontOptions* fontOpt, LPCWSTR te
 		{
 			++itr;
 			delTex = itr->second;
+			mTexMemSize -= delTex->TexWidth() * delTex->TexHeight() * 16;
 			mTexCache.erase(itr);
 			delete delTex;
 		}
 	}
-	return tex;
 }
 
 DWORD KDxTextHelper::GetTextCode(KDxFontOptions* fontOpt, LPCWSTR text, int size)
