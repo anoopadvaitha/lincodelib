@@ -115,6 +115,8 @@ struct KDxFontOptions
 #define D3DCOLOR_G(color) (BYTE)(HIBYTE(LOWORD(color)))
 // 取B通道
 #define D3DCOLOR_B(color) (BYTE)(LOBYTE(LOWORD(color)))
+// 设RGB, A默认是255
+#define D3DCOLOR_RGB(r, g, b) D3DCOLOR_ARGB(255, r, g, b)
 
 // 默认字体名
 #define DEF_FONT_NAME		L"新宋体"
@@ -189,8 +191,8 @@ public:
 	/*
 		简单的输出文本, drawBorder指明是否给文本加外框， borderColor指定外框的颜色
 	*/
-	void TextOut(int x, int y, LPCWSTR text, D3DCOLOR textColor = 0xFFFFFFFF, 
-		BOOL drawBorder = TRUE, D3DCOLOR borderColor = 0xFF000000);
+	void TextOut(int x, int y, LPCWSTR text, D3DCOLOR textColor = 0xFF000000, 
+		BOOL drawBorder = FALSE, D3DCOLOR borderColor = 0xFFFFFFFF);
 
 	/*
 		取得单行文本尺寸
@@ -668,16 +670,19 @@ public:
 	/*
 		绘矩形
 	*/
+	void DrawRect(const RECT& rc, D3DCOLOR color);
 	void DrawRect(int left, int top, int right, int bottom, D3DCOLOR color);
 
 	/*
 		填充矩形
 	*/
+	void FillRect(const RECT& rc, D3DCOLOR color);
 	void FillRect(int left, int top, int right, int bottom, D3DCOLOR color);
 
 	/*
 		填充渐变矩形
 	*/
+	void FillGradienRect(const RECT& rc, D3DCOLOR color1, D3DCOLOR color2, BOOL isHoriz);
 	void FillGradienRect(int left, int top, int right, int bottom, 
 		D3DCOLOR color1, D3DCOLOR color2, BOOL isHoriz);
 
@@ -747,8 +752,8 @@ public:
 	/*
 		简单的输出文本, drawBorder指明是否给文本加外框， borderColor指定外框的颜色
 	*/
-	void TextOut(int x, int y, LPCWSTR text, D3DCOLOR textColor = 0xFFFFFFFF, 
-		BOOL drawBorder = TRUE, D3DCOLOR borderColor = 0xFF000000);
+	void TextOut(int x, int y, LPCWSTR text, D3DCOLOR textColor = 0xFF000000, 
+		BOOL drawBorder = FALSE, D3DCOLOR borderColor = 0xFFFFFFFF);
 
 	/*
 		取得文本尺寸
@@ -1517,12 +1522,22 @@ inline void KDxRender::FillTriangle(FLOAT x1, FLOAT y1, FLOAT x2, FLOAT y2, FLOA
 	++mPrimCount;
 }
 
+inline void KDxRender::DrawRect(const RECT& rc, D3DCOLOR color)
+{
+	DrawRect(rc.left, rc.top, rc.right, rc.bottom, color);
+}
+
 inline void KDxRender::DrawRect(int left, int top, int right, int bottom, D3DCOLOR color)
 {
-	DrawLine(left, top, right, top, color);
-	DrawLine(right, top, right, bottom , color);
-	DrawLine(right, bottom , left , bottom, color);
-	DrawLine(left, bottom , left, top, color);
+	DrawLine(left, top, right-1, top, color);
+	DrawLine(right-1, top, right-1, bottom-1, color);
+	DrawLine(right-1, bottom-1, left , bottom-1, color);
+	DrawLine(left, bottom-1, left, top, color);
+}
+
+inline void KDxRender::FillRect(const RECT& rc, D3DCOLOR color)
+{
+	FillRect(rc.left, rc.top, rc.right, rc.bottom, color);
 }
 
 inline void KDxRender::FillRect(int left, int top, int right, int bottom, D3DCOLOR color)
@@ -1552,6 +1567,11 @@ inline void KDxRender::FillRect(int left, int top, int right, int bottom, D3DCOL
 	AddVertex((FLOAT)right, (FLOAT)top, color);
 	AddVertex((FLOAT)right, (FLOAT)bottom, color);
 	mPrimCount += 2;
+}
+
+inline void KDxRender::FillGradienRect(const RECT& rc, D3DCOLOR color1, D3DCOLOR color2, BOOL isHoriz)
+{
+	FillGradienRect(rc.left, rc.top, rc.right, rc.bottom, color1, color2, isHoriz);
 }
 
 inline void KDxRender::FillGradienRect(int left, int top, int right, int bottom, D3DCOLOR color1, D3DCOLOR color2, BOOL isHoriz)
@@ -2038,8 +2058,8 @@ inline void KDxRender::FontName(LPWSTR fontName, int size)
 	wcsncpy(fontName, mTextHelper.FontOptions()->FontName, size);
 }
 
-inline void KDxRender::TextOut(int x, int y, LPCWSTR text, D3DCOLOR textColor /* = 0xFFFFFFFF */, 
-	BOOL drawBorder /* = TRUE */, D3DCOLOR borderColor /* = 0xFF000000 */)
+inline void KDxRender::TextOut(int x, int y, LPCWSTR text, D3DCOLOR textColor, 
+	BOOL drawBorder , D3DCOLOR borderColor )
 {
 	mTextHelper.TextOut(x, y, text, textColor, drawBorder, borderColor);
 }
@@ -2182,8 +2202,8 @@ inline KDxFontOptions* KDxTextHelper::FontOptions()
 	return &mFontOpts;
 }
 
-inline void KDxTextHelper::TextOut(int x, int y, LPCWSTR text, D3DCOLOR textColor /* = 0xFFFFFFFF */, 
-	BOOL drawBorder /* = TRUE */, D3DCOLOR borderColor /* = 0xFF000000 */)
+inline void KDxTextHelper::TextOut(int x, int y, LPCWSTR text, D3DCOLOR textColor,
+	BOOL drawBorder , D3DCOLOR borderColor )
 {
 	KASSERT(mD3DFont);
 	KASSERT(mD3DSprite);
@@ -2314,8 +2334,8 @@ inline KDxFontOptions* KDxTextHelper::FontOptions()
 	return &mFontOpts;
 }
 
-inline void KDxTextHelper::TextOut(int x, int y, LPCWSTR text, D3DCOLOR textColor /* = 0xFFFFFFFF */, 
-	BOOL drawBorder /* = TRUE */, D3DCOLOR borderColor /* = 0xFF000000 */)
+inline void KDxTextHelper::TextOut(int x, int y, LPCWSTR text, D3DCOLOR textColor, 
+	BOOL drawBorder , D3DCOLOR borderColor )
 {
 	KDxTexture* tex = GetTexture(&mFontOpts, text);
 	if (!tex) return;

@@ -23,7 +23,7 @@ public:
 		// 渲染器
 		mRender.SetSize(mMainFrame.Width(), mMainFrame.Height());
 		mRender.SetWindow(mMainFrame.Handle());
-		mRender.SetBkColor(D3DCOLOR_ARGB(255, 198, 222, 242));
+		mRender.SetBkColor(D3DCOLOR_RGB(255, 255, 255));
 		//Render.SetVerticalSync(FALSE);
 		mRender.Initialize();
 
@@ -31,9 +31,11 @@ public:
 		mScreen = NEW_SCREEN(KDxScreen);
 		mScreen->SetHostWnd(mMainFrame.Handle());
 		mScreen->SetRender(&mRender);
+		// 有问题
+		//mScreen->SetClip(TRUE);
 
 		// 窗口
-		KDxWindow* wnd = NEW_WINDOW(KDxWindow, mScreen);
+		KDxWindow* wnd = NEW_WINDOW(KDxSimpleWindow, mScreen);
 		wnd->SetPos(10, 10);
 		wnd->SetSize(300, 300);
 		wnd->Show();
@@ -42,6 +44,10 @@ public:
 		KDxButton* btn = NEW_CONTROL(KDxButton, wnd, mScreen);
 		btn->SetCaption(L"我是按钮");
 		btn->SetPos(10, 10);
+
+		btn = NEW_CONTROL(KDxButton, wnd, mScreen);
+		btn->SetCaption(L"我是按钮2");
+		btn->SetPos(10, 40);
 
 		KDxApp::Initialize();
 	}
