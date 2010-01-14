@@ -62,65 +62,35 @@ typedef DWORD KDxShiftState;
 */
 typedef DWORD KDxNotifyType;
 #define NT_USER						0x10000
-/*
-	尺寸正在改变，param: SIZE*=将要改变的尺寸，可以改变这个值，影响最终的尺寸
-*/
+// 尺寸正在改变，param: SIZE*=将要改变的尺寸，可以改变这个值，影响最终的尺寸
 #define ntSizeChanging				1
-/*
-	尺寸改变，param: NULL
-*/
+// 尺寸改变，param: NULL
 #define ntSizeChanged				2
-/*
-	位置正在改变，param: POINT*=将要改变的尺寸，可以改变这个值，影响最终的位置
-*/
+// 位置正在改变，param: POINT*=将要改变的尺寸，可以改变这个值，影响最终的位置
 #define ntPosChanging				3
-/*
-	位置改变，param: NULL
-*/
+// 位置改变，param: NULL
 #define ntPosChanged				4
-/*
-	激活改变	 param:  0=反激活, !0=激活
-*/
+// 激活改变	 param:  0=反激活, !0=激活
 #define ntActiveChanged				5
-/*
-	焦点改变, param:　0=失去焦点, !0=获得焦点
-*/
+// 焦点改变, param:　0=失去焦点, !0=获得焦点
 #define ntFocusChanged				6
-/*
-	鼠标捕获视图改变，param:　0=失去捕获, !0=获得捕获
-*/
+// 鼠标捕获视图改变，param:　0=失去捕获, !0=获得捕获
 #define ntCaptureChnaged			7
-/*
-	可见改变，param:　0=隐藏, !0=可见
-*/
+// 可见改变，param:　0=隐藏, !0=可见
 #define ntVisibleChanged			8
-/*
-	可用改变，param:　0=禁用, !0=可用
-*/
+// 可用改变，param:　0=禁用, !0=可用
 #define ntEnableChanged				9
-/*
-	环境(右键)菜单事件，param：NULL=由键盘引起的, PPOINT=由鼠标引起的，PPOINT指定鼠标在screen的位置
-*/
+// 环境(右键)菜单事件，param：NULL=由键盘引起的, PPOINT=由鼠标引起的，PPOINT指定鼠标在screen的位置
 #define ntContextMenu				10
-/*
-	开始ShowModal, param: NULL
-*/
+// 开始ShowModal, param: NULL
 #define ntBeginModal				11
-/*
-	结束ShowModal, param: NULL
-*/
+// 结束ShowModal, param: NULL
 #define ntEndModal					12
-/*
-	鼠标进入视图, param: NULL
-*/
+// 鼠标进入视图, param: NULL
 #define ntMouseEnter				13
-/*
-	鼠标退出视图, param: NULL
-*/
+// 鼠标退出视图, param: NULL
 #define ntMouseLeave				14
-/*
-	文本改变， param: NULL
-*/
+// 文本改变， param: NULL
 #define ntTextChanged				15
 
 
@@ -129,25 +99,15 @@ typedef DWORD KDxNotifyType;
 */
 typedef DWORD KDxQueryType;
 #define QT_USER						0x10000
-/*
-	是否要处理TAB，返回值：0=不处理，!0=处理
-*/
+// 是否要处理TAB，返回值：0=不处理，!0=处理
 #define qtWantTab					1
-/*
-	是否要处理方向键，返回值：0=不处理，!0=处理 
-*/
+// 是否要处理方向键，返回值：0=不处理，!0=处理 
 #define qtWantArrows				2
-/*
-	是否要处理ESC键，返回值：0=不处理，!0=处理 
-*/
+// 是否要处理ESC键，返回值：0=不处理，!0=处理 
 #define qtWantEscape				3
-/*
-	窗口关闭请求，返回值：KDxCloseMode
-*/
+// 窗口关闭请求，返回值：KDxCloseMode
 #define qtClose						4
-/*
-	设置光标，参数： param=点击测试值；返回值：!0=设置成功
-*/
+// 设置光标，参数： param=点击测试值；返回值：!0=设置成功
 #define qtSetCursor					5
 
 
@@ -202,6 +162,7 @@ typedef DWORD KDxWndStyle;
 #define wsSizable					0x02	// 可拖动
 #define wsTopMost					0x04	// 顶层窗口
 #define wsEscClose					0x08	// ESC关闭
+#define wsActivatable				0x10	// 可激活
 
 /*
 	窗口状态
@@ -223,17 +184,11 @@ enum KDxCloseMode
 	快捷键值								  
 */
 typedef DWORD KDxShortcut;
-/*
-	生成快捷键类型
-*/
+// 生成快捷键类型
 #define MAKE_SHORTCUT(key, shift) (KDxShortcut)MAKELONG(key, shift)
-/*
-	从快捷键取得虚键
-*/
+// 从快捷键取得虚键
 #define VKEY_OF_SHORTCUT(shortcut) LOWORD(shortcut)
-/*
-	从快捷键取得Shift状态
-*/
+// 从快捷键取得Shift状态
 #define SHIFT_OF_SHORTCUT(shortcut) (KDxShiftState)HIWORD(shortcut)
 
 
@@ -847,7 +802,7 @@ class KDxWindow: public KDxView, public KDxShortcutMgr
 	DECLARE_RUNTIMEINFO(KDxWindow)
 public:
 	KDxWindow():
-		mWndStyle(wsMovable | wsSizable),
+		mWndStyle(wsMovable | wsSizable | wsActivatable),
 		mFrameSize(3),
 		mFocusedView(NULL),
 		mWndState(0)
@@ -897,6 +852,16 @@ public:
 		设置顶层窗口
 	*/
 	void SetTopMost(BOOL isTopMose);
+
+	/*
+		是否可激活
+	*/
+	BOOL IsActivatable();
+
+	/*
+		设置可激活性
+	*/
+	void SetActivatable(BOOL activatable);
 
 	/*
 		激活自己
@@ -1303,6 +1268,7 @@ protected:
 	*/
 	void WMMouseMove(WPARAM wparam, LPARAM lparam);
 	void WMSize(WPARAM wparam, LPARAM lparam);
+	void WMLButtonDblClk(WPARAM wparam, LPARAM lparam);
 	void WMLButtonDown(WPARAM wparam, LPARAM lparam);
 	void WMLButtonUp(WPARAM wparam, LPARAM lparam);
 	void WMCancelMode(WPARAM wparam, LPARAM lparam);
@@ -2092,6 +2058,19 @@ inline void KDxWindow::SetTopMost(BOOL isTopMose)
 		DEL_FLAG(mWndStyle, wsTopMost);
 }
 
+inline BOOL KDxWindow::IsActivatable()
+{
+	return HAS_FLAG(mWndStyle, wsActivatable);
+}
+
+inline void KDxWindow::SetActivatable(BOOL activatable)
+{
+	if (activatable)
+		ADD_FLAG(mWndStyle, wsActivatable);
+	else
+		DEL_FLAG(mWndStyle, wsActivatable);
+}
+
 inline BOOL KDxWindow::Active()
 {
 	return mOwnerScreen->SetActiveWindow(this);
@@ -2104,7 +2083,7 @@ inline BOOL KDxWindow::IsActive()
 
 inline BOOL KDxWindow::CanActive()
 {
-	return VisibleAndEnable();
+	return VisibleAndEnable() && IsActivatable();
 }
 
 inline KDxView* KDxWindow::FocusedView() 
@@ -3339,6 +3318,10 @@ inline BOOL KDxScreen::WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam
 	{
 		WMMouseMove(wparam, lparam);
 	}
+	else if (WM_LBUTTONDBLCLK == msg)
+	{
+		WMLButtonDblClk(wparam, lparam);
+	}
 	else if (WM_LBUTTONDOWN == msg)
 	{
 		WMLButtonDown(wparam, lparam);
@@ -3447,6 +3430,30 @@ inline void KDxScreen::WMSize(WPARAM wparam, LPARAM lparam)
 {
 	SetPos(0, 0);
 	SetSize(X_OF_LPARAM(lparam), Y_OF_LPARAM(lparam));
+}
+
+inline void KDxScreen::WMLButtonDblClk(WPARAM wparam, LPARAM lparam)
+{
+	KDxShiftState shift = VKeyToShiftState((WORD)wparam);
+	POINT pt;
+
+	pt = SmallPtToPoint(MAKEPOINTS(lparam));
+	KDxView* view = GetViewAtPos(pt, FALSE);
+
+	if (NULL != view)	
+	{
+		// 先激活父窗口
+		SetActiveWindow(view->OwnerWindow());
+
+		// 再捕获鼠标以及传送鼠标事件
+		SetCaptureView(view);
+		if (NULL != mCaptureView)
+		{	
+			pt = mCaptureView->ScreenToClient(pt);
+			mCaptureView->DoMouse(maLDblClk, shift, pt);
+			mCaptureView->DoMouse(maLDown, shift, pt);
+		}
+	}
 }
 
 inline void KDxScreen::WMLButtonDown(WPARAM wparam, LPARAM lparam)
