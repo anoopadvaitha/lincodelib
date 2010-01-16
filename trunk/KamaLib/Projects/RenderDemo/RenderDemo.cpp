@@ -35,6 +35,8 @@ public:
 		kstring path = gAppPath + L"test.png";
 		mTexture.LoadFromFile(&Render, path, D3DFMT_UNKNOWN);
 
+		mFont.SetFontOptions(12, fsItalic, L"隶书");
+		mFont2.SetFontOptions(12, 0, L"黑体");
 
 		KDxApp::Initialize();
 	}
@@ -49,9 +51,6 @@ public:
 		KDxApp::Finalize();
 	}
 protected:
-	void PrintText(LPCWSTR str)
-	{
-	}
 
 	BOOL OnWndProc(KWndFrame* wndFrame, UINT msg, WPARAM wparam, LPARAM lparam, HRESULT& ret)
 	{
@@ -62,10 +61,6 @@ protected:
 		else if (msg == WM_LBUTTONDBLCLK)
 		{
 			Render.SetSmooth(!Render.IsSmooth());
-		}
-		else if (msg == WM_LBUTTONDOWN)
-		{
-			PrintText(L"Hello");
 		}
 		return FALSE;
 	}
@@ -114,17 +109,20 @@ protected:
 			Render.FillTriangle(20, 20, 250, 20, 200, 200, 0x7F000000);
 			Render.DrawTriangle(20, 20, 250, 20, 200, 200, 0x7F00FFFF);
 
-			Render.TextOut(10, 40, L"Hello, 你好，世界123456", 0xFFFFFFFF, TRUE, 0xFF000000);
-			Render.TextOut(10, 60, L"这个世界到底是怎么了，不是我不明白，是这世界变化太快", 0xFFFFFFFF, TRUE, 0xFF000000);
+			Render.TextOut(10, 40, L"Hello, 你好，世界123456", -1, 0xFFFFFFFF, 0xFF000000);
+			Render.TextOut(10, 60, L"这个世界到底是怎么了，不是我不明白，是这世界变化太快", -1, 0xFFFFFFFF, 0xFF000000);
 			
 			kstring str;
 			str.Format(L"%d", mFPS);
-			Render.TextOut(10, 10, str, 0xFFFFFFFF, TRUE, 0xFF000000);
+			Render.TextOut(10, 10, str, -1, 0xFFFFFFFF, 0xFF000000);
 
-			SIZE sz = Render.TextSize(L"Hello，这个世界啊");
-			RECT rc;
-			SetRect(&rc, 10, 200, 10 + sz.cx, 200 + sz.cy);
-			Render.TextOut(rc.left, rc.top, L"Hello，这个世界啊");
+			//SIZE sz = Render.TextSize(L"Hello，这个世界啊");
+			//RECT rc;
+			//SetRect(&rc, 10, 200, 10 + sz.cx, 200 + sz.cy);
+			Render.TextOut(10, 200, L"Hello，这个世界啊1239", -1, 0xFF00FFFF, 0xFF000000, &mFont);
+			Render.TextOut(10, 250, L"Hello，这个世界啊1239", -1, 0xFF00FFFF, 0xFF000000, &mFont2);
+			Render.TextOut(10, 300, L"Hello，这个世界啊1239", -1, 0xFF00FFFF, 0xFF000000, &mFont);
+			Render.TextOut(10, 350, L"Hello，这个世界啊1239", -1, 0xFF00FFFF, 0xFF000000, &mFont2);
 		}
 		Render.EndPaint();
 	}
@@ -137,6 +135,8 @@ private:
 	KDxTexture mTexture;
 	KDxRender Render;
 	KD3DTexture9Ptr	mFontTex;
+	KDxFont mFont;
+	KDxFont mFont2;
 };
 
 int APIENTRY _tWinMain(HINSTANCE hInstance,

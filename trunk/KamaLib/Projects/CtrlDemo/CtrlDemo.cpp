@@ -48,6 +48,8 @@ public:
 		btn = NEW_CONTROL(KDxButton, wnd, mScreen);
 		btn->SetCaption(L"ÎÒÊÇ°´Å¥2");
 		btn->SetPos(10, 40);
+		btn->Font()->SetColor(D3DCOLOR_RGB(254, 0, 266));
+		btn->Font()->SetHeight(13);
 
 		KDxApp::Initialize();
 	}
