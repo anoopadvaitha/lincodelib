@@ -92,6 +92,8 @@ typedef DWORD KDxNotifyType;
 #define ntMouseLeave				14
 // 文本改变， param: NULL
 #define ntTextChanged				15
+// 字体改变， param: NULL
+#define ntFontChanged				16
 
 
 /*
@@ -207,6 +209,22 @@ class KDxScreen;
 */
 interface IDxViewEvent
 {
+	/*
+		视图初始化完毕
+	*/
+	virtual void OnInitialize()
+	{
+
+	}
+
+	/*
+		视图将要结束
+	*/
+	virtual void OnFinalize()
+	{
+
+	}
+
 	/*
 		鼠标事件，点下，弹起，移动
 	*/
@@ -649,6 +667,17 @@ public:
 		处理投递事件
 	*/
 	virtual void HandlePostEvent(KDxPostId id, DWORD param1, DWORD param2);
+
+protected:
+	/*
+		视图初始化好，子类可以在这里初始化数据
+	*/
+	virtual void DoInitialize();
+
+	/*
+		视图将结束，子类可以在这里清理数据
+	*/
+	virtual void DoFinalize();
 
 protected:
 	/*
@@ -1343,6 +1372,7 @@ inline KDxShiftState KeyDataToShiftState(long keyData)
 
 //------------------------------------------------------------------------------
 // KDxView
+
 IMPLEMENT_RUNTIMEINFO(KDxView, KObject)
 
 inline KDxView* KDxView::Initialize(KDxView* parentView, KDxScreen* screen)
@@ -1353,11 +1383,15 @@ inline KDxView* KDxView::Initialize(KDxView* parentView, KDxScreen* screen)
 	if (parentView)
 		parentView->AddChild(this, FALSE);
 
+	DoInitialize();
+
 	return this;
 }
 
 inline void KDxView::Finalize()
 {
+	DoFinalize();
+
 	FreeChilds();
 	SetParentView(NULL);
 
@@ -1373,6 +1407,16 @@ inline void KDxView::Finalize()
 
 	// 删除属于该视图的投递动作
 	DelScreenPostEvent();
+}
+
+inline void KDxView::DoInitialize()
+{
+
+}
+
+inline void KDxView::DoFinalize()
+{
+
 }
 
 inline KDxScreen* KDxView::OwnerScreen() 
@@ -3040,6 +3084,8 @@ inline KDxView* KDxScreen::Initialize(KDxView* parentView, KDxScreen* screen)
 	KASSERT(NULL == screen);
 
 	InitCursorTable();
+
+	DoInitialize();
 
 	return this;
 }

@@ -32,6 +32,49 @@ namespace kama
 #define FREE_CONTROL FREE_VIEW
 
 //------------------------------------------------------------------------------
+// KDxFont: 视图字体类
+
+class KDxViewFont: public KDxFont
+{
+public:
+	KDxViewFont(): mView(NULL), mColor(0xFF000000)
+	{
+
+	}
+
+	void Initialize(KDxView* view)
+	{
+		Assign(gDefFont);
+		mView = view;
+	}
+
+	void Finalize()
+	{
+		mView = NULL;
+	}
+
+	D3DCOLOR Color()
+	{
+		return mColor;
+	}
+
+	void SetColor(D3DCOLOR color)
+	{
+		mColor = color;
+	}
+
+	virtual void DoFontChanged()
+	{
+		if (mView)
+			mView->DoNotify(ntFontChanged, 0);
+	}
+
+private:
+	D3DCOLOR	mColor;
+	KDxView*	mView;
+};
+
+//------------------------------------------------------------------------------
 // KDxButton: 按钮类
 /*
 	按钮状态
@@ -62,16 +105,31 @@ public:
 
 	}
 
+	virtual void DoInitialize()
+	{
+		mFont.Initialize(this);
+	}
+
+	virtual void DoFinalize()
+	{
+		mFont.Finalize();
+	}
+
 	void SetCaption(const kstring& cap)
 	{
 		mCaption = cap;
 		if (OwnerScreen()->Render() != NULL)
-			mCapSize = OwnerScreen()->Render()->TextSize(mCaption, mCaption.Length());
+			mCapSize = OwnerScreen()->Render()->TextSize(mCaption, mCaption.Length(), FALSE, &mFont);
 	}
 
 	kstring Caption()
 	{
 		return mCaption;
+	}
+
+	KDxViewFont* Font()
+	{
+		return &mFont;
 	}
 
 	virtual void DoNotify(KDxNotifyType type, DWORD param)
@@ -80,6 +138,11 @@ public:
 			mBtnState = bsHover;
 		else if(ntMouseLeave == type)
 			mBtnState = bsNormal;
+		else if (ntFontChanged == type)
+		{
+			if (OwnerScreen()->Render() != NULL)
+				mCapSize = OwnerScreen()->Render()->TextSize(mCaption, mCaption.Length(), FALSE, &mFont);
+		}
 		
 		KDxView::DoNotify(type, param);
 	}
@@ -130,7 +193,7 @@ public:
 				InflateRect(&rc, -1, -1);
 				render->DrawRect(rc, D3DCOLOR_RGB(120, 215, 251));
 			}
-			render->TextOut(x, y, mCaption);
+			render->TextOut(x, y, mCaption, mCaption.Length(), mFont.Color(), FALSE, &mFont);
 		}
 		else if (mBtnState == bsHover)
 		{
@@ -138,7 +201,7 @@ public:
 			render->DrawRect(rc, D3DCOLOR_RGB(51, 179, 239));
 			InflateRect(&rc, -1, -1);
 			render->FillGradienRect(rc, D3DCOLOR_RGB(255, 255, 255), D3DCOLOR_RGB(176, 207, 233), FALSE);
-			render->TextOut(x, y, mCaption);
+			render->TextOut(x, y, mCaption, mCaption.Length(), mFont.Color(), FALSE, &mFont);
 		}
 		else if (mBtnState == bsDown)
 		{
@@ -146,7 +209,7 @@ public:
 			render->DrawRect(rc, D3DCOLOR_RGB(51, 179, 239));
 			InflateRect(&rc, -1, -1);
 			render->FillGradienRect(rc, D3DCOLOR_RGB(176, 207, 233), D3DCOLOR_RGB(255, 255, 255), FALSE);
-			render->TextOut(x+1, y+1, mCaption);
+			render->TextOut(x+1, y+1, mCaption, mCaption.Length(), mFont.Color(), FALSE, &mFont);
 		}
 	}
 
@@ -154,6 +217,7 @@ protected:
 	SIZE			mCapSize;
 	kstring			mCaption;				// 按钮标题
 	KDxButtonState	mBtnState;				// 控件状态
+	KDxViewFont		mFont;					// 字体
 };
 IMPLEMENT_RUNTIMEINFO(KDxButton, KDxView)
 

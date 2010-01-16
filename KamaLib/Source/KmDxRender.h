@@ -15,7 +15,7 @@
 		3.  文本绘制。
 		4.  剪裁
 	KDxTexture: 纹理包装类。
-	KDxTextHelper: 文本输出辅助类。
+	KDxText: 文本输出辅助类。
 	KDxMainFrame: 主窗口类
 	KDxApp: 主程序类，提供消息循环，及FPS计算。
 
@@ -79,25 +79,6 @@ enum KDxBlendMode
 	bmShadow,
 };
 
-/*
-	字体风格
-*/
-typedef DWORD KDxFontStyle;
-#define fsBold			1
-#define fsItalic		2
-#define fsUnderline		4
-#define fsStrikeOut		8
-
-/*
-	字体选项
-*/
-struct KDxFontOptions
-{
-	int				Height;
-	KDxFontStyle	Style;
-	WCHAR			FontName[LF_FACESIZE];
-};
-
 // PI
 #define DX_PI  ((FLOAT)3.141592654f)
 // 半PI
@@ -118,13 +99,9 @@ struct KDxFontOptions
 // 设RGB, A默认是255
 #define D3DCOLOR_RGB(r, g, b) D3DCOLOR_ARGB(255, r, g, b)
 
-// 默认字体名
-#define DEF_FONT_NAME		L"新宋体"
-// 默认字体高
-#define DEF_FONT_HEIGHT		12
-
 class KDxRender;
 class KDxTexture;
+class KDxText;
 
 /*
 	设备通知类型
@@ -150,72 +127,173 @@ interface IDxDeviceNotify
 };
 
 /*
-	1.  USE_D3DXFONT: 用ID3DXFont实现，不支持下划线和删除线风格，同时也是一种超慢速的字体渲染
-	2.  默认用GDI绘制到内存DC，再复制到纹理，对纹理进行缓存的方式，同时对几种等宽字体进行特殊
-		处理，使取字体尺寸更快速
+	字体风格
 */
-#ifdef USE_D3DXFONT
+typedef DWORD KDxFontStyle;
+#define fsBold			1			// 粗体
+#define fsItalic		2			// 斜体
+#define fsUnderline		4			// 下划线
+#define fsStrikeOut		8			// 删除线
+
+// 默认字体名
+#define DEF_FONT_NAME		L"新宋体"
+// 默认字体高
+#define DEF_FONT_HEIGHT		12
 
 /*
-	文字输出辅助类
+	字体数据
 */
-class KDxTextHelper: public IDxDeviceNotify
+struct KDxFontData
 {
-	typedef std::map<DWORD, ID3DXFont*> KDxD3DFontMap;
+	int				height;
+	KDxFontStyle	style;
+	WCHAR			name[LF_FACESIZE];
+};
+
+/*
+	字体类
+*/
+class KDxFont
+{
+	friend KDxText;
 public:
-	KDxTextHelper():
-	  mD3DFont(NULL), mD3DSprite(NULL), mRender(NULL)
+	KDxFont(): mCode(0)
 	{
 	}
 
-	/*
-		初始化
-	*/
-	void Initialize(KDxRender* render);
+	KDxFont(int height, KDxFontStyle style, LPCWSTR name)
+	{
+		SetFontOptions(height, style, name);
+	}
 
-	/*
-		结束
-	*/
-	void Finalize();
+	KDxFont(const KDxFont& font)
+	{
+		*this = font;
+	}
 
-	/*
-		设置字体选项
-	*/
-	void SetFontOptions(int height, KDxFontStyle style, LPCWSTR fontName);
+	KDxFont& operator = (const KDxFont& font)
+	{
+		SetFontOptions(font.mData.height, font.mData.style, font.mData.name);
+		return *this;
+	}
 
-	/*
-		取字体选项
-	*/
-	KDxFontOptions* FontOptions();
+	void Assign(const KDxFont& font)
+	{
+		SetFontOptions(font.mData.height, font.mData.style, font.mData.name);	
+	}
 
-	/*
-		简单的输出文本, drawBorder指明是否给文本加外框， borderColor指定外框的颜色
-	*/
-	void TextOut(int x, int y, LPCWSTR text, D3DCOLOR textColor = 0xFF000000, 
-		BOOL drawBorder = FALSE, D3DCOLOR borderColor = 0xFFFFFFFF);
+	void SetFontOptions(int height, KDxFontStyle style, LPCWSTR name)
+	{
+		mData.height = height;
+		mData.style = style;
+		wcsncpy(mData.name, name, LF_FACESIZE);
+		mCode = GetHashCode((BYTE*)&mData, sizeof(mData));
+		DoFontChanged();
+	}
 
-	/*
-		取得单行文本尺寸
-	*/
-	SIZE TextSize(LPCWSTR text, int len = -1, BOOL hasBorder = FALSE);
+	DWORD Code() const
+	{
+		return mCode;
+	}
+
+	int Height() const
+	{
+		return mData.height;
+	}
+
+	void SetHeight(int height)
+	{
+		SetFontOptions(height, mData.style, mData.name);
+	}
+
+	int Style() const
+	{
+		return mData.style;
+	}
+
+	void SetStyle(KDxFontStyle style)
+	{
+		SetFontOptions(mData.height, style, mData.name);
+	}
+
+	BOOL IsBold() const
+	{
+		return HAS_FLAG(mData.style, fsBold);
+	}
+
+	BOOL IsItalic()	const
+	{
+		return HAS_FLAG(mData.style, fsItalic);
+	}
+
+	BOOL IsUnderline() const
+	{
+		return HAS_FLAG(mData.style, fsUnderline);
+	}
+
+	BOOL IsStrikeOut() const
+	{
+		return HAS_FLAG(mData.style, fsStrikeOut);
+	}
+
+	kstring Name()
+	{
+		return kstring(mData.name);
+	}
+
+	void SetName(LPCWSTR name)
+	{
+		SetFontOptions(mData.height, mData.style, name);
+	}
+
+	BOOL IsEmpty() const
+	{
+		return (mCode == 0);
+	}
+
+	HFONT CreateGdiFont()
+	{
+		if (IsEmpty())
+			return NULL;
+
+		DWORD weight = IsBold()	? FW_BOLD : FW_NORMAL;
+		DWORD italic = IsItalic() ? TRUE : FALSE;
+		DWORD underline	= IsUnderline() ? TRUE	: FALSE;
+		DWORD strikeout = IsStrikeOut() ? TRUE : FALSE;
+		return CreateFontW(
+			mData.height, 
+			0, 0, 0, 
+			weight, 
+			italic, 
+			underline, 
+			strikeout,
+			DEFAULT_CHARSET, 
+			0, 0, 0, 0, 
+			mData.name);
+	}
 
 protected:
-	virtual void OnDeviceNotify(KDxRender* render, KDxDeviceNotifyType type);
-	void FreeD3DFonts();
-	ID3DXFont* GetFont(KDxFontOptions& fontOpt);
+	virtual void DoFontChanged()
+	{
 
-private:
-	KDxD3DFontMap	mFontMap;
-	KDxFontOptions	mFontOpts;
-	ID3DXFont*		mD3DFont;
-	ID3DXSprite*	mD3DSprite;
-	KDxRender*		mRender;
+	}
+
+protected:
+	DWORD			mCode;			// 字体哈唏码
+	KDxFontData		mData;			// 字体数据
 };
 
-#else
+/*
+	默认字体
+*/
+__declspec(selectany) KDxFont gDefFont(DEF_FONT_HEIGHT, 0, DEF_FONT_NAME);
 
-#define MAX_TEXT_CACHE	512
-#define MAX_TEXT_MEM	10 * 1024 * 1024
+// 最大文本纹理数
+#define MAX_TEXT_CACHE		512
+// 最大纹理内存
+#define MAX_TEXT_MEM		10 * 1024 * 1024
+// 最大GDI字体缓存
+#define MAX_GDIFONT_CACHE	64
 
 // 黑白位图信息
 typedef struct tagBITMAPINFO2 {
@@ -224,14 +302,18 @@ typedef struct tagBITMAPINFO2 {
 } BITMAPINFO2, FAR *LPBITMAPINFO2, *PBITMAPINFO2;
 
 /*
-	文字输出辅助类
+	文字输出辅助类, 作了如下优化:
+	1.  缓存一定数量的GDI字体句柄.
+	2.  用GDI绘制文本到内存DC，再复制到纹理，对纹理进行缓存
+	3.  对几种等宽字体进行特殊处理，使取字体尺寸更快速
 */
-class KDxTextHelper: public IDxDeviceNotify
+class KDxText
 {
 	typedef std::map<DWORD, KDxTexture*> KDxTexCache;
+	typedef std::map<DWORD, HFONT> KDxGdiFontCache;
 public:
-	KDxTextHelper():
-		mMemDC(NULL), mOrgFont(NULL), mRender(NULL), mTexMemSize(0)
+	KDxText():
+		mMemDC(NULL), mDefGdiFont(NULL), mCstGdiFont(NULL), mRender(NULL), mTexMemSize(0)
 	{
 	}
 
@@ -246,41 +328,44 @@ public:
 	void Finalize();
 
 	/*
-		设置字体选项
+		设置默认字体
 	*/
-	void SetFontOptions(int height, KDxFontStyle style, LPCWSTR fontName);
+	void SetDefFont(const KDxFont& font);
 
 	/*
-		取字体选项
+		取默认字体
 	*/
-	KDxFontOptions* FontOptions();
+	void GetDefFont(KDxFont& font);
 
 	/*
-		简单的输出文本, drawBorder指明是否给文本加外框， borderColor指定外框的颜色
+		简单的输出文本
+		text 要输出的文本
+		textLen 文本长度, 如果为-1表示输出所有文本
+		borderColor 指定外框的颜色, 如果为0表示没有外框
+		font 指定字体, 如果为NULL表示使用默认字体
 	*/
-	void TextOut(int x, int y, LPCWSTR text, D3DCOLOR textColor = 0xFF000000, 
-		BOOL drawBorder = FALSE, D3DCOLOR borderColor = 0xFFFFFFFF);
+	void TextOut(int x, int y, LPCWSTR text, int textLen = -1, D3DCOLOR textColor = 0xFF000000, 
+		D3DCOLOR borderColor = 0, KDxFont* font = NULL);
 
 	/*
-		取得单行文本尺寸, len等于-1表示使用整个字符串
+		取得单行文本尺寸
+		textLen 等于-1表示使用整个字符串
+		font 指定字体, 如果为NULL表示使用默认字体
 	*/
-	SIZE TextSize(LPCWSTR text, int len = -1, BOOL hasBorder = FALSE);
+	SIZE TextSize(LPCWSTR text, int textLen = -1, BOOL hasBorder = FALSE,
+		KDxFont* font = NULL);
 
 protected:
-	/*
-		设备通知
-	*/
-	virtual void OnDeviceNotify(KDxRender* render, KDxDeviceNotifyType type);
 
 	/*
 		取文本纹理
 	*/
-	KDxTexture* GetTexture(KDxFontOptions* fontOpt, LPCWSTR text);
+	KDxTexture* GetTexture(KDxFont* font, LPCWSTR text, int textLen);
 
 	/*
-		取得文本与字体的唯一标识码
+		取得文本的唯一标识码
 	*/
-	DWORD GetTextCode(KDxFontOptions* fontOpt, LPCWSTR text, int size);
+	DWORD GetTextCode(KDxFont* font, LPCWSTR text, int textLen);
 
 	/*
 		释放纹理缓存
@@ -288,25 +373,42 @@ protected:
 	void FreeTexCache();
 
 	/*
-		减少纹理缓存
+		纹理缓存
 	*/
-	void ReduceTexCache(DWORD useTexCode);
+	void CacheTex(DWORD code, KDxTexture* tex);
 
 	/*
 		取字体的优化类型
 	*/
-	BOOL CanSizeOptimize();
+	BOOL CanSizeOptimize(KDxFont* font);
+
+	/*
+		缓存Gdi字体
+	*/
+	void CacheGdiFont(DWORD code, HFONT font);
+
+	/*
+		取GDI字体
+	*/
+	HFONT GetGdiFont(KDxFont& font);
+
+	/*
+		释放GDI字体缓存
+	*/
+	void FreeGdiFontCache();
 
 private:
-	KDxFontOptions	mFontOpts;
-	KDxRender*		mRender;
-	HDC				mMemDC;
-	HFONT			mOrgFont;
-	KDxTexCache		mTexCache;
-	DWORD			mTexMemSize;
+	HDC				mMemDC;				// 内存DC
+	HFONT			mOrgGdiFont;		// 原始GDI字体
+	KDxFont			mDefFont;			// 默认字体 
+	HFONT			mDefGdiFont;		// 默认GDI字体
+	KDxFont			mCstFont;			// 自定义字体
+	HFONT			mCstGdiFont;		// 自定义GDI字体
+	DWORD			mTexMemSize;		// 纹理内存大小
+	KDxTexCache		mTexCache;			// 纹理缓存
+	KDxGdiFontCache	mFontCache;			// 字体缓存
+	KDxRender*		mRender;			// 渲染器
 };
-
-#endif // USE_D3DXFONT
 
 /*
 	Dx渲染器
@@ -730,35 +832,25 @@ public:
 	// 字体与文本
 
 	/*
-		设置字体选项
+		设默认字体
 	*/
-	void SetFontOptions(int height, KDxFontStyle style, LPCWSTR fontName);
+	void SetDefFont(const KDxFont& font);
 
 	/*
-		取字体高度
+		取默认字体
 	*/
-	int FontHeight();
+	void GetDefFont(KDxFont& font);
 
 	/*
-		取字体风格
+		
 	*/
-	KDxFontStyle FontStyle();
-
-	/*
-		取字体名称
-	*/
-	void FontName(LPWSTR fontName, int size);
-
-	/*
-		简单的输出文本, drawBorder指明是否给文本加外框， borderColor指定外框的颜色
-	*/
-	void TextOut(int x, int y, LPCWSTR text, D3DCOLOR textColor = 0xFF000000, 
-		BOOL drawBorder = FALSE, D3DCOLOR borderColor = 0xFFFFFFFF);
+	void TextOut(int x, int y, LPCWSTR text, int textLen = -1, D3DCOLOR textColor = 0xFF000000, 
+		D3DCOLOR borderColor = 0, KDxFont* font = NULL);
 
 	/*
 		取得文本尺寸
 	*/
-	SIZE TextSize(LPCWSTR text, int len = -1, BOOL hasBorder = FALSE);
+	SIZE TextSize(LPCWSTR text, int textLen = -1, BOOL hasBorder = FALSE, KDxFont* font = NULL);
 
 	//------------------------------------------------------------------------------
 	// 剪裁
@@ -873,7 +965,7 @@ private:
 	RECT					mWndRect;			// 窗口尺寸
 	BOOL					mIsTopMost;			// 是否置顶
 	KDxNotifyVector			mNotifyVector;		// 通知列表
-	KDxTextHelper			mTextHelper;		// 文本辅助类
+	KDxText			mText;		// 文本辅助类
 	KDxClipList				mClipList;			// 剪裁列表
 };
 
@@ -1206,7 +1298,7 @@ inline BOOL KDxRender::Initialize()
 	ResetRenderState();
 
 	// 字体
-	mTextHelper.Initialize(this);
+	mText.Initialize(this);
 
 	mInited = TRUE;
 	DoNotify(ntDeviceInit);
@@ -1219,7 +1311,7 @@ inline void KDxRender::Finalize()
 	DoNotify(ntDeviceTerm);
 	mVertexBuf.Release();
 	mDevice9.Release();
-	mTextHelper.Finalize();
+	mText.Finalize();
 }
 
 inline BOOL KDxRender::CheckSystemCaps()
@@ -2038,35 +2130,26 @@ inline void KDxRender::DoNotify(KDxDeviceNotifyType type)
 	}
 }
 
-inline void KDxRender::SetFontOptions(int height, KDxFontStyle style, LPCWSTR fontName)
+inline void KDxRender::SetDefFont(const KDxFont& font)
 {
-	mTextHelper.SetFontOptions(height, style, fontName);
+	mText.SetDefFont(font);
 }
 
-inline int KDxRender::FontHeight()
+inline void KDxRender::GetDefFont(KDxFont& font)
 {
-	return mTextHelper.FontOptions()->Height;
+	mText.GetDefFont(font);
 }
 
-inline KDxFontStyle KDxRender::FontStyle()
+inline void KDxRender::TextOut(int x, int y, LPCWSTR text, int textLen /* = -1 */, 
+	D3DCOLOR textColor /* = 0xFF000000 */, D3DCOLOR borderColor /* = 0 */, KDxFont* font /* = NULL */)
 {
-	return mTextHelper.FontOptions()->Style;
+	mText.TextOut(x, y, text, textLen, textColor, borderColor, font);
 }
 
-inline void KDxRender::FontName(LPWSTR fontName, int size)
+inline SIZE KDxRender::TextSize(LPCWSTR text, int textLen /* = -1 */, 
+	BOOL hasBorder /* = FALSE */, KDxFont* font /* = NULL */)
 {
-	wcsncpy(fontName, mTextHelper.FontOptions()->FontName, size);
-}
-
-inline void KDxRender::TextOut(int x, int y, LPCWSTR text, D3DCOLOR textColor, 
-	BOOL drawBorder , D3DCOLOR borderColor )
-{
-	mTextHelper.TextOut(x, y, text, textColor, drawBorder, borderColor);
-}
-
-inline SIZE KDxRender::TextSize(LPCWSTR text, int len, BOOL hasBorder)
-{
-	return mTextHelper.TextSize(text, len, hasBorder);
+	return mText.TextSize(text, textLen, hasBorder, font);
 }
 
 inline BOOL KDxRender::BeginClip(RECT& rcClip)
@@ -2127,172 +2210,92 @@ inline void KDxRender::EndClip()
 }
 
 //------------------------------------------------------------------------------
-// KDxTextHelper
+// KDxText
 
-#ifdef USE_D3DXFONT
-inline void KDxTextHelper::Initialize(KDxRender* render)
-{
-	KASSERT(render != NULL);
-
-	mRender = render;
-	
-	HRESULT hr = D3DXCreateSprite(mRender->Device9(), &mD3DSprite);
-	KASSERT(hr == S_OK);
-
-	SetFontOptions(DEF_FONT_HEIGHT, 0, DEF_FONT_NAME);
-}
-
-inline void KDxTextHelper::Finalize()
-{
-	mD3DFont = NULL;
-	FreeD3DFonts();
-	INTF_RELEASE(mD3DSprite);
-	mRender = NULL;
-}
-
-inline void KDxTextHelper::FreeD3DFonts()
-{
-	KDxD3DFontMap::iterator itr;
-	for (itr = mFontMap.begin(); itr != mFontMap.end(); ++itr)
-		INTF_RELEASE(itr->second);
-	mFontMap.clear();
-}
-
-inline ID3DXFont* KDxTextHelper::GetFont(KDxFontOptions& fontOpt)
-{
-	DWORD code = GetHashCode((BYTE*)(&fontOpt), sizeof(fontOpt));
-	KDxD3DFontMap::iterator itr = mFontMap.find(code);
-	if (itr != mFontMap.end())
-	{
-		return itr->second;
-	}
-	else
-	{
-		ID3DXFont* font;
-		HRESULT hr = D3DXCreateFontW(
-			mRender->Device9(), 
-			fontOpt.Height, 
-			0, 
-			HAS_FLAG(fontOpt.Style, fsBold) ? FW_BOLD : FW_NORMAL,
-			1,
-			HAS_FLAG(fontOpt.Style, fsItalic) ? TRUE : FALSE,
-			DEFAULT_CHARSET,
-			0, 0, 0,
-			fontOpt.FontName, &font);
-		if (hr == S_OK)
-		{
-			mFontMap.insert(std::make_pair(code, font));
-			return font;
-		}
-	}
-
-	return NULL;
-}
-
-inline void KDxTextHelper::SetFontOptions(int height, KDxFontStyle style, LPCWSTR fontName)
-{
-	mFontOpts.Height = height;
-	mFontOpts.Style = style;
-	wcsncpy(mFontOpts.FontName, fontName, LF_FACESIZE);
-	mD3DFont = GetFont(mFontOpts);
-}
-
-inline KDxFontOptions* KDxTextHelper::FontOptions()
-{
-	return &mFontOpts;
-}
-
-inline void KDxTextHelper::TextOut(int x, int y, LPCWSTR text, D3DCOLOR textColor,
-	BOOL drawBorder , D3DCOLOR borderColor )
-{
-	KASSERT(mD3DFont);
-	KASSERT(mD3DSprite);
-	RECT rc;
-	if (!drawBorder)
-	{
-		SetRect(&rc, x, y, 0, 0);
-		mD3DFont->DrawTextW(NULL, text, -1, &rc, DT_NOCLIP | DT_SINGLELINE, textColor);
-	}
-	else
-	{
-		mD3DSprite->Begin(D3DXSPRITE_ALPHABLEND | D3DXSPRITE_SORT_TEXTURE);
-		SetRect(&rc, x-1, y, 0, 0);
-		mD3DFont->DrawTextW(mD3DSprite, text, -1, &rc, DT_NOCLIP | DT_SINGLELINE, borderColor);
-		SetRect(&rc, x+1, y, 0, 0);
-		mD3DFont->DrawTextW(mD3DSprite, text, -1, &rc, DT_NOCLIP | DT_SINGLELINE, borderColor);
-		SetRect(&rc, x, y-1, 0, 0);
-		mD3DFont->DrawTextW(mD3DSprite, text, -1, &rc, DT_NOCLIP | DT_SINGLELINE, borderColor);
-		SetRect(&rc, x, y+1, 0, 0);
-		mD3DFont->DrawTextW(mD3DSprite, text, -1, &rc, DT_NOCLIP | DT_SINGLELINE, borderColor);
-		SetRect(&rc, x, y, 0, 0);
-		mD3DFont->DrawTextW(mD3DSprite, text, -1, &rc, DT_NOCLIP | DT_SINGLELINE, textColor);
-		mD3DSprite->End();
-	}
-}
-
-inline SIZE KDxTextHelper::TextSize(LPCWSTR text, int len, BOOL hasBorder)
-{
-	KASSERT(mD3DFont);
-	RECT rc;
-	SetRect(&rc, 0, 0, 0, 0);
-	mD3DFont->DrawTextW(NULL, text, len, &rc, DT_SINGLELINE | DT_CALCRECT, 0);
-	SIZE sz;
-	if (hasBorder)
-	{
-		sz.cx = rc.right + 2;
-		sz.cy = rc.bottom + 2;
-	}
-	else
-	{
-		sz.cx = rc.right;
-		sz.cy = rc.bottom;
-	}
-	return sz;
-}
-
-inline void KDxTextHelper::OnDeviceNotify(KDxRender* render, KDxDeviceNotifyType type)
-{
-	if (type == ntDeviceLost)
-	{
-		mD3DSprite->OnLostDevice();
-		KDxD3DFontMap::iterator itr;
-		for (itr = mFontMap.begin(); itr != mFontMap.end(); ++itr)
-			itr->second->OnLostDevice();
-	}
-	else if (type == ntDeviceReset)
-	{
-		mD3DSprite->OnResetDevice();
-		KDxD3DFontMap::iterator itr;
-		for (itr = mFontMap.begin(); itr != mFontMap.end(); ++itr)
-			itr->second->OnResetDevice();
-	}
-}
-
-#else
-
-inline void KDxTextHelper::Initialize(KDxRender* render)
+inline void KDxText::Initialize(KDxRender* render)
 {
 	KASSERT(render != NULL);
 	mRender = render;
 	mMemDC = CreateCompatibleDC(0);
 	SetTextColor(mMemDC, 0xFFFFFF);
 	SetBkMode(mMemDC, TRANSPARENT);
-	SetFontOptions(DEF_FONT_HEIGHT, 0, DEF_FONT_NAME);
+	SetDefFont(gDefFont);
+	mOrgGdiFont = (HFONT)SelectObject(mMemDC, (HFONT)mDefGdiFont);
 }
 
-inline void KDxTextHelper::Finalize()
+inline void KDxText::Finalize()
 {
-	if (mOrgFont)
-	{
-		HFONT hFont = (HFONT)SelectObject(mMemDC, mOrgFont);
-		DeleteObject((HGDIOBJ)hFont);
-	}
+	SelectObject(mMemDC, mOrgGdiFont);
 	DeleteDC(mMemDC);
+
+	mDefGdiFont = NULL;
+	mCstGdiFont = NULL;
+	FreeGdiFontCache();
+
 	FreeTexCache();
 	mRender = NULL;
 }
 
-inline void KDxTextHelper::FreeTexCache()
+inline void KDxText::SetDefFont(const KDxFont& font)
+{
+	if (!font.IsEmpty() && (font.Code() != mDefFont.Code()))
+	{
+		mDefFont = font;
+		mDefGdiFont = GetGdiFont(mDefFont);
+	}
+}
+
+inline void KDxText::GetDefFont(KDxFont& font)
+{
+	font = mDefFont;
+}
+
+inline void KDxText::CacheGdiFont(DWORD code, HFONT font)
+{
+	mFontCache.insert(std::make_pair(code, font));
+	
+	// 超出缓存, 删除掉一个
+	if (mFontCache.size() > MAX_GDIFONT_CACHE)
+	{
+		// 不能删除掉默认字体和自定义字体
+		KDxGdiFontCache::iterator itr;
+		for (itr = mFontCache.begin(); itr != mFontCache.end(); ++itr)
+		{
+			if ((itr->first != code) && (itr->first != mDefFont.Code()) && (itr->first != mCstFont.Code()))
+				break;
+		}
+		
+		if (itr != mFontCache.end())
+		{
+			DeleteObject(itr->second);
+			mFontCache.erase(itr);
+		}
+	}
+}
+
+inline HFONT KDxText::GetGdiFont(KDxFont& font)
+{
+	// 先从缓存中查找, 找不到再创建
+	KDxGdiFontCache::iterator itr = mFontCache.find(font.Code());
+	if (itr != mFontCache.end())
+		return itr->second;
+	else 
+	{
+		HFONT gdiFont = font.CreateGdiFont();
+		CacheGdiFont(font.Code(), gdiFont);
+		return gdiFont;
+	}
+}
+
+inline void KDxText::FreeGdiFontCache()
+{
+	KDxGdiFontCache::iterator itr;
+	for (itr = mFontCache.begin(); itr != mFontCache.end(); ++itr)
+		DeleteObject((HFONT)itr->second);
+	mFontCache.clear();
+}
+
+inline void KDxText::FreeTexCache()
 {
 	KDxTexCache::iterator itr;
 	for (itr = mTexCache.begin(); itr != mTexCache.end(); ++itr)
@@ -2300,47 +2303,13 @@ inline void KDxTextHelper::FreeTexCache()
 	mTexCache.clear();
 }
 
-inline void KDxTextHelper::SetFontOptions(int height, KDxFontStyle style, LPCWSTR fontName)
+inline void KDxText::TextOut(int x, int y, LPCWSTR text, int textLen /* = -1 */, 
+	D3DCOLOR textColor /* = 0xFF000000 */, D3DCOLOR borderColor /* = 0 */, KDxFont* font /* = NULL */)
 {
-	if ((height == mFontOpts.Height) && (style == mFontOpts.Style) && 
-		(wcscmp(fontName, mFontOpts.FontName) == 0))
-		return;
-	mFontOpts.Height = height;
-	mFontOpts.Style = style;
-	wcsncpy(mFontOpts.FontName, fontName, LF_FACESIZE);
-	
-	// 字体
-	DWORD weight	= HAS_FLAG(style, fsBold)		? FW_BOLD	: FW_NORMAL;
-	DWORD italic	= HAS_FLAG(style, fsItalic)		? TRUE		: FALSE;
-	DWORD underline	= HAS_FLAG(style, fsUnderline)	? TRUE		: FALSE;
-	DWORD strikeout = HAS_FLAG(style, fsStrikeOut)	? TRUE		: FALSE;
-	
-	HFONT hFont	= CreateFontW(
-		height, 0, 0, 0, 
-		weight, italic, underline, strikeout,
-		DEFAULT_CHARSET, 
-		0, 0, 0, 0, 
-		mFontOpts.FontName);
-	HFONT hOldFont = (HFONT)SelectObject(mMemDC, (HGDIOBJ)hFont);
-
-	if (!mOrgFont)
-		mOrgFont = hOldFont;
-	else
-		DeleteObject((HGDIOBJ)hOldFont);
-}
-
-inline KDxFontOptions* KDxTextHelper::FontOptions()
-{
-	return &mFontOpts;
-}
-
-inline void KDxTextHelper::TextOut(int x, int y, LPCWSTR text, D3DCOLOR textColor, 
-	BOOL drawBorder , D3DCOLOR borderColor )
-{
-	KDxTexture* tex = GetTexture(&mFontOpts, text);
+	KDxTexture* tex = GetTexture(font, text, textLen);
 	if (!tex) return;
 
-	if (!drawBorder)
+	if (!borderColor)
 	{
 		mRender->Draw(x, y, tex, bmAlpha, textColor);
 	}
@@ -2354,30 +2323,31 @@ inline void KDxTextHelper::TextOut(int x, int y, LPCWSTR text, D3DCOLOR textColo
 	}
 }
 
-inline BOOL KDxTextHelper::CanSizeOptimize()
+inline BOOL KDxText::CanSizeOptimize(KDxFont* font)
 {
-	if (HAS_FLAG(mFontOpts.Style, fsBold))
+	if (font->IsBold())
 		return FALSE;
 
-	if ((wcscmp(mFontOpts.FontName, L"新宋体") == 0) || 
-		(wcscmp(mFontOpts.FontName, L"隶书")== 0) ||
-		(wcscmp(mFontOpts.FontName, L"幼圆") == 0) ||
-		(wcscmp(mFontOpts.FontName, L"楷体_GB2312") == 0))
+	if ((wcscmp(font->mData.name, L"新宋体") == 0) || 
+		(wcscmp(font->mData.name, L"隶书")== 0) ||
+		(wcscmp(font->mData.name, L"幼圆") == 0) ||
+		(wcscmp(font->mData.name, L"楷体_GB2312") == 0))
 	{
 		return TRUE;
 	}
 	
-	if ((wcscmp(mFontOpts.FontName, L"宋体") == 0) ||
-		(wcscmp(mFontOpts.FontName, L"黑体") == 0))
+	if ((wcscmp(font->mData.name, L"宋体") == 0) ||
+		(wcscmp(font->mData.name, L"黑体") == 0))
 	{
-		if ((abs(mFontOpts.Height) % 2) == 0)
+		if ((abs(font->mData.height) % 2) == 0)
 			return TRUE;
 	}
 	
 	return FALSE;
 }
 
-inline SIZE KDxTextHelper::TextSize(LPCWSTR text, int len /* = -1 */, BOOL hasBorder /* = FALSE */)
+inline SIZE KDxText::TextSize(LPCWSTR text, int textLen /* = -1 */, 
+	BOOL hasBorder /* = FALSE */,  KDxFont* font /* = NULL */)
 {
 /*
 	优化策略：
@@ -2388,15 +2358,36 @@ inline SIZE KDxTextHelper::TextSize(LPCWSTR text, int len /* = -1 */, BOOL hasBo
 	3.  使用API计算文本尺寸
 */
 
-	SIZE sz;
-	memset(&sz, 0, sizeof(sz));
-	if (len == -1)
-		len = (int)wcslen(text);
-	if (!len) 
+	SIZE sz = {0, 0};
+
+	if (textLen == -1)
+		textLen = (int)wcslen(text);
+	if (!textLen) 
 		return sz;
 
+	// 字体选择
+	KDxFont* curFont;
+	HFONT curGdiFont;
+	if (!font || (font->Code() == mDefFont.Code()))
+	{
+		// 用默认字体
+		curFont = &mDefFont;
+		curGdiFont = mDefGdiFont;
+	}
+	else
+	{
+		// 用自定义字体
+		if (font->Code() != mCstFont.Code())
+		{
+			mCstFont = *font;
+			mCstGdiFont = GetGdiFont(mCstFont);
+		}
+		curFont = &mCstFont;
+		curGdiFont = mCstGdiFont;
+	}
+
 	// 先找缓存纹理
-	DWORD code = GetTextCode(&mFontOpts, text, len);
+	DWORD code = GetTextCode(curFont, text, textLen);
 	KDxTexture* tex = NULL;
 	KDxTexCache::iterator itr = mTexCache.find(code);
 	if (itr != mTexCache.end())
@@ -2407,10 +2398,10 @@ inline SIZE KDxTextHelper::TextSize(LPCWSTR text, int len /* = -1 */, BOOL hasBo
 	}
 	else
 	{
-		if (CanSizeOptimize())
+		if (CanSizeOptimize(curFont))
 		{
 			// 对特殊字体进行优化
-			sz.cy = abs(mFontOpts.Height);;
+			sz.cy = abs(curFont->Height());
 			sz.cx = 0;
 			int w = (sz.cy % 2) ? sz.cy + 1 : sz.cy;
 			int hw = w / 2;
@@ -2423,17 +2414,23 @@ inline SIZE KDxTextHelper::TextSize(LPCWSTR text, int len /* = -1 */, BOOL hasBo
 					sz.cx += w;
 				p++;
 			}
+
+			// 斜体还再宽一点
+			if (curFont->IsItalic())
+				SelectObject(mMemDC, (HFONT)curGdiFont);
 		}
 		else
 		{
 			// 用API计算文本尺寸
-			GetTextExtentPoint32W(mMemDC, text, len, &sz);
-			if (HAS_FLAG(mFontOpts.Style, fsItalic))
-			{
-				ABCFLOAT abc;
-				if (GetCharABCWidthsFloatW(mMemDC, text[len-1], text[len-1], &abc))
-					sz.cx -= abc.abcfC;
-			}
+			SelectObject(mMemDC, (HFONT)curGdiFont);
+			GetTextExtentPoint32W(mMemDC, text, textLen, &sz);
+		}
+
+		if (curFont->IsItalic())
+		{
+			ABCFLOAT abc;
+			if (GetCharABCWidthsFloatW(mMemDC, text[textLen-1], text[textLen-1], &abc))
+				sz.cx -= abc.abcfC;
 		}
 	}
 
@@ -2446,25 +2443,43 @@ inline SIZE KDxTextHelper::TextSize(LPCWSTR text, int len /* = -1 */, BOOL hasBo
 	return sz;
 }
 
-inline KDxTexture* KDxTextHelper::GetTexture(KDxFontOptions* fontOpt, LPCWSTR text)
+inline KDxTexture* KDxText::GetTexture(KDxFont* font, LPCWSTR text, int textLen)
 {
-	int textLen = (int)wcslen(text);
-	if (!textLen) return NULL;
+	// 文本长度
+	if (textLen == -1)
+		textLen = (int)wcslen(text);
+	if (textLen == 0) 
+		return NULL;
 
-	DWORD code = GetTextCode(fontOpt, text, textLen);
+	// 字体选择
+	KDxFont* curFont;
+	HFONT curGdiFont;
+	if (!font || (font->Code() == mDefFont.Code()))
+	{
+		// 用默认字体
+		curFont = &mDefFont;
+		curGdiFont = mDefGdiFont;
+	}
+	else
+	{
+		// 用自定义字体
+		if (font->Code() != mCstFont.Code())
+		{
+			mCstFont = *font;
+			mCstGdiFont = GetGdiFont(mCstFont);
+		}
+		curFont = &mCstFont;
+		curGdiFont = mCstGdiFont;
+	}
+
+	// 先从缓存寻找
+	DWORD code = GetTextCode(curFont, text, textLen);
 	KDxTexCache::iterator itr = mTexCache.find(code);
 	if (itr != mTexCache.end())
 		return itr->second;
 
 	// 字体尺寸
-	SIZE textSize;
-	GetTextExtentPoint32W(mMemDC, text, textLen, &textSize);
-	if (HAS_FLAG(mFontOpts.Style, fsItalic))
-	{
-		ABCFLOAT abc;
-		if (GetCharABCWidthsFloatW(mMemDC, text[textLen-1], text[textLen-1], &abc))
-			textSize.cx -= abc.abcfC;
-	}
+	SIZE textSize = TextSize(text, textLen, FALSE, curFont);
 
 	// 创建纹理, 用A4R4G4B4
 	KDxTexture* tex = new KDxTexture;
@@ -2477,6 +2492,9 @@ inline KDxTexture* KDxTextHelper::GetTexture(KDxFontOptions* fontOpt, LPCWSTR te
 	// 创建一个黑白位图
 	HBITMAP textBmp = CreateCompatibleBitmap(mMemDC, textSize.cx, textSize.cy);
 	HBITMAP oldBmp = (HBITMAP)SelectObject(mMemDC, (HGDIOBJ)textBmp);
+
+	// 应用当前的字体
+	SelectObject(mMemDC, (HFONT)curGdiFont);
 
 	// 输出文本
 	TextOutW(mMemDC, 0, 0, text, textLen);
@@ -2529,59 +2547,43 @@ inline KDxTexture* KDxTextHelper::GetTexture(KDxFontOptions* fontOpt, LPCWSTR te
 	DeleteObject(textBmp);
 	
 	// 缓存纹理
-	mTexMemSize += tex->TexWidth() * tex->TexHeight() * 16;
-	mTexCache.insert(std::make_pair(code, tex));
-
-	// 处理纹理缓存过大的情况
-	ReduceTexCache(code);
+	CacheTex(code, tex);
 	return tex;
 }
 
-inline void KDxTextHelper::ReduceTexCache(DWORD useTexCode)
+inline void KDxText::CacheTex(DWORD code, KDxTexture* tex)
 {
+	mTexMemSize += tex->TexWidth() * tex->TexHeight() * 16;
+	mTexCache.insert(std::make_pair(code, tex));
+
 	KTRACE(L"Text Texture Num: %d;  Text Texture Memory: %d", mTexCache.size(), mTexMemSize);
 	if ((mTexCache.size() > MAX_TEXT_CACHE) || (mTexMemSize > MAX_TEXT_MEM))
 	{
-		KDxTexCache::iterator itr = mTexCache.begin();
-		KDxTexture* delTex;
-		if (itr->first != useTexCode)
+		KDxTexCache::iterator itr;
+		for (itr = mTexCache.begin(); itr != mTexCache.end(); ++itr)
 		{
-			delTex = itr->second;
-			mTexMemSize -= delTex->TexWidth() * delTex->TexHeight() * 16;
-			mTexCache.erase(itr);
-			delete delTex;
+			if (itr->first != code)
+				break;
 		}
-		else 
+
+		if (itr != mTexCache.end())
 		{
-			++itr;
-			delTex = itr->second;
-			mTexMemSize -= delTex->TexWidth() * delTex->TexHeight() * 16;
+			mTexMemSize -= itr->second->TexWidth() * itr->second->TexHeight() * 16;
+			delete itr->second;
 			mTexCache.erase(itr);
-			delete delTex;
+			
 		}
 	}
 }
 
-DWORD KDxTextHelper::GetTextCode(KDxFontOptions* fontOpt, LPCWSTR text, int size)
+DWORD KDxText::GetTextCode(KDxFont* font, LPCWSTR text, int textLen)
 {
-	int len1 = sizeof(KDxFontOptions);
-	int len2 = size * sizeof(WCHAR);
-	int len = len1 + len2;
-	BYTE* ptrData = new BYTE[len];
-	memcpy(ptrData, fontOpt, len1);
-	memcpy((void*)(ptrData + len1), text, len2);
-	DWORD code = GetHashCode(ptrData, len);
-	delete ptrData;
-	return code;
+	static DWORD code[2];
+	code[0] = GetHashCode((BYTE*)text, textLen);
+	code[1] = font->Code();
+
+	return GetHashCode((BYTE*)code, 8);
 }
-
-inline void KDxTextHelper::OnDeviceNotify(KDxRender* render, KDxDeviceNotifyType type)
-{
-	// nothing
-}
-
-#endif
-
 //------------------------------------------------------------------------------
 // KDxTexture
 
