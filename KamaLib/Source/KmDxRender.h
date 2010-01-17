@@ -699,6 +699,26 @@ public:
 		return mBkColor;
 	}
 
+	int PaintOffsetX()
+	{
+		return mPaintOffsetX;
+	}
+
+	void SetPaintOffsetX(int x)
+	{
+		mPaintOffsetX = x;
+	}
+
+	int PaintOffsetY()
+	{
+		return mPaintOffsetY;
+	}
+
+	void SetPaintOffsetY(int y)
+	{
+		mPaintOffsetY = y;
+	}
+
 	//------------------------------------------------------------------------------
 	// 显示模式
 	/*
@@ -965,8 +985,10 @@ private:
 	RECT					mWndRect;			// 窗口尺寸
 	BOOL					mIsTopMost;			// 是否置顶
 	KDxNotifyVector			mNotifyVector;		// 通知列表
-	KDxText			mText;		// 文本辅助类
+	KDxText					mText;				// 文本辅助类
 	KDxClipList				mClipList;			// 剪裁列表
+	int						mPaintOffsetX;		// 绘制偏移X
+	int						mPaintOffsetY;		// 绘制偏移Y
 };
 
 /*
@@ -1493,6 +1515,9 @@ inline BOOL KDxRender::BeginPaint()
 		return FALSE;
 	if (!mVertexBuf)
 		return FALSE;
+
+	mPaintOffsetX = 0;
+	mPaintOffsetY = 0;
 	mDevice9->Clear(0, NULL, D3DCLEAR_TARGET, mBkColor, 1.0f, 0);
 	mDevice9->BeginScene();
 	mVertexBuf->Lock(0, 0, (void**)&mPtrVertex, D3DLOCK_DISCARD);
@@ -1571,8 +1596,8 @@ inline void KDxRender::DrawLine(FLOAT x1, FLOAT y1, FLOAT x2, FLOAT y2, D3DCOLOR
 			mCurTexture = NULL;
 		}
 	}
-	AddVertex(x1, y1, color);
-	AddVertex(x2, y2, color);
+	AddVertex(x1 + mPaintOffsetX, y1 + mPaintOffsetY, color);
+	AddVertex(x2 + mPaintOffsetX, y2 + mPaintOffsetY, color);
 	++mPrimCount;
 }
 
@@ -1608,9 +1633,9 @@ inline void KDxRender::FillTriangle(FLOAT x1, FLOAT y1, FLOAT x2, FLOAT y2, FLOA
 			mCurTexture = NULL;
 		}
 	}
-	AddVertex(x1, y1, color);
-	AddVertex(x2, y2, color);
-	AddVertex(x3, y3, color);
+	AddVertex(x1 + mPaintOffsetX, y1 + mPaintOffsetY, color);
+	AddVertex(x2 + mPaintOffsetX, y2 + mPaintOffsetY, color);
+	AddVertex(x3 + mPaintOffsetX, y3 + mPaintOffsetY, color);
 	++mPrimCount;
 }
 
@@ -1652,12 +1677,12 @@ inline void KDxRender::FillRect(int left, int top, int right, int bottom, D3DCOL
 			mCurTexture = NULL;
 		}
 	}
-	AddVertex((FLOAT)left, (FLOAT)top, color);
-	AddVertex((FLOAT)right, (FLOAT)bottom, color);
-	AddVertex((FLOAT)left, (FLOAT)bottom, color);
-	AddVertex((FLOAT)left, (FLOAT)top, color);
-	AddVertex((FLOAT)right, (FLOAT)top, color);
-	AddVertex((FLOAT)right, (FLOAT)bottom, color);
+	AddVertex((FLOAT)(left + mPaintOffsetX), (FLOAT)(top + mPaintOffsetY),		color);
+	AddVertex((FLOAT)(right + mPaintOffsetX), (FLOAT)(bottom + mPaintOffsetY),	color);
+	AddVertex((FLOAT)(left + mPaintOffsetX), (FLOAT)(bottom + mPaintOffsetY),	color);
+	AddVertex((FLOAT)(left + mPaintOffsetX), (FLOAT)(top + mPaintOffsetY),		color);
+	AddVertex((FLOAT)(right + mPaintOffsetX), (FLOAT)(top + mPaintOffsetY),		color);
+	AddVertex((FLOAT)(right + mPaintOffsetX), (FLOAT)(bottom + mPaintOffsetY),	color);
 	mPrimCount += 2;
 }
 
@@ -1690,12 +1715,12 @@ inline void KDxRender::FillGradienRect(int left, int top, int right, int bottom,
 			mCurTexture = NULL;
 		}
 	}
-	AddVertex((FLOAT)left, (FLOAT)top, color1);
-	AddVertex((FLOAT)right, (FLOAT)bottom, color2);
-	AddVertex((FLOAT)left, (FLOAT)bottom, isHoriz ? color1 : color2);
-	AddVertex((FLOAT)left, (FLOAT)top, color1);
-	AddVertex((FLOAT)right, (FLOAT)top, isHoriz ? color2 : color1);
-	AddVertex((FLOAT)right, (FLOAT)bottom, color2);
+	AddVertex((FLOAT)(left + mPaintOffsetX), (FLOAT)(top + mPaintOffsetY),		color1);
+	AddVertex((FLOAT)(right + mPaintOffsetX), (FLOAT)(bottom + mPaintOffsetY),	color2);
+	AddVertex((FLOAT)(left + mPaintOffsetX), (FLOAT)(bottom + mPaintOffsetY),	isHoriz ? color1 : color2);
+	AddVertex((FLOAT)(left + mPaintOffsetX), (FLOAT)(top + mPaintOffsetY),		color1);
+	AddVertex((FLOAT)(right + mPaintOffsetX), (FLOAT)(top + mPaintOffsetY),		isHoriz ? color2 : color1);
+	AddVertex((FLOAT)(right + mPaintOffsetX), (FLOAT)(bottom + mPaintOffsetY),	color2);
 	mPrimCount += 2;
 }
 
@@ -2043,12 +2068,12 @@ inline void KDxRender::Draw(int x, int y, KDxTexture* tex,
 	FLOAT bottom = top + tex->ImgHeight();
 	FLOAT u = (FLOAT)tex->ImgWidth() / (FLOAT)tex->TexWidth();
 	FLOAT v = (FLOAT)tex->ImgHeight() / (float)tex->TexHeight();
-	AddVertex(left, top, color, 0, 0, 0.5f);
-	AddVertex(right, bottom, color, u, v, 0.5f);
-	AddVertex(left, bottom, color, 0, v, 0.5f);
-	AddVertex(left, top, color, 0, 0, 0.5f);
-	AddVertex(right, top, color, u, 0, 0.5f);
-	AddVertex(right, bottom, color, u, v, 0.5f);
+	AddVertex((FLOAT)(left + mPaintOffsetX), (FLOAT)(top + mPaintOffsetY),		color, 0, 0, 0.5f);
+	AddVertex((FLOAT)(right + mPaintOffsetX), (FLOAT)(bottom + mPaintOffsetY),	color, u, v, 0.5f);
+	AddVertex((FLOAT)(left + mPaintOffsetX), (FLOAT)(bottom + mPaintOffsetY),	color, 0, v, 0.5f);
+	AddVertex((FLOAT)(left + mPaintOffsetX), (FLOAT)(top + mPaintOffsetY),		color, 0, 0, 0.5f);
+	AddVertex((FLOAT)(right + mPaintOffsetX), (FLOAT)(top + mPaintOffsetY),		color, u, 0, 0.5f);
+	AddVertex((FLOAT)(right + mPaintOffsetX), (FLOAT)(bottom + mPaintOffsetY),	color, u, v, 0.5f);
 	mPrimCount += 2;
 }
 
@@ -2082,12 +2107,12 @@ inline void KDxRender::StretchDraw(int x, int y, int w, int h, KDxTexture* tex,
 	FLOAT bottom = top + h;
 	FLOAT u = (FLOAT)tex->ImgWidth() / (FLOAT)tex->TexWidth();
 	FLOAT v = (FLOAT)tex->ImgHeight() / (float)tex->TexHeight();
-	AddVertex(left, top, color, 0, 0, 0.5f);
-	AddVertex(right, bottom, color, u, v, 0.5f);
-	AddVertex(left, bottom, color, 0, v, 0.5f);
-	AddVertex(left, top, color, 0, 0, 0.5f);
-	AddVertex(right, top, color, u, 0, 0.5f);
-	AddVertex(right, bottom, color, u, v, 0.5f);
+	AddVertex((FLOAT)(left + mPaintOffsetX), (FLOAT)(top + mPaintOffsetY),		color, 0, 0, 0.5f);
+	AddVertex((FLOAT)(right + mPaintOffsetX), (FLOAT)(bottom + mPaintOffsetY),	color, u, v, 0.5f);
+	AddVertex((FLOAT)(left + mPaintOffsetX), (FLOAT)(bottom + mPaintOffsetY),	color, 0, v, 0.5f);
+	AddVertex((FLOAT)(left + mPaintOffsetX), (FLOAT)(top + mPaintOffsetY),		color, 0, 0, 0.5f);
+	AddVertex((FLOAT)(right + mPaintOffsetX), (FLOAT)(top + mPaintOffsetY),		color, u, 0, 0.5f);
+	AddVertex((FLOAT)(right + mPaintOffsetX), (FLOAT)(bottom + mPaintOffsetY),	color, u, v, 0.5f);
 	mPrimCount += 2;
 }
 

@@ -266,11 +266,10 @@ interface IDxViewEvent
 	}
 
 	/*
-		绘制事件， 
-		rcPaint	要绘制的区域，为屏幕坐标
-		rcScreen 视图在屏幕中的区域
+		绘制事件， 注意: Render此时已经调整好绘制坐标的偏移, 
+		因此调用Render的绘制函数时, 应该传入视图的客户坐标, 而非屏幕坐标
 	*/
-	virtual void OnPaint(KDxView* view, KDxRender* render, const RECT& rcPaint, const RECT& rcScreen) 
+	virtual void OnPaint(KDxView* view, KDxRender* render) 
 	{
 
 	}
@@ -505,6 +504,12 @@ public:
 	void SetPos(int left, int top);
 
 	/*
+		设置位置尺寸
+	*/
+	void SetBound(int left, int top, int width, int height);
+	void SetBound(const RECT& rc);
+
+	/*
 		取最小尺寸
 	*/
 	SIZE MinSize();
@@ -527,12 +532,17 @@ public:
 	/*
 		取得视图的客户区域
 	*/
-	void ClientRect(RECT& rc);
+	void GetClientRect(RECT& rc);
+
+	/*
+		取得相对于父视图的区域
+	*/
+	void GetViewRect(RECT& rc);
 
 	/*
 		取得视图所占的屏幕区域
 	*/
-	void ScreenRect(RECT& rc);
+	void GetScreenRect(RECT& rc);
 
 	/*
 		屏幕坐标转客户坐标
@@ -659,9 +669,10 @@ public:
 	virtual void DoUpdate();
 
 	/*
-		绘制，具体用什么绘制
+		绘制，注意: Render此时已经调整好绘制坐标的偏移, 
+		因此调用Render的绘制函数时, 应该传入视图的客户坐标, 而非屏幕坐标
 	*/
-	virtual void DoPaint(KDxRender* render, const RECT& rcPaint, const RECT& rcScreen);
+	virtual void DoPaint(KDxRender* render);
 
 	/*
 		处理投递事件
@@ -1674,6 +1685,17 @@ inline void KDxView::SetPos(int left, int top)
 	DoNotify(ntPosChanged, NULL);
 }
 
+inline void KDxView::SetBound(const RECT& rc)
+{
+	SetBound(rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top);
+}
+
+inline void KDxView::SetBound(int left, int top, int width, int height)
+{
+	SetPos(left, top);
+	SetSize(width, height);
+}
+
 inline SIZE KDxView::MinSize() 
 { 
 	return mMinSize; 
@@ -1712,12 +1734,17 @@ inline void KDxView::SetMaxSize(int cx, int cy)
 		mHeight > cy ? cy : mHeight);
 }
 
-inline void KDxView::ClientRect(RECT& rc)
+inline void KDxView::GetClientRect(RECT& rc)
 {
 	SetRect(&rc, 0, 0, mWidth, mHeight);
 }
 
-inline void KDxView::ScreenRect(RECT& rc)
+inline void KDxView::GetViewRect(RECT& rc)
+{
+	SetRect(&rc, mLeft, mTop, mLeft + mWidth, mTop + mHeight);
+}
+
+inline void KDxView::GetScreenRect(RECT& rc)
 {
 	int Left = 0;
 	int Top = 0;
@@ -1737,7 +1764,7 @@ inline void KDxView::ScreenRect(RECT& rc)
 inline POINT KDxView::ScreenToClient(const POINT& pt)
 {
 	RECT rc;
-	ScreenRect(rc);
+	GetScreenRect(rc);
 	POINT ptRet;
 	ptRet.x = pt.x - rc.left;
 	ptRet.y = pt.y - rc.top;
@@ -1747,7 +1774,7 @@ inline POINT KDxView::ScreenToClient(const POINT& pt)
 inline POINT KDxView::ClientToScreen(const POINT& pt)
 {
 	RECT rc;
-	ScreenRect(rc);
+	GetScreenRect(rc);
 	POINT ptRet;
 	ptRet.x = pt.x + rc.left;
 	ptRet.y = pt.y + rc.top;
@@ -1782,7 +1809,7 @@ inline KDxView* KDxView::GetViewAtPos(POINT pt, BOOL allowDisabled)
 inline KDxHitTest KDxView::HitTestView(const POINT& pt)
 {
 	RECT rc;
-	ClientRect(rc);
+	GetClientRect(rc);
 	return PtInRect(&rc, pt) ? htClient : htNone;
 }
 
@@ -1932,10 +1959,10 @@ inline void KDxView::DoUpdate()
 		mViewEvent->OnUpdate(this);
 }
 
-inline void KDxView::DoPaint(KDxRender* render, const RECT& rcPaint, const RECT& rcScreen)
+inline void KDxView::DoPaint(KDxRender* render)
 {
 	if (mViewEvent)
-		mViewEvent->OnPaint(this, render, rcPaint, rcScreen);
+		mViewEvent->OnPaint(this, render);
 }
 
 inline void KDxView::HandlePostEvent(KDxPostId id, DWORD param1, DWORD param2)
@@ -2233,7 +2260,7 @@ inline KDxView* KDxWindow::FindNextArrowView(KDxView* startView, BOOL isForward)
 			--curPos;
 		}
 		view = parentView->ChildView(curPos);
-		if (view->CanFocus())
+		if (view->CanFocus() && view->IsTabStop())
 			return view;
 	} while (curPos != pos);
 
@@ -2678,7 +2705,7 @@ inline KDxHitTest KDxWindow::HitTestView(const POINT& pt)
 
 	if (IsMovable())
 	{
-		ClientRect(rc);
+		GetClientRect(rc);
 		return ::PtInRect(&rc, pt) ? htMoveRegion : htNone;
 	}
 
@@ -2804,7 +2831,7 @@ inline void KDxScreen::SetHostWnd(HWND hwnd)
 		mHostWnd = hwnd;
 		SubclassWindow(mHostWnd);
 		RECT rc;
-		GetClientRect(mHostWnd, &rc);
+		::GetClientRect(mHostWnd, &rc);
 		SetPos(0, 0);
 		SetSize(rc.right, rc.bottom);
 	}
@@ -3051,9 +3078,10 @@ inline void KDxScreen::Paint()
 	{
 		KASSERT(mRender != NULL);
 
+		DoPaint(mRender);
+
 		RECT rcPaint;
-		ScreenRect(rcPaint);
-		DoPaint(mRender, rcPaint, rcPaint);
+		GetScreenRect(rcPaint);
 		PaintChilds(this, rcPaint, rcPaint);
 	}
 }
@@ -3210,6 +3238,9 @@ inline void KDxScreen::DestroyAllCursor()
 inline void KDxScreen::PaintChilds(KDxView* parentView, const RECT& rcParentPaint, const RECT& rcParentScreen)
 {
 	RECT rcChildScreen, rcChildPaint;
+	int orgOffsetX, orgOffsetY;
+	orgOffsetX = mRender->PaintOffsetX();
+	orgOffsetY = mRender->PaintOffsetY();
 
 	if (OBJECT_DERIVEDFROM(parentView, KDxScreen))
 	{
@@ -3232,7 +3263,11 @@ inline void KDxScreen::PaintChilds(KDxView* parentView, const RECT& rcParentPain
 					BOOL isClip = FALSE;
 					if (mCanClip && mRender->BeginClip(rcChildPaint))
 						isClip = TRUE;
-					wnd->DoPaint(mRender, rcChildPaint, rcChildScreen);
+
+					mRender->SetPaintOffsetX(rcChildScreen.left);
+					mRender->SetPaintOffsetY(rcChildScreen.top);
+					wnd->DoPaint(mRender);
+
 					if (isClip) 
 						mRender->EndClip();
 
@@ -3258,7 +3293,11 @@ inline void KDxScreen::PaintChilds(KDxView* parentView, const RECT& rcParentPain
 					BOOL isClip = FALSE;
 					if (mCanClip && mRender->BeginClip(rcChildPaint))
 						isClip = TRUE;
-					wnd->DoPaint(mRender, rcChildPaint, rcChildScreen);
+
+					mRender->SetPaintOffsetX(rcChildScreen.left);
+					mRender->SetPaintOffsetY(rcChildScreen.top);
+					wnd->DoPaint(mRender);
+
 					if (isClip) 
 						mRender->EndClip();
 
@@ -3285,7 +3324,11 @@ inline void KDxScreen::PaintChilds(KDxView* parentView, const RECT& rcParentPain
 					BOOL isClip = FALSE;
 					if (mCanClip && mRender->BeginClip(rcChildPaint))
 						isClip = TRUE;
-					view->DoPaint(mRender, rcChildPaint, rcChildScreen);
+
+					mRender->SetPaintOffsetX(rcChildScreen.left);
+					mRender->SetPaintOffsetY(rcChildScreen.top);
+					view->DoPaint(mRender);
+
 					if (isClip)
 						mRender->EndClip();
 					
@@ -3294,6 +3337,9 @@ inline void KDxScreen::PaintChilds(KDxView* parentView, const RECT& rcParentPain
 			}
 		}
 	}
+
+	mRender->SetPaintOffsetX(orgOffsetX);
+	mRender->SetPaintOffsetY(orgOffsetY);
 }
 
 inline void KDxScreen::UpdateChilds(KDxView* parentView)
@@ -3540,7 +3586,7 @@ inline void KDxScreen::WMLButtonUp(WPARAM wparam, LPARAM lparam)
 
 		// 点击
 		RECT rc;
-		view->ClientRect(rc);
+		view->GetClientRect(rc);
 		if (::PtInRect(&rc, pt))
 			view->DoMouse(maClick, shift, pt);
 
