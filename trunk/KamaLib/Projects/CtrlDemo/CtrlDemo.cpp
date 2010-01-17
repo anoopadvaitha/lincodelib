@@ -35,21 +35,44 @@ public:
 		//mScreen->SetClip(TRUE);
 
 		// 窗口
-		KDxWindow* wnd = NEW_WINDOW(KDxSimpleWindow, mScreen);
-		wnd->SetPos(10, 10);
-		wnd->SetSize(300, 300);
-		wnd->Show();
+		KDxSimpleForm* form = NEW_WINDOW(KDxSimpleForm, mScreen);
+		form->SetPos(10, 10);
+		form->SetSize(400, 300);
+		form->Show();
 
 		// 按钮
-		KDxButton* btn = NEW_CONTROL(KDxButton, wnd, mScreen);
+		KDxButton* btn = NEW_CONTROL(KDxButton, form, mScreen);
 		btn->SetCaption(L"我是按钮");
 		btn->SetPos(10, 10);
+		//btn->SetEnable(FALSE);
 
-		btn = NEW_CONTROL(KDxButton, wnd, mScreen);
+		btn = NEW_CONTROL(KDxButton, form, mScreen);
 		btn->SetCaption(L"我是按钮2");
 		btn->SetPos(10, 40);
 		btn->Font()->SetColor(D3DCOLOR_RGB(254, 0, 266));
 		btn->Font()->SetHeight(13);
+
+		KDxLabel* label = NEW_CONTROL(KDxLabel, form, mScreen);
+		label->SetAutoSize(FALSE);
+		label->SetPos(10, 100);
+		label->SetSize(120, 14);
+		//label->SetTextAlign(taRight);
+		label->SetCaption(L"我是标签, 黑黑!");
+
+		KDxPanel* panel = NEW_CONTROL(KDxPanel, form, mScreen);
+		panel->SetBound(120, 10,  200, 200);
+		//panel->SetFocusable(TRUE);
+		panel->SetDrawFrame(TRUE);
+		panel->SetTransparent(FALSE);
+
+		btn = NEW_CONTROL(KDxButton, panel, mScreen);
+		btn->SetCaption(L"我是按钮3");
+		btn->SetPos(10, 10);
+		//btn->SetEnable(FALSE);
+
+		btn = NEW_CONTROL(KDxButton, panel, mScreen);
+		btn->SetCaption(L"我是按钮4");
+		btn->SetPos(10, 40);
 
 		KDxApp::Initialize();
 	}

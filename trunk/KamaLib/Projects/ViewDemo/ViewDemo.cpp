@@ -19,7 +19,7 @@ public:
 		HBITMAP hOldBmp = (HBITMAP)SelectObject(dcMem, (HGDIOBJ)hMemBmp);
 
 		RECT rc;
-		ScreenRect(rc);
+		GetScreenRect(rc);
 		FillRect(dcMem, &rc, HBRUSH(COLOR_WINDOW + 1));
 		hBrush1 = CreateSolidBrush(RGB(0, 85, 241));
 		hBrush2 = CreateSolidBrush(RGB(124, 156, 226));
@@ -54,7 +54,7 @@ protected:
 			if (view->IsVisible())
 			{
 				RECT rc;
-				view->ScreenRect(rc);
+				view->GetScreenRect(rc);
 
 				if (wnd)
 				{
@@ -92,7 +92,7 @@ protected:
 			if (view->IsVisible())
 			{
 				RECT rc;
-				view->ScreenRect(rc);
+				view->GetScreenRect(rc);
 				if (wnd)
 				{
 					if (wnd->IsActive())
