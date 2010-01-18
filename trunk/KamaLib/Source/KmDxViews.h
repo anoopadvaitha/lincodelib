@@ -57,11 +57,16 @@ typedef DWORD KDxShiftState;
 #define ssAlt						0x02	// Alt键按下
 #define ssCtrl						0x04	// Ctrl键按下
 
+// 用户ID起始值, 自定义控件可以使用这个ID以上的值
+#define ID_USER						0x10000
+// 程序ID起始值, 外部程序应该使用这个ID以上的值
+#define ID_APP						0x20000
+
 /*
 	通知事件类型, 0~NT_USER-1由框架保留，用户可以使用其他的值
 */
 typedef DWORD KDxNotifyType;
-#define NT_USER						0x10000
+#define NT_USER						ID_USER
 // 尺寸正在改变，param: SIZE*=将要改变的尺寸，可以改变这个值，影响最终的尺寸
 #define ntSizeChanging				1
 // 尺寸改变，param: NULL
@@ -100,7 +105,7 @@ typedef DWORD KDxNotifyType;
 	请求事件类型, 0~QT_USER-1由框架保留，用户可以使用其他的值
 */
 typedef DWORD KDxQueryType;
-#define QT_USER						0x10000
+#define QT_USER						ID_USER
 // 是否要处理TAB，返回值：0=不处理，!0=处理
 #define qtWantTab					1
 // 是否要处理方向键，返回值：0=不处理，!0=处理 
@@ -117,7 +122,7 @@ typedef DWORD KDxQueryType;
 	视图点击测试值0~oxHT_USER-1由框架保留，用户可以使用其他值
 */
 typedef DWORD KDxHitTest;
-#define HT_USER						0x10000
+#define HT_USER						ID_USER
 #define htNone						0		// 什么也没有，透明
 #define htClient					1		// 点击到客户区
 #define htBorderLeft				2		// 边缘左
@@ -134,7 +139,7 @@ typedef DWORD KDxHitTest;
 	光标类型, 0~CT_USER-1由框架保留，用户可以使用其他值
 */
 typedef DWORD KDxCursorType;
-#define CT_USER						0x10000
+#define CT_USER						ID_USER
 #define ctArrow						1		// 默认光标
 #define ctIbeam						2		// 光束, 移到编辑框时的那个形状
 #define ctWait						3		// 沙漏, 等待光标
@@ -155,6 +160,7 @@ typedef DWORD KDxCursorType;
 */
 typedef DWORD KDxViewStyle;
 #define vsTabStop					0x01	// Tab停止，与焦点关系紧密
+#define vsFocusable					0x02	// 是否可获得焦点
 
 /*
 	窗口风格
@@ -330,12 +336,13 @@ public:
 		mOwnerWindow(NULL),
 		mParentView(NULL), 
 		mViewEvent(NULL),
-		mViewStyle(vsTabStop),
+		mViewStyle(vsTabStop | vsFocusable),
 		mUserData(0), 
 		mLeft(0), 
 		mTop(0), 
 		mWidth(100), 
 		mHeight(60), 
+		mGroup(0),
 		mIsVisible(TRUE), 
 		mIsEnable(TRUE)
 	{
@@ -577,6 +584,17 @@ public:
 	void SetTabStop(BOOL isTabStop);
 
 	/*
+		是否可获得焦点
+	*/
+	BOOL IsFocusable();
+
+	/*
+		设置是否可获得焦点
+	*/
+	void SetFocusable(BOOL isFocusable);
+
+
+	/*
 		是否为焦点控件，isInWnd指定是在窗口级别判断，还是在屏幕级别判断
 		注意屏幕级别只有一个焦点视图，这个视图是接收键盘事件的
 	*/
@@ -631,6 +649,21 @@ public:
 		设置可用性
 	*/
 	void SetEnable(BOOL isEnable);
+
+	/*
+		是否当前鼠标盘旋的视图
+	*/
+	BOOL IsHoverView();
+
+	/*
+		组
+	*/
+	int Group();
+
+	/*
+		设组
+	*/
+	void SetGroup(int group);
 
 	/*
 		取视图事件接口
@@ -733,6 +766,7 @@ protected:
 	int					mTop;				// 顶
 	int					mWidth;				// 宽
 	int					mHeight;			// 高
+	int					mGroup;				// 组
 	SIZE				mMinSize;			// 最小尺寸，为0表示无限制
 	SIZE				mMaxSize;			// 最大尺寸，为0表示无限制
 	BOOL				mIsVisible;			// 可见
@@ -1826,6 +1860,19 @@ inline void KDxView::SetTabStop(BOOL isTabStop)
 		DEL_FLAG(mViewStyle, vsTabStop);
 }
 
+inline BOOL KDxView::IsFocusable()
+{
+	return HAS_FLAG(mViewStyle, vsFocusable);
+}
+
+inline void KDxView::SetFocusable(BOOL isFocusable)
+{
+	if (isFocusable)
+		ADD_FLAG(mViewStyle, vsFocusable);
+	else
+		DEL_FLAG(mViewStyle, vsFocusable);
+}
+
 inline BOOL KDxView::IsFocused(BOOL isInWnd)
 {
 	if ((NULL == mOwnerWindow) || (mOwnerWindow->FocusedView() != this))
@@ -1839,7 +1886,7 @@ inline BOOL KDxView::IsFocused(BOOL isInWnd)
 
 inline BOOL KDxView::CanFocus()
 {
-	return VisibleAndEnable();
+	return IsFocusable() && VisibleAndEnable();
 }
 
 inline BOOL KDxView::SetFocus()
@@ -1914,6 +1961,22 @@ inline void KDxView::SetEnable(BOOL isEnable)
 		UpdateEnable(isEnable);
 		DoNotify(ntEnableChanged, DWORD(mIsEnable));
 	}
+}
+
+inline BOOL KDxView::IsHoverView()
+{
+	KASSERT(mOwnerScreen);
+	return (mOwnerScreen->HoverView() == this);
+}
+
+inline int KDxView::Group()
+{
+	return mGroup;
+}
+
+inline void KDxView::SetGroup(int group)
+{
+	mGroup = group;
 }
 
 inline IDxViewEvent* KDxView::ViewEvent() 
@@ -2260,7 +2323,7 @@ inline KDxView* KDxWindow::FindNextArrowView(KDxView* startView, BOOL isForward)
 			--curPos;
 		}
 		view = parentView->ChildView(curPos);
-		if (view->CanFocus() && view->IsTabStop())
+		if (view->CanFocus() && (view->Group() == startView->Group()))
 			return view;
 	} while (curPos != pos);
 
@@ -2608,22 +2671,6 @@ inline void KDxWindow::DoNotify(KDxNotifyType type, DWORD param)
 				mOwnerScreen->ActiveNextWindow(this);
 		}
 	}
-	else if (type == ntActiveChanged)
-	{
-		// 重设焦点，首先判断有没有焦点视图，有就设焦点给它，如果没有就
-		// 寻找第一个可以获得焦点的视图，有就设焦点给它，如果没有就
-		// 设给自己
-		if ((NULL != mFocusedView) && (mFocusedView != this))
-			mFocusedView->SetFocus();
-		else
-		{
-			KDxView* view = FindNexTabtView(NULL, TRUE);
-			if (NULL != view)
-				view->SetFocus();
-			else
-				SetFocus();
-		}
-	}
 
 	KDxView::DoNotify(type, param);
 }
@@ -2893,6 +2940,16 @@ inline BOOL KDxScreen::SetActiveWindow(KDxWindow* wnd)
 	{
 		mActiveWindow->BringToFront();
 		mActiveWindow->DoNotify(ntActiveChanged, TRUE);
+
+		// 寻找第一个可以获得焦点的视图，有就设焦点给它，如果没有就设给自己
+		if (!mActiveWindow->FocusedView() || (mActiveWindow->FocusedView() == mActiveWindow))
+		{
+			KDxView* view = mActiveWindow->FindNexTabtView(NULL, TRUE);
+			if (NULL != view)
+				view->SetFocus();
+			else
+				mActiveWindow->SetFocus();
+		}
 	}
 
 	return TRUE;
@@ -3544,6 +3601,9 @@ inline void KDxScreen::WMLButtonDblClk(WPARAM wparam, LPARAM lparam)
 			pt = mCaptureView->ScreenToClient(pt);
 			mCaptureView->DoMouse(maLDblClk, shift, pt);
 			mCaptureView->DoMouse(maLDown, shift, pt);
+			// 焦点
+			if (!OBJECT_DERIVEDFROM(mCaptureView, KDxWindow))
+				mCaptureView->SetFocus();
 		}
 	}
 }
@@ -3567,6 +3627,9 @@ inline void KDxScreen::WMLButtonDown(WPARAM wparam, LPARAM lparam)
 		{	
 			pt = mCaptureView->ScreenToClient(pt);
 			mCaptureView->DoMouse(maLDown, shift, pt);
+			// 焦点
+			if (!OBJECT_DERIVEDFROM(mCaptureView, KDxWindow))
+				mCaptureView->SetFocus();
 		}
 	}
 }
