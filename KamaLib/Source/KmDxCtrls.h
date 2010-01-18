@@ -38,6 +38,8 @@ namespace kama
 #define CTRLCOLOR_BORDER			D3DCOLOR_RGB(27, 143, 213)
 // 禁用边框颜色
 #define CTRLCOLOR_BORDER_DISABLED	D3DCOLOR_RGB(111, 181, 227)
+// 鼠标盘旋边框颜色
+#define CTRLCOLOR_BORDER_HOVER		D3DCOLOR_RGB(133, 228, 255)
 // 控件焦点线框
 #define CTRLCOLOR_FOCUSFRAME		D3DCOLOR_RGB(120, 215, 251)
 // 悬浮线框
@@ -144,8 +146,8 @@ public:
 	void SetCaption(const kstring& cap)
 	{
 		mCaption = cap;
-		if (mOwnerScreen && (mOwnerScreen->Render() != NULL))
-			mCapSize = mOwnerScreen->Render()->TextSize(mCaption, mCaption.Length(), FALSE, &mFont);
+		KASSERT(mOwnerScreen->Render() != NULL);
+		mCapSize = mOwnerScreen->Render()->TextSize(mCaption, mCaption.Length(), FALSE, &mFont);
 	}
 
 	kstring Caption()
@@ -170,8 +172,8 @@ public:
 		}
 		else if (ntFontChanged == type)
 		{
-			if (mOwnerScreen && (mOwnerScreen->Render() != NULL))
-				mCapSize = mOwnerScreen->Render()->TextSize(mCaption, mCaption.Length(), FALSE, &mFont);
+			KASSERT(mOwnerScreen->Render() != NULL);
+			mCapSize = mOwnerScreen->Render()->TextSize(mCaption, mCaption.Length(), FALSE, &mFont);
 		}
 		
 		KDxView::DoNotify(type, param);
@@ -181,7 +183,6 @@ public:
 	{
 		if (maLDown == action)
 		{
-			SetFocus();
 			mBtnState = bsDown;
 		}
 		else if(maLUp == action)
@@ -311,9 +312,10 @@ class KDxPanel: public KDxView
 {
 	DECLARE_RUNTIMEINFO(KDxPanel)
 public:
-	KDxPanel(): mIsDrawFrame(FALSE), mIsFocusable(FALSE), mIsTransparent(TRUE)
+	KDxPanel(): mIsDrawFrame(FALSE), mIsTransparent(TRUE)
 	{ 
-		SetTabStop(mIsFocusable);
+		SetTabStop(FALSE);
+		SetFocusable(FALSE);
 	}
 
 	BOOL IsDrawFrame()
@@ -326,17 +328,6 @@ public:
 		mIsDrawFrame = isDrawFrame;
 	}
 
-	BOOL IsFocusable()
-	{
-		return mIsFocusable;
-	}
-
-	void SetFocusable(BOOL isFocusable)
-	{
-		mIsFocusable = isFocusable;
-		SetTabStop(mIsFocusable);
-	}
-
 	BOOL IsTransparent()
 	{
 		return mIsTransparent;
@@ -345,16 +336,6 @@ public:
 	void SetTransparent(BOOL isTransparent)
 	{
 		mIsTransparent = isTransparent;
-	}
-
-	virtual void DoMouse(KDxMouseAction action, KDxShiftState shift, const POINT& pt)
-	{
-		if (action == maLDown)
-		{
-			if (mIsFocusable)
-				SetFocus();
-		}
-		KDxView::DoMouse(action, shift, pt);
 	}
 
 	virtual void DoPaint(KDxRender* render)
@@ -368,7 +349,7 @@ public:
 		if (mIsDrawFrame)
 			render->DrawRect(rc, IsEnable() ? CTRLCOLOR_BORDER : CTRLCOLOR_BORDER_DISABLED);
 		
-		if (mIsFocusable && IsFocused())
+		if (IsFocused())
 		{
 			InflateRect(&rc, -2, -2);
 			render->DrawRect(rc, CTRLCOLOR_FOCUSFRAME);
@@ -379,7 +360,6 @@ public:
 
 protected:
 	BOOL	mIsDrawFrame;		// 是否绘制边框
-	BOOL	mIsFocusable;		// 可否获得焦点
 	BOOL	mIsTransparent;		// 背景是否透明
 };
 IMPLEMENT_RUNTIMEINFO(KDxPanel, KDxView)
@@ -406,6 +386,7 @@ public:
 		mCapSize.cx = 0;
 		mCapSize.cy = 0;
 		SetTabStop(FALSE);
+		SetFocusable(FALSE);
 	}
 
 	virtual void DoInitialize()
@@ -490,8 +471,7 @@ public:
 		if (isAutoSize != mIsAutoSize)
 		{
 			mIsAutoSize = isAutoSize;
-			if (mIsAutoSize)
-				SetSize(mCapSize.cx, mCapSize.cy);
+			CalcSize();
 		}
 	}
 
@@ -505,12 +485,17 @@ public:
 		mAlign = align;
 	}
 
+	KDxFont* Font()
+	{
+		return &mFont;
+	}
+
 protected:
 	void CalcSize()
 	{
 		// 计算大小
-		if (mOwnerScreen && (mOwnerScreen->Render() != NULL))
-			mCapSize = mOwnerScreen->Render()->TextSize(mCaption, mCaption.Length(), FALSE, &mFont);
+		KASSERT(mOwnerScreen->Render() != NULL);
+		mCapSize = mOwnerScreen->Render()->TextSize(mCaption, mCaption.Length(), FALSE, &mFont);
 
 		// 自动调整尺寸
 		if (mIsAutoSize)
@@ -525,6 +510,201 @@ protected:
 	KDxViewFont		mFont;			// 字体
 };
 IMPLEMENT_RUNTIMEINFO(KDxLabel, KDxView)
+
+//------------------------------------------------------------------------------
+// KDxCheckBox: 复选框, 只支持二态, 不打算支持三态
+// TODO: 用图片来绘那个选择框
+
+#define CB_BOX_CX	20
+#define CB_BOX_CY	20
+
+// 选中钩的颜色
+#define CBCOLOR_CHECK			D3DCOLOR_RGB(62, 156, 10)
+// 禁用时选中钩的颜色
+#define CBCOLOR_CHECK_DISABLED	D3DCOLOR_RGB(133, 193, 72)
+// 背景
+#define CBCOLOR_BG				D3DCOLOR_RGB(255, 255, 255)
+
+// 选择改变, param: BOOL=选择状态
+#define ntCheckChanged	NT_USER + 1
+
+class KDxCheckBox: public KDxView
+{
+	DECLARE_RUNTIMEINFO(KDxCheckBox)
+public:
+	KDxCheckBox(): mIsChecked(FALSE), mIsAutoSize(TRUE)
+	{
+ 		mSize.cx = 0;
+		mSize.cy = 0;
+		mCapSize.cx = 0;
+		mCapSize.cy = 0;
+	}
+
+	virtual void DoInitialize()
+	{
+		mFont.Initialize(this);
+		CalcSize();
+	}
+
+	virtual void DoFinalize()
+	{
+		mFont.Finalize();
+	}
+
+	virtual void DoMouse(KDxMouseAction action, KDxShiftState shift, const POINT& pt)
+	{
+		if (action == maClick)
+		{
+			SetChecked(!mIsChecked);
+		}
+		KDxView::DoMouse(action, shift, pt);
+	}
+
+	virtual void DoNotify(KDxNotifyType type, DWORD param)
+	{
+		if (type == ntFontChanged)
+		{
+			CalcSize();
+		}
+		else if (type == ntSizeChanging)
+		{
+			if (mIsAutoSize)
+			{
+				SIZE* sz = (SIZE*)param;
+				*sz = mSize;
+			}
+		}
+		KDxView::DoNotify(type, param);
+	}
+
+	virtual void DoPaint(KDxRender* render)
+	{
+		RECT rc, rcBox, rc2;
+		GetClientRect(rc);
+		rcBox.left = 3;
+		rcBox.top = (rc.bottom - 13) / 2;
+		rcBox.right = rcBox.left + 13;
+		rcBox.bottom = rcBox.top + 13;
+
+		if (IsEnable())
+		{
+			render->FillRect(rcBox, CBCOLOR_BG);
+			render->DrawRect(rcBox, CTRLCOLOR_BORDER);
+
+			// 鼠标盘旋
+			if (IsHoverView())
+			{
+				rc2 = rcBox;
+				InflateRect(&rc2, 1, 1);
+				render->DrawRect(rc2, CTRLCOLOR_BORDER_HOVER);
+			}
+
+			// 选择
+			if (IsChecked())
+			{
+				rc2 = rcBox;
+				InflateRect(&rc2, -3, -3);
+				render->FillRect(rc2, CBCOLOR_CHECK);
+			}
+
+			// 文字
+			int x, y;
+			x = CB_BOX_CX;
+			y = (rc.bottom - mCapSize.cy) / 2;
+			render->TextOut(x, y, mCaption, mCaption.Length(), mFont.Color(), 0, &mFont);
+
+			// 焦点框
+			if (IsFocused())
+				render->DrawRect(rc, CTRLCOLOR_FOCUSFRAME);
+		}
+		else
+		{
+			render->FillRect(rcBox, CBCOLOR_BG);
+			render->DrawRect(rcBox, CTRLCOLOR_BORDER_DISABLED);
+			
+			// 选择
+			if (IsChecked())
+			{
+				rc2 = rcBox;
+				InflateRect(&rc2, -3, -3);
+				render->FillRect(rc2, CBCOLOR_CHECK_DISABLED);
+			}
+
+			// 文字
+			int x, y;
+			x = CB_BOX_CX;
+			y = (rc.bottom - mCapSize.cy) / 2;
+			render->TextOut(x, y, mCaption, mCaption.Length(), CTRLCOLOR_FONT_DISABLED, 0, &mFont);
+		}
+		KDxView::DoPaint(render);
+	}
+
+	KDxViewFont* Font()
+	{
+		return &mFont;
+	}
+
+	kstring Caption()
+	{
+		return mCaption;
+	}
+
+	void SetCaption(const kstring& cap)
+	{
+		mCaption = cap;
+		CalcSize();
+	}
+
+	BOOL IsChecked()
+	{
+		return mIsChecked;
+	}
+
+	void SetChecked(BOOL isChecked)
+	{
+		if (isChecked != mIsChecked)
+		{
+			mIsChecked = isChecked;
+			DoNotify(ntCheckChanged, mIsChecked);
+		}
+	}
+
+	BOOL IsAutoSize()
+	{
+		return mIsAutoSize;
+	}
+
+	void SetAutoSize(BOOL isAutoSize)
+	{
+		if (isAutoSize != mIsAutoSize)
+		{
+			mIsAutoSize = isAutoSize;
+			CalcSize();
+		}
+	}
+
+protected:
+	void CalcSize()
+	{
+		KASSERT(mOwnerScreen->Render() != NULL);
+		mCapSize = mOwnerScreen->Render()->TextSize(mCaption, mCaption.Length(), FALSE, &mFont);
+		if (mIsAutoSize)
+		{
+			mSize.cx = mCapSize.cx + CB_BOX_CX + 2;
+			mSize.cy = max(mCapSize.cy, CB_BOX_CY);
+			SetSize(mSize.cx, mSize.cy);
+		}
+	}
+
+protected:
+	SIZE				mSize;				// 尺寸
+	SIZE				mCapSize;			// 标题尺寸
+	kstring				mCaption;			// 标题
+	BOOL				mIsAutoSize;		// 自动调整尺寸
+	BOOL				mIsChecked;			// 是否选择
+	KDxViewFont			mFont;				// 字体
+};
+IMPLEMENT_RUNTIMEINFO(KDxCheckBox, KDxView)
 
 }
 #endif // __KAMA_KMDXCTRLS_H__

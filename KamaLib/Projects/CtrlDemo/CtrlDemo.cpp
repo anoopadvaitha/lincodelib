@@ -61,7 +61,7 @@ public:
 
 		KDxPanel* panel = NEW_CONTROL(KDxPanel, form, mScreen);
 		panel->SetBound(120, 10,  200, 200);
-		//panel->SetFocusable(TRUE);
+		panel->SetFocusable(TRUE);
 		panel->SetDrawFrame(TRUE);
 		panel->SetTransparent(FALSE);
 
@@ -73,6 +73,12 @@ public:
 		btn = NEW_CONTROL(KDxButton, panel, mScreen);
 		btn->SetCaption(L"我是按钮4");
 		btn->SetPos(10, 40);
+
+
+		KDxCheckBox* cbox = NEW_CONTROL(KDxCheckBox, panel, mScreen);
+		cbox->SetPos(10, 70);
+		cbox->SetCaption(L"我是复选框啊");
+		cbox->SetChecked(TRUE);
 
 		KDxApp::Initialize();
 	}
