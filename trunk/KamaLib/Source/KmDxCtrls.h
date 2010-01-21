@@ -80,7 +80,7 @@ public:
 	virtual void DoFontChanged()
 	{
 		if (mView)
-			mView->DoNotify(ntFontChanged, 0);
+			mView->DoNotify(NID_FONTCHANGED, 0);
 	}
 
 private:
@@ -136,11 +136,14 @@ public:
 	virtual void DoInitialize()
 	{
 		mFont.Initialize(this);
+
+		KDxView::DoInitialize();
 	}
 
 	virtual void DoFinalize()
 	{
 		mFont.Finalize();
+		KDxView::DoFinalize();
 	}
 
 	void SetCaption(const kstring& cap)
@@ -160,32 +163,32 @@ public:
 		return &mFont;
 	}
 
-	virtual void DoNotify(KDxNotifyType type, DWORD param)
+	virtual void DoNotify(KDxNotifyId id, DWORD param)
 	{
-		if (ntMouseEnter == type)
+		if (NID_MOUSEENTER == id)
 		{
 			mBtnState = bsHover;
 		}
-		else if(ntMouseLeave == type)
+		else if(NID_MOUSELEAVE == id)
 		{
 			mBtnState = bsNormal;
 		}
-		else if (ntFontChanged == type)
+		else if (NID_FONTCHANGED == id)
 		{
 			KASSERT(mOwnerScreen->Render() != NULL);
 			mCapSize = mOwnerScreen->Render()->TextSize(mCaption, mCaption.Length(), FALSE, &mFont);
 		}
 		
-		KDxView::DoNotify(type, param);
+		KDxView::DoNotify(id, param);
 	}
 
 	virtual void DoMouse(KDxMouseAction action, KDxShiftState shift, const POINT& pt)
 	{
-		if (maLDown == action)
+		if (maLButtonDown == action)
 		{
 			mBtnState = bsDown;
 		}
-		else if(maLUp == action)
+		else if(maLButtonUp == action)
 		{
 			mBtnState = bsNormal;
 		}
@@ -195,13 +198,13 @@ public:
 
 	virtual void DoKeyboard(KDxKeyAction action, WORD& key, KDxShiftState shift)
 	{
-		if ((action == kaDown) && (key == VK_RETURN))
+		if ((action == kaKeyDown) && (key == VK_RETURN))
 		{
 			// 回车默认为是点击
 			POINT pt;
 			pt.x = -1;
 			pt.y = -1;
-			DoMouse(maClick, shift, pt);
+			DoMouse(maMouseClick, shift, pt);
 		}
 
 		KDxView::DoKeyboard(action, key, shift);
@@ -393,11 +396,15 @@ public:
 	{
 		mFont.Initialize(this);
 		CalcSize();
+
+		KDxView::DoInitialize();
 	}
 
 	virtual void DoFinalize()
 	{
 		mFont.Finalize();
+
+		KDxView::DoFinalize();
 	}
 
 	virtual void DoPaint(KDxRender* render)
@@ -432,13 +439,13 @@ public:
 		KDxView::DoPaint(render);
 	}
 
-	virtual void DoNotify(KDxNotifyType type, DWORD param)
+	virtual void DoNotify(KDxNotifyId id, DWORD param)
 	{
-		if (type == ntFontChanged)
+		if (id == NID_FONTCHANGED)
 		{
 			CalcSize();
 		}
-		else if (type == ntSizeChanging)
+		else if (id == NID_SIZECHANGING)
 		{
 			if (mIsAutoSize)
 			{
@@ -447,7 +454,7 @@ public:
 			}
 		}
 
-		KDxView::DoNotify(type, param);
+		KDxView::DoNotify(id, param);
 	}
 
 	kstring Caption()
@@ -513,6 +520,7 @@ IMPLEMENT_RUNTIMEINFO(KDxLabel, KDxView)
 
 //------------------------------------------------------------------------------
 // KDxCheckBox: 复选框, 只支持二态, 不打算支持三态
+// KDxRaidoBox: 单选框
 // TODO: 用图片来绘那个选择框
 
 #define CB_BOX_CX	20
@@ -526,7 +534,7 @@ IMPLEMENT_RUNTIMEINFO(KDxLabel, KDxView)
 #define CBCOLOR_BG				D3DCOLOR_RGB(255, 255, 255)
 
 // 选择改变, param: BOOL=选择状态
-#define ntCheckChanged	NT_USER + 1
+#define NID_CHECKCHANGED	NID_USER + 1
 
 class KDxCheckBox: public KDxView
 {
@@ -544,29 +552,33 @@ public:
 	{
 		mFont.Initialize(this);
 		CalcSize();
+
+		KDxView::DoInitialize();
 	}
 
 	virtual void DoFinalize()
 	{
 		mFont.Finalize();
+
+		KDxView::DoFinalize();
 	}
 
 	virtual void DoMouse(KDxMouseAction action, KDxShiftState shift, const POINT& pt)
 	{
-		if (action == maClick)
+		if (action == maMouseClick)
 		{
 			SetChecked(!mIsChecked);
 		}
 		KDxView::DoMouse(action, shift, pt);
 	}
 
-	virtual void DoNotify(KDxNotifyType type, DWORD param)
+	virtual void DoNotify(KDxNotifyId id, DWORD param)
 	{
-		if (type == ntFontChanged)
+		if (id == NID_FONTCHANGED)
 		{
 			CalcSize();
 		}
-		else if (type == ntSizeChanging)
+		else if (id == NID_SIZECHANGING)
 		{
 			if (mIsAutoSize)
 			{
@@ -574,7 +586,16 @@ public:
 				*sz = mSize;
 			}
 		}
-		KDxView::DoNotify(type, param);
+		KDxView::DoNotify(id, param);
+	}
+
+	virtual void DoKeyboard(KDxKeyAction action, WORD& key, KDxShiftState shift)
+	{
+		if ((action == kaKeyDown) && (key == VK_SPACE))
+		{
+			SetChecked(!mIsChecked);
+		}
+		KDxView::DoKeyboard(action, key, shift);
 	}
 
 	virtual void DoPaint(KDxRender* render)
@@ -665,7 +686,7 @@ public:
 		if (isChecked != mIsChecked)
 		{
 			mIsChecked = isChecked;
-			DoNotify(ntCheckChanged, mIsChecked);
+			DoNotify(NID_CHECKCHANGED, mIsChecked);
 		}
 	}
 
@@ -705,6 +726,523 @@ protected:
 	KDxViewFont			mFont;				// 字体
 };
 IMPLEMENT_RUNTIMEINFO(KDxCheckBox, KDxView)
+
+
+class KDxRadioBox: public KDxView
+{
+	DECLARE_RUNTIMEINFO(KDxRadioBox)
+public:
+	KDxRadioBox(): mIsChecked(FALSE), mIsAutoSize(TRUE)
+	{
+		mSize.cx = 0;
+		mSize.cy = 0;
+		mCapSize.cx = 0;
+		mCapSize.cy = 0;
+	}
+
+	virtual void DoInitialize()
+	{
+		mFont.Initialize(this);
+		CalcSize();
+
+		KDxView::DoInitialize();
+	}
+
+	virtual void DoFinalize()
+	{
+		mFont.Finalize();
+
+		KDxView::DoFinalize();
+	}
+
+	virtual void DoMouse(KDxMouseAction action, KDxShiftState shift, const POINT& pt)
+	{
+		if (action == maMouseClick)
+		{
+			SetChecked(TRUE);
+		}
+		KDxView::DoMouse(action, shift, pt);
+	}
+
+	virtual void DoNotify(KDxNotifyId id, DWORD param)
+	{
+		if (id == NID_FONTCHANGED)
+		{
+			CalcSize();
+		}
+		else if (id == NID_SIZECHANGING)
+		{
+			if (mIsAutoSize)
+			{
+				SIZE* sz = (SIZE*)param;
+				*sz = mSize;
+			}
+		}
+		KDxView::DoNotify(id, param);
+	}
+
+	virtual void DoKeyboard(KDxKeyAction action, WORD& key, KDxShiftState shift)
+	{
+		if ((action == kaKeyDown) && (key == VK_SPACE))
+		{
+			SetChecked(TRUE);
+		}
+		KDxView::DoKeyboard(action, key, shift);
+	}
+
+	virtual void DoPaint(KDxRender* render)
+	{
+		RECT rc, rcBox;
+		GetClientRect(rc);
+
+		rcBox.left = 3;
+		rcBox.top = (rc.bottom - 13) / 2;
+		rcBox.right = rcBox.left + 13;
+		rcBox.bottom = rcBox.top + 13;
+
+		// 先用8角形逼近, 以后用图片替换
+		const int margin = 4;
+		POINT pts[8] = {{rcBox.left + margin, rcBox.top}, 
+						{rcBox.right - margin, rcBox.top},
+						{rcBox.right, rcBox.top + margin},
+						{rcBox.right, rcBox.bottom - margin},
+						{rcBox.right - margin, rcBox.bottom},
+						{rcBox.left + margin, rcBox.bottom},
+						{rcBox.left, rcBox.bottom - margin},
+						{rcBox.left, rcBox.top + margin}};
+
+		if (IsEnable())
+		{
+			render->FillPolygon(pts, 8, CBCOLOR_BG);
+			render->DrawPolygon(pts, 8, CTRLCOLOR_BORDER, TRUE);
+
+			// 鼠标盘旋
+			if (IsHoverView())
+			{
+				pts[0].y--; pts[1].y--;
+				pts[2].x++; pts[3].x++;
+				pts[4].y++; pts[5].y++;
+				pts[6].x--; pts[7].x--;
+				render->DrawPolygon(pts, 8, CTRLCOLOR_BORDER_HOVER, TRUE);
+			}
+
+			// 选择
+			if (IsChecked())
+			{
+				InflateRect(&rcBox, -3, -3);
+				render->FillRect(rcBox, CBCOLOR_CHECK);
+			}
+
+			// 文字
+			int x, y;
+			x = CB_BOX_CX;
+			y = (rc.bottom - mCapSize.cy) / 2;
+			render->TextOut(x, y, mCaption, mCaption.Length(), mFont.Color(), 0, &mFont);
+
+			// 焦点框
+			if (IsFocused())
+				render->DrawRect(rc, CTRLCOLOR_FOCUSFRAME);
+		}
+		else
+		{
+			render->FillPolygon(pts, 8, CBCOLOR_BG);
+			render->DrawPolygon(pts, 8, CTRLCOLOR_BORDER_DISABLED, TRUE);
+
+			// 选择
+			if (IsChecked())
+			{
+				InflateRect(&rcBox, -3, -3);
+				render->FillRect(rcBox, CBCOLOR_CHECK_DISABLED);
+			}
+
+			// 文字
+			int x, y;
+			x = CB_BOX_CX;
+			y = (rc.bottom - mCapSize.cy) / 2;
+			render->TextOut(x, y, mCaption, mCaption.Length(), CTRLCOLOR_FONT_DISABLED, 0, &mFont);
+		}
+		KDxView::DoPaint(render);
+	}
+
+	KDxViewFont* Font()
+	{
+		return &mFont;
+	}
+
+	kstring Caption()
+	{
+		return mCaption;
+	}
+
+	void SetCaption(const kstring& cap)
+	{
+		mCaption = cap;
+		CalcSize();
+	}
+
+	BOOL IsChecked()
+	{
+		return mIsChecked;
+	}
+
+	void SetChecked(BOOL isChecked)
+	{
+		if (isChecked != mIsChecked)
+		{
+			mIsChecked = isChecked;
+
+			// 如果选中, 取消同组的其他单选框
+			if (mIsChecked && mParentView)
+			{
+				KDxRadioBox* rbox;
+				KDxView* view;
+				for (int i = 0; i < mParentView->ChildCount(); ++i)
+				{
+					view = mParentView->ChildView(i);
+					if (OBJECT_DERIVEDFROM(view, KDxRadioBox))
+					{
+						rbox = (KDxRadioBox*)view;
+						if ((rbox != this) && (rbox->Group() == this->Group()))
+						{
+							rbox->SetChecked(FALSE);
+							break;
+						}
+					}
+				}
+			}
+
+			DoNotify(NID_CHECKCHANGED, mIsChecked);
+		}
+	}
+
+	BOOL IsAutoSize()
+	{
+		return mIsAutoSize;
+	}
+
+	void SetAutoSize(BOOL isAutoSize)
+	{
+		if (isAutoSize != mIsAutoSize)
+		{
+			mIsAutoSize = isAutoSize;
+			CalcSize();
+		}
+	}
+
+protected:
+	void CalcSize()
+	{
+		KASSERT(mOwnerScreen->Render() != NULL);
+		mCapSize = mOwnerScreen->Render()->TextSize(mCaption, mCaption.Length(), FALSE, &mFont);
+		if (mIsAutoSize)
+		{
+			mSize.cx = mCapSize.cx + CB_BOX_CX + 2;
+			mSize.cy = max(mCapSize.cy, CB_BOX_CY);
+			SetSize(mSize.cx, mSize.cy);
+		}
+	}
+
+protected:
+	SIZE				mSize;				// 尺寸
+	SIZE				mCapSize;			// 标题尺寸
+	kstring				mCaption;			// 标题
+	BOOL				mIsAutoSize;		// 自动调整尺寸
+	BOOL				mIsChecked;			// 是否选择
+	KDxViewFont			mFont;				// 字体
+};
+IMPLEMENT_RUNTIMEINFO(KDxRadioBox, KDxView)
+
+//------------------------------------------------------------------------------
+// KDxScrooBar: 滚动条
+
+// 滚动条按钮尺寸
+#define SB_BTNSIZE			17
+// 滚动块的最小尺寸
+#define SB_MINTHUMBSIZE		5
+
+/*
+	通知事件
+*/
+// 滚动位置改变, param: NULL
+#define NID_SCROLLCHANGED		NID_USER
+
+/*
+	点击测试值
+*/
+enum KDxSBArea
+{
+	sbaButton1,		// 滚动条第1个按钮
+	sbaButton2,		// 滚动条第2个按钮
+	sbaThumb,		// 滚动块
+	sbaPage1,		// 页区域1
+	sbaPage2		// 页区域2
+};
+
+/*
+	滚动条的滚动范围是0~mMaxPos，mPos表明当前的滚动位置，这里的数值单位是逻辑单位
+	mPage指定滚动一页需要多少逻辑单位，mLine指定滚动一行需要多少逻辑单位
+*/
+
+class KDxScrollBar: public KDxView
+{
+	DECLARE_RUNTIMEINFO(KDxScrollBar)
+public:
+	KDxScrollBar(): 
+		mMaxPos(100), mPos(0), mPage(10), mLine(1),
+		mIsVertScroll(TRUE), mIsAutoThumbSize(TRUE), mThumbSize(17)
+	{
+		mHeight = 150;
+		mWidth = 17;
+		SetFocusable(FALSE);
+		SetTabStop(FALSE);
+	}
+
+	UINT MaxPos()
+	{
+		return mMaxPos;
+	}
+
+	void SetMaxPos(UINT maxPos)
+	{
+		if (maxPos != mMaxPos)
+		{
+			mMaxPos = maxPos;
+			if (mPos > mMaxPos)
+				mPos = mMaxPos;
+			if (mPage > mMaxPos)
+				mPage = mMaxPos;
+			if (mLine > mMaxPos)
+				mLine = mMaxPos;
+			CalcAutoThumbSize();
+		}
+	}
+
+	UINT Pos()
+	{
+		return mPos;
+	}
+
+	void SetPos(UINT pos)
+	{
+		if (pos > mMaxPos)
+			return;
+
+		if (mPos != pos)
+		{
+			mPos = pos;
+			DoNotify(NID_SCROLLCHANGED, 0);
+		}
+	}
+
+	UINT Page()
+	{
+		return mPage;
+	}
+
+	void SetPage(UINT page)
+	{
+		if (page > mMaxPos)
+			return;
+
+		if (mPage != page)
+		{
+			mPage = page;
+			CalcAutoThumbSize();
+		}
+	}
+
+	void SetLine(UINT line)
+	{
+		if (line > mMaxPos)
+			return;
+
+		if (mLine != line)
+		{
+			mLine = line;
+		}
+	}
+
+	BOOL IsVertScroll()
+	{
+		return mIsVertScroll;
+	}
+
+	void SetVertScroll(BOOL isVert)
+	{
+		if (isVert != mIsVertScroll)
+		{
+			mIsVertScroll = isVert;
+			SetSize(mHeight, mWidth);
+		}
+	}
+
+	BOOL IsAutoThumbSize()
+	{
+		return mIsAutoThumbSize;
+	}
+
+	void SetAutoThumbSize(BOOL isAuto)
+	{
+		if (isAuto != mIsAutoThumbSize)
+		{
+			mIsAutoThumbSize = isAuto;
+			CalcAutoThumbSize();
+		}
+	}
+
+	UINT ThumbSize()
+	{
+		return mThumbSize;
+	}
+
+	void SetThumbSize(UINT size)
+	{
+		if ((size != mThumbSize) && !mIsAutoThumbSize)
+		{
+			mThumbSize = size;
+			if (mIsVertScroll)
+			{
+				if ((mThumbSize + 2 * SB_BTNSIZE) > (UINT)mHeight)
+					mThumbSize = mHeight - 2 * SB_BTNSIZE;
+			}
+			else
+			{
+				if ((mThumbSize + 2 * SB_BTNSIZE) > (UINT)mWidth)
+					mThumbSize = mWidth - 2 * SB_BTNSIZE;
+			}
+			if (mThumbSize < SB_MINTHUMBSIZE)
+				mThumbSize = 0;
+		}
+	}
+
+	virtual void DoInitialize()
+	{
+		CalcAutoThumbSize();
+		KDxView::DoInitialize();
+	}
+
+	virtual void DoNotify(KDxNotifyId id, DWORD param)
+	{
+		if (NID_SIZECHANGED == id)
+		{
+			CalcAutoThumbSize();
+		}
+		KDxView::DoNotify(id, param);
+	}
+
+	virtual void DoMouse(KDxMouseAction action, KDxShiftState shift, const POINT& pt)
+	{
+		if (maMouseMove == action)
+		{
+			if (mIsMouseDown)
+			{
+				// 处理滚动位置
+
+			}
+			else
+			{
+				mMouseArea = GetArea(pt);
+			}
+		}
+		else if (maLButtonDown == action)
+		{
+			mIsMouseDown = TRUE;	
+		}
+		else if (maLButtonUp == action)
+		{
+			mIsMouseDown = FALSE;
+		}
+		KDxView::DoMouse(action, shift, pt);
+	}
+
+	virtual void DoPaint(KDxRender* render)
+	{
+
+		KDxView::DoPaint(render);
+	}
+
+protected:
+	void CalcAutoThumbSize()
+	{
+		// 自动调整滚动块尺寸
+		if (mIsAutoThumbSize)
+		{
+			int size = mIsVertScroll ? mHeight : mWidth;
+			if ((mMaxPos == 0) )
+				mThumbSize = 0;
+			else
+			{
+				mThumbSize = (size - 2 * SB_BTNSIZE) * mPage / mMaxPos;
+				if (mThumbSize < SB_MINTHUMBSIZE)
+					mThumbSize = SB_MINTHUMBSIZE;
+			}
+		}
+	}
+
+	KDxSBArea GetArea(const POINT& pt)
+	{
+		RECT rc;
+
+		// 第1个按钮
+		SetRect(&rc, 0, 0, SB_BTNSIZE, SB_BTNSIZE);
+		if (PtInRect(&rc, pt))
+			return sbaButton1;
+
+		// 第2个按钮
+		if(mIsVertScroll)
+			SetRect(&rc, 0, mHeight - SB_BTNSIZE, SB_BTNSIZE, mHeight);
+		else
+			SetRect(&rc, mWidth - SB_BTNSIZE, 0, mWidth, SB_BTNSIZE);
+		if (PtInRect(&rc, pt))
+			return sbaButton2;
+
+		// 滚动块
+		if (mIsVertScroll)
+		{
+			FLOAT factor = (FLOAT)(mHeight - 2 * SB_BTNSIZE) / mMaxPos;
+			int top = SB_BTNSIZE + Round(mPos * factor);
+			SetRect(&rc, 0, top, SB_BTNSIZE, top + mThumbSize);
+		}
+		else
+		{
+			FLOAT factor = (FLOAT)(mWidth - 2 * SB_BTNSIZE)	/ mMaxPos;
+			int left = SB_BTNSIZE + Round(mPos * factor);
+			SetRect(&rc, left, 0, left + mThumbSize, SB_BTNSIZE);
+		}
+		if (PtInRect(&rc, pt))
+			return sbaThumb;
+
+		// 页区域
+		if (mIsVertScroll)
+		{
+			if (pt.y < rc.top)
+				return sbaPage1;
+			else
+				return sbaPage2;
+		}
+		else
+		{
+			if (pt.x < rc.left)
+				return sbaPage1;
+			else
+				return sbaPage2;
+		}
+	}
+
+protected:
+	UINT				mMaxPos;			// 最大滚动位置
+	UINT				mPos;				// 当前滚动位置
+	UINT				mPage;				// 滚动一页逻辑单位
+	UINT				mLine;				// 滚动一行逻辑单位
+	BOOL				mIsAutoThumbSize;	// 自动调整滚动块的尺寸
+	UINT				mThumbSize;			// 滚动块的尺寸
+	BOOL				mIsVertScroll;		// 是否是垂直滚动条，否则为水平滚动条
+	BOOL				mIsMouseDown;	    // 鼠标是否点击
+	KDxSBArea			mMouseArea;			// 当前鼠标所在的区域, 前提是鼠标悬浮在控件上面
+};
+IMPLEMENT_RUNTIMEINFO(KDxScrollBar, KDxView)
+
+
 
 }
 #endif // __KAMA_KMDXCTRLS_H__

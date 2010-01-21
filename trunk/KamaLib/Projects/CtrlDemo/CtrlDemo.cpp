@@ -37,7 +37,7 @@ public:
 		// 窗口
 		KDxSimpleForm* form = NEW_WINDOW(KDxSimpleForm, mScreen);
 		form->SetPos(10, 10);
-		form->SetSize(400, 300);
+		form->SetSize(600, 500);
 		form->Show();
 
 		// 按钮
@@ -60,7 +60,7 @@ public:
 		label->SetCaption(L"我是标签, 黑黑!");
 
 		KDxPanel* panel = NEW_CONTROL(KDxPanel, form, mScreen);
-		panel->SetBound(120, 10,  200, 200);
+		panel->SetBound(120, 10,  450, 400);
 		panel->SetFocusable(TRUE);
 		panel->SetDrawFrame(TRUE);
 		panel->SetTransparent(FALSE);
@@ -79,6 +79,17 @@ public:
 		cbox->SetPos(10, 70);
 		cbox->SetCaption(L"我是复选框啊");
 		cbox->SetChecked(TRUE);
+
+		KDxRadioBox* rbox = NEW_CONTROL(KDxRadioBox, panel, mScreen);
+		rbox->SetPos(10, 95);
+		rbox->SetCaption(L"我是单选框1");
+		rbox->SetGroup(1);
+
+		rbox = NEW_CONTROL(KDxRadioBox, panel, mScreen);
+		rbox->SetPos(10, 120);
+		rbox->SetCaption(L"我是单选框2");
+		rbox->SetGroup(1);
+
 
 		KDxApp::Initialize();
 	}

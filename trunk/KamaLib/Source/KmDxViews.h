@@ -26,17 +26,17 @@ namespace kama
 */
 enum KDxMouseAction
 {
-	maMove,							// 移动
-	maLDown,						// 左键点下
-	maRDown,						// 右键点下
-	maMDown,						// 中键点下
-	maLUp,							// 左键弹起
-	maRUp,							// 右键弹起
-	maMUp,							// 中键弹起
-	maLDblClk,						// 左键双击
-	maRDblClk,						// 右键双击
-	maMDblClk,						// 中键双击
-	maClick							// 点击
+	maMouseMove,						// 移动
+	maLButtonDown,						// 左键点下
+	maRButtonDown,						// 右键点下
+	maMButtonDown,						// 中键点下
+	maLButtonUp,						// 左键弹起
+	maRButtonUp,						// 右键弹起
+	maMButtonUp,						// 中键弹起
+	maLButtonDblClk,					// 左键双击
+	maRButtonDblClk,					// 右键双击
+	maMButtonDblClk,					// 中键双击
+	maMouseClick						// 点击
 };					
 
 /*
@@ -44,139 +44,139 @@ enum KDxMouseAction
 */
 enum KDxKeyAction
 {
-	kaDown,							// 键盘击下
-	kaChar,							// 键盘字符
-	kaUp							// 键盘弹起
+	kaKeyDown,							// 键盘击下
+	kaChar,								// 键盘字符
+	kaKeyUp								// 键盘弹起
 };
 
 /*
 	Shift状态
 */
 typedef DWORD KDxShiftState;
-#define ssShift						0x01	// Shift键按下
-#define ssAlt						0x02	// Alt键按下
-#define ssCtrl						0x04	// Ctrl键按下
+#define ssShift					0x01	// Shift键按下
+#define ssAlt					0x02	// Alt键按下
+#define ssCtrl					0x04	// Ctrl键按下
+
 
 // 用户ID起始值, 自定义控件可以使用这个ID以上的值
-#define ID_USER						0x10000
+#define ID_USER					0x10000
 // 程序ID起始值, 外部程序应该使用这个ID以上的值
-#define ID_APP						0x20000
+#define ID_APP					0x20000
 
 /*
-	通知事件类型, 0~NT_USER-1由框架保留，用户可以使用其他的值
+	通知事件ID, 0~NTD_USER-1由框架保留，用户可以使用其他的值
 */
-typedef DWORD KDxNotifyType;
-#define NT_USER						ID_USER
+typedef DWORD KDxNotifyId;
+#define NID_USER					ID_USER
 // 尺寸正在改变，param: SIZE*=将要改变的尺寸，可以改变这个值，影响最终的尺寸
-#define ntSizeChanging				1
+#define NID_SIZECHANGING			1
 // 尺寸改变，param: NULL
-#define ntSizeChanged				2
+#define NID_SIZECHANGED				2
 // 位置正在改变，param: POINT*=将要改变的尺寸，可以改变这个值，影响最终的位置
-#define ntPosChanging				3
+#define NID_POSCHANGING				3
 // 位置改变，param: NULL
-#define ntPosChanged				4
+#define NID_POSCHANGED				4
 // 激活改变	 param:  0=反激活, !0=激活
-#define ntActiveChanged				5
+#define NID_ACTIVECHANGED			5
 // 焦点改变, param:　0=失去焦点, !0=获得焦点
-#define ntFocusChanged				6
+#define NID_FOCUSCHANGED			6
 // 鼠标捕获视图改变，param:　0=失去捕获, !0=获得捕获
-#define ntCaptureChnaged			7
+#define NID_CAPTURECHANGED			7
 // 可见改变，param:　0=隐藏, !0=可见
-#define ntVisibleChanged			8
+#define NID_VISIBLECHANGED			8
 // 可用改变，param:　0=禁用, !0=可用
-#define ntEnableChanged				9
+#define NID_ENABLECHANGED			9
 // 环境(右键)菜单事件，param：NULL=由键盘引起的, PPOINT=由鼠标引起的，PPOINT指定鼠标在screen的位置
-#define ntContextMenu				10
+#define NID_CONTEXATMENU			10
 // 开始ShowModal, param: NULL
-#define ntBeginModal				11
+#define NID_BEGINMODAL				11
 // 结束ShowModal, param: NULL
-#define ntEndModal					12
+#define NID_ENDMODAL				12
 // 鼠标进入视图, param: NULL
-#define ntMouseEnter				13
+#define NID_MOUSEENTER				13
 // 鼠标退出视图, param: NULL
-#define ntMouseLeave				14
+#define NID_MOUSELEAVE				14
 // 文本改变， param: NULL
-#define ntTextChanged				15
+#define NID_TEXTCHANGED				15
 // 字体改变， param: NULL
-#define ntFontChanged				16
-
+#define NID_FONTCHANGED				16
 
 /*
-	请求事件类型, 0~QT_USER-1由框架保留，用户可以使用其他的值
+	请求事件ID, 0~QID_USER-1由框架保留，用户可以使用其他的值
 */
-typedef DWORD KDxQueryType;
-#define QT_USER						ID_USER
+typedef DWORD KDxQueryId;
+#define QID_USER					ID_USER
 // 是否要处理TAB，返回值：0=不处理，!0=处理
-#define qtWantTab					1
+#define QID_WANTTAB					1
 // 是否要处理方向键，返回值：0=不处理，!0=处理 
-#define qtWantArrows				2
+#define QID_WANTARROWS				2
 // 是否要处理ESC键，返回值：0=不处理，!0=处理 
-#define qtWantEscape				3
+#define QID_WANTESCAPE				3
 // 窗口关闭请求，返回值：KDxCloseMode
-#define qtClose						4
+#define QID_CLOSE					4
 // 设置光标，参数： param=点击测试值；返回值：!0=设置成功
-#define qtSetCursor					5
+#define QID_SETCURSOR				5
 
 
 /*
-	视图点击测试值0~oxHT_USER-1由框架保留，用户可以使用其他值
+	视图点击测试值0~HT_USER-1由框架保留，用户可以使用其他值
 */
 typedef DWORD KDxHitTest;
 #define HT_USER						ID_USER
-#define htNone						0		// 什么也没有，透明
-#define htClient					1		// 点击到客户区
-#define htBorderLeft				2		// 边缘左
-#define htBorderTop					3		// 边缘顶
-#define htBorderRight				4		// 边缘右
-#define htBorderBottom				5		// 边缘底
-#define htBorderLeftTop				6		// 边缘左顶
-#define htBorderLeftBottom			7		// 边缘左底
-#define htBorderRightTop			8		// 边缘右顶
-#define htBorderRightBottom			9		// 边缘右底
-#define htMoveRegion				10		// 可移动区域
+#define HT_NONE						0		// 什么也没有，透明
+#define HT_CLIENT					1		// 点击到客户区
+#define HT_BORDERLEFT				2		// 边缘左
+#define HT_BORDERTOP				3		// 边缘顶
+#define HT_BORDERRIGHT				4		// 边缘右
+#define HT_BORDERBOTTOM				5		// 边缘底
+#define HT_BORDERLEFTTOP			6		// 边缘左顶
+#define HT_BORDERLEFTBOTTOM			7		// 边缘左底
+#define HT_BORDERRIGHTTOP			8		// 边缘右顶
+#define HT_BORDERRIGHTBOTTOM		9		// 边缘右底
+#define HT_MOVEREION				10		// 可移动区域
 
 /*
-	光标类型, 0~CT_USER-1由框架保留，用户可以使用其他值
+	光标类型, 0~CID_USER-1由框架保留，用户可以使用其他值
 */
-typedef DWORD KDxCursorType;
-#define CT_USER						ID_USER
-#define ctArrow						1		// 默认光标
-#define ctIbeam						2		// 光束, 移到编辑框时的那个形状
-#define ctWait						3		// 沙漏, 等待光标
-#define ctCross						4		// 十字光标
-#define ctUpArrow					5		// 向上箭头
-#define ctSizeNWSE					6		// 西北--东南 方向箭头  "\"
-#define ctSizeNESW					7		// 东北--西南 方向箭头	"/"
-#define ctSizeWE					8		// 东西 方向箭头 "-"
-#define ctSizeNS					9		// 南北 方向箭头 "|"
-#define ctSizeAll					10		// 移动, 十字箭头
-#define ctNo						11		// 圆圈带斜杠, 表示拒绝
-#define ctAppStarting				12		// 光标带沙漏, 表示程序正在启动
-#define ctHelp						13		// 光标带问号, 表示帮助
-#define ctHand						14		// 手指光标
+typedef DWORD KDxCursorId;
+#define CID_USER					ID_USER
+#define CID_ARROW					1		// 默认光标
+#define CID_IBEAM					2		// 光束, 移到编辑框时的那个形状
+#define CID_WAIT					3		// 沙漏, 等待光标
+#define CID_CROSS					4		// 十字光标
+#define CID_UPARROW					5		// 向上箭头
+#define CID_SIZENWSE				6		// 西北--东南 方向箭头  "\"
+#define CID_SIZENESW				7		// 东北--西南 方向箭头	"/"
+#define CID_SIZEWE					8		// 东西 方向箭头 "-"
+#define CID_SIZENS					9		// 南北 方向箭头 "|"
+#define CID_SIZEALL					10		// 移动, 十字箭头
+#define CID_NO						11		// 圆圈带斜杠, 表示拒绝
+#define CID_APPSTARTING				12		// 光标带沙漏, 表示程序正在启动
+#define CID_HELP					13		// 光标带问号, 表示帮助
+#define CID_HAND					14		// 手指光标
 
 /*
 	视图风格
 */
 typedef DWORD KDxViewStyle;
-#define vsTabStop					0x01	// Tab停止，与焦点关系紧密
-#define vsFocusable					0x02	// 是否可获得焦点
+#define VS_TABSTOP					0x01	// Tab停止，与焦点关系紧密
+#define VS_FOCUSABLE				0x02	// 是否可获得焦点
 
 /*
 	窗口风格
 */
 typedef DWORD KDxWndStyle;
-#define wsMovable					0x01	// 可移动
-#define wsSizable					0x02	// 可拖动
-#define wsTopMost					0x04	// 顶层窗口
-#define wsEscClose					0x08	// ESC关闭
-#define wsActivatable				0x10	// 可激活
+#define WS_MOVABLE					0x01	// 可移动
+#define WS_SIZABLE					0x02	// 可拖动
+#define WS_TOPMOST					0x04	// 顶层窗口
+#define WS_ESCCLOSE					0x08	// ESC关闭
+#define WS_ACTIVATABLE				0x10	// 可激活
 
 /*
 	窗口状态
 */
 typedef DWORD KDxWndState;
-#define wsModal						0x01	// 模态状态
+#define WS_MODAL					0x01	// 模态状态
 
 /*
 	窗口关闭模式
@@ -201,10 +201,11 @@ typedef DWORD KDxShortcut;
 
 
 /*
-	投递事件ID
+	投递事件ID, 0~PID_USER-1由框架保留，用户可以使用其他值
 */
 typedef DWORD KDxPostId;
-#define piRelease					1		// 释放自己，无参数
+#define PID_USER					ID_USER
+#define PID_RELEASE					1		// 释放自己，无参数
 
 class KDxView;
 class KDxWindow;
@@ -248,17 +249,17 @@ interface IDxViewEvent
 	}
 
 	/*
-		通用的通知事件，KDxNotifyType指明通知的类型, param为附带的参数
+		通用的通知事件，KDxNotifyId指明通知的类型, param为附带的参数
 	*/
-	virtual void OnNotify(KDxView* view, KDxNotifyType type, DWORD param) 
+	virtual void OnNotify(KDxView* view, KDxNotifyId id, DWORD param) 
 	{
 
 	}
 
 	/*
-		通用的请求事件，KDxQueryType指明请求的类型, param为附带的参数
+		通用的请求事件，KDxQueryId指明请求的类型, param为附带的参数
 	*/
-	virtual LRESULT OnQuery(KDxView* view, KDxQueryType type, DWORD param) 
+	virtual LRESULT OnQuery(KDxView* view, KDxQueryId id, DWORD param) 
 	{ 
 		return 0; 
 	}
@@ -336,7 +337,7 @@ public:
 		mOwnerWindow(NULL),
 		mParentView(NULL), 
 		mViewEvent(NULL),
-		mViewStyle(vsTabStop | vsFocusable),
+		mViewStyle(VS_TABSTOP | VS_FOCUSABLE),
 		mUserData(0), 
 		mLeft(0), 
 		mTop(0), 
@@ -689,12 +690,12 @@ public:
 	/*
 		通知事件
 	*/
-	virtual void DoNotify(KDxNotifyType type, DWORD param);
+	virtual void DoNotify(KDxNotifyId id, DWORD param);
 
 	/*
 		请求事件
 	*/
-	virtual LRESULT DoQuery(KDxQueryType type, DWORD param);
+	virtual LRESULT DoQuery(KDxQueryId id, DWORD param);
 
 	/*
 		更新
@@ -876,7 +877,7 @@ class KDxWindow: public KDxView, public KDxShortcutMgr
 	DECLARE_RUNTIMEINFO(KDxWindow)
 public:
 	KDxWindow():
-		mWndStyle(wsMovable | wsSizable | wsActivatable),
+		mWndStyle(WS_MOVABLE | WS_SIZABLE | WS_ACTIVATABLE),
 		mFrameSize(3),
 		mFocusedView(NULL),
 		mWndState(0)
@@ -1037,9 +1038,9 @@ public:
 
 	virtual void DoMouse(KDxMouseAction action, KDxShiftState state, const POINT& pt);
 
-	virtual void DoNotify(KDxNotifyType type, DWORD param);
+	virtual void DoNotify(KDxNotifyId id, DWORD param);
 
-	virtual LRESULT DoQuery(KDxQueryType type, DWORD param);
+	virtual LRESULT DoQuery(KDxQueryId id, DWORD param);
 
 	virtual KDxHitTest HitTestView(const POINT& pt);
 
@@ -1106,7 +1107,7 @@ private:
 */
 class KDxScreen: public KDxView, public KDxShortcutMgr
 {
-	typedef std::map<KDxCursorType, HCURSOR> KDxCursorMap;
+	typedef std::map<KDxCursorId, HCURSOR> KDxCursorMap;
 	typedef std::list<KDxPostInfo> KDxPostInfoList;
 	DECLARE_RUNTIMEINFO(KDxScreen)
 public:
@@ -1188,14 +1189,14 @@ public:
 	BOOL SetCaptureView(KDxView* view);
 
 	/*
-		取type类型的光标
+		取id类型的光标
 	*/
-	HCURSOR GetCursor(KDxCursorType type);
+	HCURSOR GetCursor(KDxCursorId id);
 
 	/*
 		添加自定义光标
 	*/
-	BOOL AddCursor(KDxCursorType type, HCURSOR cursor);
+	BOOL AddCursor(KDxCursorId id, HCURSOR cursor);
 
 	/*
 		当前光标位置
@@ -1676,7 +1677,7 @@ inline void KDxView::SetSize(int width, int height)
 	SIZE sz;
 	sz.cx = width;
 	sz.cy = height;
-	DoNotify(ntSizeChanging, (DWORD)(&sz));
+	DoNotify(NID_SIZECHANGING, (DWORD)(&sz));
 
 	if (mMinSize.cx != 0)
 	{
@@ -1701,7 +1702,7 @@ inline void KDxView::SetSize(int width, int height)
 
 	mWidth = sz.cx;
 	mHeight = sz.cy;
-	DoNotify(ntSizeChanged, NULL);
+	DoNotify(NID_SIZECHANGED, NULL);
 }
 
 inline void KDxView::SetPos(int left, int top)
@@ -1712,11 +1713,11 @@ inline void KDxView::SetPos(int left, int top)
 	POINT pt;
 	pt.x = left;
 	pt.y = top;
-	DoNotify(ntPosChanging, (DWORD)(&pt));
+	DoNotify(NID_POSCHANGING, (DWORD)(&pt));
 
 	mLeft = pt.x;
 	mTop = pt.y;
-	DoNotify(ntPosChanged, NULL);
+	DoNotify(NID_POSCHANGED, NULL);
 }
 
 inline void KDxView::SetBound(const RECT& rc)
@@ -1844,33 +1845,33 @@ inline KDxHitTest KDxView::HitTestView(const POINT& pt)
 {
 	RECT rc;
 	GetClientRect(rc);
-	return PtInRect(&rc, pt) ? htClient : htNone;
+	return PtInRect(&rc, pt) ? HT_CLIENT : HT_NONE;
 }
 
 inline BOOL KDxView::IsTabStop() 
 { 
-	return HAS_FLAG(mViewStyle, vsTabStop); 
+	return HAS_FLAG(mViewStyle, VS_TABSTOP); 
 }
 
 inline void KDxView::SetTabStop(BOOL isTabStop)
 {
 	if (isTabStop)
-		ADD_FLAG(mViewStyle, vsTabStop);
+		ADD_FLAG(mViewStyle, VS_TABSTOP);
 	else
-		DEL_FLAG(mViewStyle, vsTabStop);
+		DEL_FLAG(mViewStyle, VS_TABSTOP);
 }
 
 inline BOOL KDxView::IsFocusable()
 {
-	return HAS_FLAG(mViewStyle, vsFocusable);
+	return HAS_FLAG(mViewStyle, VS_FOCUSABLE);
 }
 
 inline void KDxView::SetFocusable(BOOL isFocusable)
 {
 	if (isFocusable)
-		ADD_FLAG(mViewStyle, vsFocusable);
+		ADD_FLAG(mViewStyle, VS_FOCUSABLE);
 	else
-		DEL_FLAG(mViewStyle, vsFocusable);
+		DEL_FLAG(mViewStyle, VS_FOCUSABLE);
 }
 
 inline BOOL KDxView::IsFocused(BOOL isInWnd)
@@ -1944,7 +1945,7 @@ inline void KDxView::SetVisible(BOOL isVisible)
 	{
 		mIsVisible = isVisible;
 		UpdateVisible(isVisible);
-		DoNotify(ntVisibleChanged, DWORD(mIsVisible));
+		DoNotify(NID_VISIBLECHANGED, DWORD(mIsVisible));
 	}
 }
 
@@ -1959,7 +1960,7 @@ inline void KDxView::SetEnable(BOOL isEnable)
 	{
 		mIsEnable = isEnable;
 		UpdateEnable(isEnable);
-		DoNotify(ntEnableChanged, DWORD(mIsEnable));
+		DoNotify(NID_ENABLECHANGED, DWORD(mIsEnable));
 	}
 }
 
@@ -2003,16 +2004,16 @@ inline void KDxView::DoKeyboard(KDxKeyAction action, WORD& key, KDxShiftState sh
 		mViewEvent->OnKeyboard(this, action, key, shift);
 }
 
-inline void KDxView::DoNotify(KDxNotifyType type, DWORD param)
+inline void KDxView::DoNotify(KDxNotifyId id, DWORD param)
 {
 	if (mViewEvent)
-		mViewEvent->OnNotify(this, type, param);
+		mViewEvent->OnNotify(this, id, param);
 }
 
-inline LRESULT KDxView::DoQuery(KDxQueryType type, DWORD param)
+inline LRESULT KDxView::DoQuery(KDxQueryId id, DWORD param)
 {
 	if (mViewEvent)
-		return mViewEvent->OnQuery(this, type, param);
+		return mViewEvent->OnQuery(this, id, param);
 	return 0;
 }
 
@@ -2142,67 +2143,67 @@ IMPLEMENT_RUNTIMEINFO(KDxWindow, KDxView)
 
 inline BOOL KDxWindow::IsMovable() 
 { 
-	return HAS_FLAG(mWndStyle, wsMovable); 
+	return HAS_FLAG(mWndStyle, WS_MOVABLE); 
 }
 
 inline void KDxWindow::SetMovable(BOOL isMovable)
 { 
 	if (isMovable) 
-		ADD_FLAG(mWndStyle, wsMovable);
+		ADD_FLAG(mWndStyle, WS_MOVABLE);
 	else 
-		DEL_FLAG(mWndStyle, wsMovable); 
+		DEL_FLAG(mWndStyle, WS_MOVABLE); 
 }
 
 inline BOOL KDxWindow::IsSizable() 
 { 
-	return HAS_FLAG(mWndStyle, wsSizable); 
+	return HAS_FLAG(mWndStyle, WS_SIZABLE); 
 }
 
 inline void KDxWindow::SetSizable(BOOL isSizable)
 {
 	if (isSizable)
-		ADD_FLAG(mWndStyle, wsSizable);
+		ADD_FLAG(mWndStyle, WS_SIZABLE);
 	else
-		DEL_FLAG(mWndStyle, wsSizable);
+		DEL_FLAG(mWndStyle, WS_SIZABLE);
 }
 
 inline BOOL KDxWindow::IsEscClose() 
 { 
-	return HAS_FLAG(mWndStyle, wsEscClose); 
+	return HAS_FLAG(mWndStyle, WS_ESCCLOSE); 
 }
 
 inline void KDxWindow::SetEscClose(BOOL isEscClose)
 {
 	if (isEscClose)
-		ADD_FLAG(mWndStyle, wsEscClose);
+		ADD_FLAG(mWndStyle, WS_ESCCLOSE);
 	else
-		DEL_FLAG(mWndStyle, wsEscClose);
+		DEL_FLAG(mWndStyle, WS_ESCCLOSE);
 }
 
 inline BOOL KDxWindow::IsTopMost() 
 { 
-	return HAS_FLAG(mWndStyle, wsTopMost); 
+	return HAS_FLAG(mWndStyle, WS_TOPMOST); 
 }
 
 inline void KDxWindow::SetTopMost(BOOL isTopMose)
 {
 	if (isTopMose)
-		ADD_FLAG(mWndStyle, wsTopMost);
+		ADD_FLAG(mWndStyle, WS_TOPMOST);
 	else
-		DEL_FLAG(mWndStyle, wsTopMost);
+		DEL_FLAG(mWndStyle, WS_TOPMOST);
 }
 
 inline BOOL KDxWindow::IsActivatable()
 {
-	return HAS_FLAG(mWndStyle, wsActivatable);
+	return HAS_FLAG(mWndStyle, WS_ACTIVATABLE);
 }
 
 inline void KDxWindow::SetActivatable(BOOL activatable)
 {
 	if (activatable)
-		ADD_FLAG(mWndStyle, wsActivatable);
+		ADD_FLAG(mWndStyle, WS_ACTIVATABLE);
 	else
-		DEL_FLAG(mWndStyle, wsActivatable);
+		DEL_FLAG(mWndStyle, WS_ACTIVATABLE);
 }
 
 inline BOOL KDxWindow::Active()
@@ -2236,9 +2237,9 @@ inline BOOL KDxWindow::SetFocusedView(KDxView* view)
 	KDxView* oldView = mFocusedView;
 	mFocusedView = view;
 	if (NULL != oldView)
-		oldView->DoNotify(ntFocusChanged, FALSE);
+		oldView->DoNotify(NID_FOCUSCHANGED, FALSE);
 	if (NULL != mFocusedView)
-		mFocusedView->DoNotify(ntFocusChanged, TRUE);
+		mFocusedView->DoNotify(NID_FOCUSCHANGED, TRUE);
 	return TRUE;
 }
 
@@ -2339,17 +2340,17 @@ inline void KDxWindow::Show(BOOL isActive)
 
 inline void KDxWindow::Close()
 {
-	if (HAS_FLAG(mWndState, wsModal))
+	if (HAS_FLAG(mWndState, WS_MODAL))
 	{
 		CloseModal(0);
 	}
 	else 
 	{
-		KDxCloseMode action = (KDxCloseMode)DoQuery(qtClose, NULL);
+		KDxCloseMode action = (KDxCloseMode)DoQuery(QID_CLOSE, NULL);
 		if (cmHide == action)
 			SetVisible(FALSE);
 		else if (cmFree == action)
-			mOwnerScreen->PostEvent(this, piRelease, 0, 0);
+			mOwnerScreen->PostEvent(this, PID_RELEASE, 0, 0);
 	}
 }
 
@@ -2360,17 +2361,17 @@ inline void KDxWindow::Hide()
 
 inline int KDxWindow::ShowModal()
 {
-	if (IsVisible() || !IsEnable() || HAS_FLAG(mWndState, wsModal))
+	if (IsVisible() || !IsEnable() || HAS_FLAG(mWndState, WS_MODAL))
 		return 0;
 
 	gIsDraging = FALSE;
 	mOwnerScreen->SetCaptureView(NULL);
-	DoNotify(ntBeginModal, 0);
+	DoNotify(NID_BEGINMODAL, 0);
 
 	KDxWindowList disableList;
 	mOwnerScreen->BeginModal(this, disableList);
 
-	ADD_FLAG(mWndState, wsModal);
+	ADD_FLAG(mWndState, WS_MODAL);
 	Show();
 	KMsgLooper* msgLooper = mOwnerScreen->MsgLooper();
 	while (IsModal() && !msgLooper->IsTerm())
@@ -2378,7 +2379,7 @@ inline int KDxWindow::ShowModal()
 
 	mOwnerScreen->EndModal(this, disableList);
 	Hide();
-	DoNotify(ntEndModal, 0);
+	DoNotify(NID_ENDMODAL, 0);
 	return mModalResult;
 }
 
@@ -2387,13 +2388,13 @@ inline BOOL KDxWindow::CloseModal(int ret)
 	if (!IsModal())
 		return FALSE;
 
-	KDxCloseMode action = (KDxCloseMode)DoQuery(qtClose, NULL);
+	KDxCloseMode action = (KDxCloseMode)DoQuery(QID_CLOSE, NULL);
 	if ((cmHide == action) || (cmFree == action))
 	{
-		DEL_FLAG(mWndState, wsModal);
+		DEL_FLAG(mWndState, WS_MODAL);
 		mModalResult = ret;
 		if (cmFree == action)
-			mOwnerScreen->PostEvent(this, piRelease, 0, 0);
+			mOwnerScreen->PostEvent(this, PID_RELEASE, 0, 0);
 	}
 
 	return TRUE;
@@ -2401,7 +2402,7 @@ inline BOOL KDxWindow::CloseModal(int ret)
 
 inline BOOL KDxWindow::IsModal()
 { 
-	return HAS_FLAG(mWndState, wsModal); 
+	return HAS_FLAG(mWndState, WS_MODAL); 
 }
 
 inline void KDxWindow::ScreenCenter()
@@ -2434,11 +2435,11 @@ inline void KDxWindow::DragTo(const POINT& pt)
 
 	int dx = mOwnerScreen->MouseX() - gDragPoint.x;
 	int dy = mOwnerScreen->MouseY() - gDragPoint.y;
-	if (gDragHitTest == htMoveRegion)
+	if (gDragHitTest == HT_MOVEREION)
 	{
 		SetPos(dx + gOrgLeft, dy + gOrgTop);
 	}
-	else if (gDragHitTest == htBorderLeft)
+	else if (gDragHitTest == HT_BORDERLEFT)
 	{	
 		if ((mMaxSize.cx != 0) && (gOrgWidth - dx > mMaxSize.cx))
 		{
@@ -2456,7 +2457,7 @@ inline void KDxWindow::DragTo(const POINT& pt)
 			SetPos(gOrgLeft + dx, mTop);
 		}
 	}
-	else if (gDragHitTest == htBorderTop)
+	else if (gDragHitTest == HT_BORDERTOP)
 	{
 		if ((mMaxSize.cy != 0) && (gOrgHeight - dy > mMaxSize.cy))
 		{
@@ -2474,7 +2475,7 @@ inline void KDxWindow::DragTo(const POINT& pt)
 			SetPos(mLeft, gOrgTop + dy);
 		}
 	}
-	else if (gDragHitTest == htBorderLeftTop)
+	else if (gDragHitTest == HT_BORDERLEFTTOP)
 	{
 		int w, h, l, t;
 
@@ -2513,7 +2514,7 @@ inline void KDxWindow::DragTo(const POINT& pt)
 		SetSize(w, h);
 		SetPos(l, t);
 	}
-	else if (gDragHitTest == htBorderRight)
+	else if (gDragHitTest == HT_BORDERRIGHT)
 	{
 		if ((mMaxSize.cx != 0) && (gOrgWidth + dx > mMaxSize.cx))
 			SetSize(mMaxSize.cx, mHeight);
@@ -2522,7 +2523,7 @@ inline void KDxWindow::DragTo(const POINT& pt)
 		else
 			SetSize(gOrgWidth + dx, mHeight);
 	}
-	else if (gDragHitTest == htBorderRightTop)
+	else if (gDragHitTest == HT_BORDERRIGHTTOP)
 	{
 		int w, h, t;
 		if ((mMaxSize.cx != 0) && (gOrgWidth + dx > mMaxSize.cx))
@@ -2551,7 +2552,7 @@ inline void KDxWindow::DragTo(const POINT& pt)
 		SetSize(w, h);
 		SetPos(mLeft, t);
 	}
-	else if (gDragHitTest == htBorderBottom)
+	else if (gDragHitTest == HT_BORDERBOTTOM)
 	{
 		if ((mMaxSize.cy != 0) && (gOrgHeight + dy > mMaxSize.cy))
 			SetSize(mWidth, mMaxSize.cy);
@@ -2560,7 +2561,7 @@ inline void KDxWindow::DragTo(const POINT& pt)
 		else
 			SetSize(mWidth, gOrgHeight + dy);
 	}
-	else if (gDragHitTest == htBorderLeftBottom)
+	else if (gDragHitTest == HT_BORDERLEFTBOTTOM)
 	{
 		int w, h, l;
 
@@ -2590,7 +2591,7 @@ inline void KDxWindow::DragTo(const POINT& pt)
 		SetSize(w, h);
 		SetPos(l, mTop);
 	}
-	else if (gDragHitTest == htBorderRightBottom)
+	else if (gDragHitTest == HT_BORDERRIGHTBOTTOM)
 	{
 		int w, h;
 		if ((mMaxSize.cx != 0) && (gOrgWidth + dx > mMaxSize.cx))
@@ -2637,21 +2638,21 @@ inline void KDxWindow::Finalize()
 inline void KDxWindow::DoMouse(KDxMouseAction action, KDxShiftState state, const POINT& pt)
 {
 	// 下面代码处理拖动
-	if (action == maMove)	
+	if (action == maMouseMove)	
 	{
 		// 鼠标移动，窗口拖动进行中
 		if (IsDraging())
 			DragTo(pt);
 	}
-	else if (action == maLDown)
+	else if (action == maLButtonDown)
 	{
 		// 鼠标点下，拖动开始
 		gDragHitTest = HitTestView(pt);
-		if ((gDragHitTest == htMoveRegion) || 
-			((gDragHitTest >= htBorderLeft) && (gDragHitTest <= htBorderRightBottom)))
+		if ((gDragHitTest == HT_MOVEREION) || 
+			((gDragHitTest >= HT_BORDERLEFT) && (gDragHitTest <= HT_BORDERRIGHTBOTTOM)))
 			BeginDrag(pt);
 	}
-	else if (action = maLUp)
+	else if (action = maLButtonUp)
 	{
 		// 鼠标弹起，拖动结束
 		EndDrag(pt);
@@ -2660,9 +2661,9 @@ inline void KDxWindow::DoMouse(KDxMouseAction action, KDxShiftState state, const
 	KDxView::DoMouse(action, state, pt);
 }
 
-inline void KDxWindow::DoNotify(KDxNotifyType type, DWORD param)
+inline void KDxWindow::DoNotify(KDxNotifyId id, DWORD param)
 {
-	if (type == ntVisibleChanged)
+	if (id == NID_VISIBLECHANGED)
 	{
 		// 隐藏激活下一个窗口
 		if (!param)
@@ -2672,32 +2673,32 @@ inline void KDxWindow::DoNotify(KDxNotifyType type, DWORD param)
 		}
 	}
 
-	KDxView::DoNotify(type, param);
+	KDxView::DoNotify(id, param);
 }
 
-inline LRESULT KDxWindow::DoQuery(KDxQueryType type, DWORD param)
+inline LRESULT KDxWindow::DoQuery(KDxQueryId id, DWORD param)
 {
-	if (qtSetCursor == type)
+	if (QID_SETCURSOR == id)
 	{
 		HCURSOR hc = NULL;
-		if (param == htBorderLeft)
-			hc = mOwnerScreen->GetCursor(ctSizeWE);
-		else if (param == htBorderRight)
-			hc = mOwnerScreen->GetCursor(ctSizeWE);
-		else if (param == htBorderTop)
-			hc = mOwnerScreen->GetCursor(ctSizeNS);
-		else if (param == htBorderBottom)
-			hc = mOwnerScreen->GetCursor(ctSizeNS);
-		else if (param == htBorderLeftTop)
-			hc = mOwnerScreen->GetCursor(ctSizeNWSE);
-		else if (param == htBorderRightBottom)
-			hc = mOwnerScreen->GetCursor(ctSizeNWSE);
-		else if (param == htBorderRightTop)
-			hc = mOwnerScreen->GetCursor(ctSizeNESW);
-		else if (param == htBorderLeftBottom)
-			hc = mOwnerScreen->GetCursor(ctSizeNESW);
-		else if (param == htMoveRegion)
-			hc = mOwnerScreen->GetCursor(ctArrow);
+		if (param == HT_BORDERLEFT)
+			hc = mOwnerScreen->GetCursor(CID_SIZEWE);
+		else if (param == HT_BORDERRIGHT)
+			hc = mOwnerScreen->GetCursor(CID_SIZEWE);
+		else if (param == HT_BORDERTOP)
+			hc = mOwnerScreen->GetCursor(CID_SIZENS);
+		else if (param == HT_BORDERBOTTOM)
+			hc = mOwnerScreen->GetCursor(CID_SIZENS);
+		else if (param == HT_BORDERLEFTTOP)
+			hc = mOwnerScreen->GetCursor(CID_SIZENWSE);
+		else if (param == HT_BORDERRIGHTBOTTOM)
+			hc = mOwnerScreen->GetCursor(CID_SIZENWSE);
+		else if (param == HT_BORDERRIGHTTOP)
+			hc = mOwnerScreen->GetCursor(CID_SIZENESW);
+		else if (param == HT_BORDERLEFTBOTTOM)
+			hc = mOwnerScreen->GetCursor(CID_SIZENESW);
+		else if (param == HT_MOVEREION)
+			hc = mOwnerScreen->GetCursor(CID_ARROW);
 
 		if (hc)
 		{
@@ -2706,7 +2707,7 @@ inline LRESULT KDxWindow::DoQuery(KDxQueryType type, DWORD param)
 		}
 	}
 
-	return KDxView::DoQuery(type, param);
+	return KDxView::DoQuery(id, param);
 }
 
 inline KDxHitTest KDxWindow::HitTestView(const POINT& pt)
@@ -2719,41 +2720,41 @@ inline KDxHitTest KDxWindow::HitTestView(const POINT& pt)
 	{
 		::SetRect(&rc, mWidth - mFrameSize - 4, mHeight - mFrameSize - 4, mWidth, mHeight);
 		if (::PtInRect(&rc, pt))
-			return htBorderRightBottom;
+			return HT_BORDERRIGHTBOTTOM;
 
 		::SetRect(&rc, 0, mHeight - mFrameSize - 4, mFrameSize + 4, mHeight);
 		if (::PtInRect(&rc, pt))
-			return htBorderLeftBottom;
+			return HT_BORDERLEFTBOTTOM;
 
 		::SetRect(&rc, mWidth - mFrameSize - 4, 0, mWidth, mFrameSize + 4);
 		if (::PtInRect(&rc, pt))
-			return htBorderRightTop;
+			return HT_BORDERRIGHTTOP;
 
 		::SetRect(&rc, 0, 0, mFrameSize + 4, mFrameSize + 4);
 		if (::PtInRect(&rc, pt))
-			return htBorderLeftTop;
+			return HT_BORDERLEFTTOP;
 
 		::SetRect(&rc, mWidth - mFrameSize, mFrameSize, mWidth, mHeight - mFrameSize);
 		if (::PtInRect(&rc, pt))
-			return htBorderRight;
+			return HT_BORDERRIGHT;
 
 		::SetRect(&rc, 0, mFrameSize, mFrameSize, mHeight - mFrameSize);
 		if (::PtInRect(&rc, pt))
-			return htBorderLeft;
+			return HT_BORDERLEFT;
 
 		::SetRect(&rc, mFrameSize, mHeight - mFrameSize, mWidth - mFrameSize, mHeight);
 		if (::PtInRect(&rc, pt))
-			return htBorderBottom;
+			return HT_BORDERBOTTOM;
 
 		::SetRect(&rc, mFrameSize, 0, mWidth - mFrameSize, mFrameSize);
 		if (::PtInRect(&rc, pt))
-			return htBorderTop;
+			return HT_BORDERTOP;
 	}
 
 	if (IsMovable())
 	{
 		GetClientRect(rc);
-		return ::PtInRect(&rc, pt) ? htMoveRegion : htNone;
+		return ::PtInRect(&rc, pt) ? HT_MOVEREION : HT_NONE;
 	}
 
 	return KDxView::HitTestView(pt);
@@ -2780,7 +2781,7 @@ inline BOOL KDxWindow::PreKeyHandle(WORD& key, KDxShiftState shift)
 			else if (IsEscClose())
 			{
 				if (NULL != mFocusedView)
-					if (mFocusedView->DoQuery(qtWantEscape, NULL))
+					if (mFocusedView->DoQuery(QID_WANTESCAPE, NULL))
 						return FALSE;
 
 				Close();
@@ -2789,7 +2790,7 @@ inline BOOL KDxWindow::PreKeyHandle(WORD& key, KDxShiftState shift)
 		}
 		if ((VK_TAB == key) && (!HAS_FLAG(shift, ssCtrl)))
 		{
-			if (mFocusedView && mFocusedView->DoQuery(qtWantTab, NULL))
+			if (mFocusedView && mFocusedView->DoQuery(QID_WANTTAB, NULL))
 				return FALSE;
 
 			KDxView* pNextView = FindNexTabtView(mFocusedView, !HAS_FLAG(shift, ssShift));
@@ -2799,7 +2800,7 @@ inline BOOL KDxWindow::PreKeyHandle(WORD& key, KDxShiftState shift)
 		}
 		else if ((VK_LEFT <= key) && (key <= VK_DOWN))
 		{
-			if (mFocusedView && mFocusedView->DoQuery(qtWantArrows, NULL))
+			if (mFocusedView && mFocusedView->DoQuery(QID_WANTARROWS, NULL))
 				return FALSE;
 
 			KDxView* pNextView = FindNextArrowView(mFocusedView, (VK_RIGHT == key) || (VK_DOWN == key));
@@ -2814,7 +2815,7 @@ inline BOOL KDxWindow::PreKeyHandle(WORD& key, KDxShiftState shift)
 
 inline void KDxWindow::HandlePostAction(KDxPostId paId, DWORD param1, DWORD param2)
 {
-	if (piRelease == paId)
+	if (PID_RELEASE == paId)
 	{
 		FREE_VIEW(this);
 	}
@@ -2934,12 +2935,12 @@ inline BOOL KDxScreen::SetActiveWindow(KDxWindow* wnd)
 	KDxWindow* oldWnd = mActiveWindow;
 	mActiveWindow = wnd;
 	if (NULL != oldWnd)
-		oldWnd->DoNotify(ntActiveChanged, FALSE);
+		oldWnd->DoNotify(NID_ACTIVECHANGED, FALSE);
 
 	if (NULL != mActiveWindow)
 	{
 		mActiveWindow->BringToFront();
-		mActiveWindow->DoNotify(ntActiveChanged, TRUE);
+		mActiveWindow->DoNotify(NID_ACTIVECHANGED, TRUE);
 
 		// 寻找第一个可以获得焦点的视图，有就设焦点给它，如果没有就设给自己
 		if (!mActiveWindow->FocusedView() || (mActiveWindow->FocusedView() == mActiveWindow))
@@ -2983,16 +2984,16 @@ inline BOOL KDxScreen::SetCaptureView(KDxView* view)
 	KDxView* oldView = mCaptureView;
 	mCaptureView = view;
 	if (NULL != oldView)
-		oldView->DoNotify(ntCaptureChnaged, FALSE);
+		oldView->DoNotify(NID_CAPTURECHANGED, FALSE);
 
 	if (NULL != mCaptureView)
-		mCaptureView->DoNotify(ntCaptureChnaged, TRUE);
+		mCaptureView->DoNotify(NID_CAPTURECHANGED, TRUE);
 	return TRUE;
 }
 
-inline HCURSOR KDxScreen::GetCursor(KDxCursorType type)
+inline HCURSOR KDxScreen::GetCursor(KDxCursorId id)
 {
-	KDxCursorMap::iterator itr = mCursorMap.find(type);
+	KDxCursorMap::iterator itr = mCursorMap.find(id);
 	if (itr == mCursorMap.end())
 		return NULL;
 
@@ -3000,16 +3001,16 @@ inline HCURSOR KDxScreen::GetCursor(KDxCursorType type)
 
 }
 
-inline BOOL KDxScreen::AddCursor(KDxCursorType type, HCURSOR cursor)
+inline BOOL KDxScreen::AddCursor(KDxCursorId id, HCURSOR cursor)
 {
-	if (type < CT_USER)
+	if (id < CID_USER)
 		return FALSE;
 
-	KDxCursorMap::iterator itr = mCursorMap.find(type);
+	KDxCursorMap::iterator itr = mCursorMap.find(id);
 	if (itr != mCursorMap.end())
 		return FALSE;
 
-	mCursorMap.insert(std::make_pair(type, cursor));
+	mCursorMap.insert(std::make_pair(id, cursor));
 	return TRUE;
 
 }
@@ -3150,10 +3151,10 @@ inline void KDxScreen::Update()
 	if (view != mHoverView)
 	{
 		if(mHoverView)
-			mHoverView->DoNotify(ntMouseLeave, NULL);
+			mHoverView->DoNotify(NID_MOUSELEAVE, NULL);
 		mHoverView = view;
 		if (mHoverView)
-			mHoverView->DoNotify(ntMouseEnter, NULL);
+			mHoverView->DoNotify(NID_MOUSEENTER, NULL);
 	}
 
 	if (IsVisible())
@@ -3264,20 +3265,20 @@ inline BOOL KDxScreen::PreKeyHandle(WORD& key, KDxShiftState shift)
 
 inline void KDxScreen::InitCursorTable()
 {
-	mCursorMap.insert(std::make_pair(ctArrow,		::LoadCursor(NULL, IDC_ARROW)));
-	mCursorMap.insert(std::make_pair(ctIbeam,		::LoadCursor(NULL, IDC_IBEAM)));
-	mCursorMap.insert(std::make_pair(ctWait,		::LoadCursor(NULL, IDC_WAIT)));
-	mCursorMap.insert(std::make_pair(ctCross,		::LoadCursor(NULL, IDC_CROSS)));
-	mCursorMap.insert(std::make_pair(ctUpArrow,		::LoadCursor(NULL, IDC_UPARROW)));
-	mCursorMap.insert(std::make_pair(ctSizeNWSE,	::LoadCursor(NULL, IDC_SIZENWSE)));
-	mCursorMap.insert(std::make_pair(ctSizeNESW,	::LoadCursor(NULL, IDC_SIZENESW)));
-	mCursorMap.insert(std::make_pair(ctSizeWE,		::LoadCursor(NULL, IDC_SIZEWE)));
-	mCursorMap.insert(std::make_pair(ctSizeNS,		::LoadCursor(NULL, IDC_SIZENS)));
-	mCursorMap.insert(std::make_pair(ctSizeAll,		::LoadCursor(NULL, IDC_SIZEALL)));
-	mCursorMap.insert(std::make_pair(ctNo,			::LoadCursor(NULL, IDC_NO)));
-	mCursorMap.insert(std::make_pair(ctAppStarting,	::LoadCursor(NULL, IDC_APPSTARTING)));
-	mCursorMap.insert(std::make_pair(ctHelp,		::LoadCursor(NULL, IDC_HELP)));
-	mCursorMap.insert(std::make_pair(ctHand,		::LoadCursor(NULL, IDC_HAND)));
+	mCursorMap.insert(std::make_pair(CID_ARROW,		::LoadCursor(NULL, IDC_ARROW)));
+	mCursorMap.insert(std::make_pair(CID_IBEAM,		::LoadCursor(NULL, IDC_IBEAM)));
+	mCursorMap.insert(std::make_pair(CID_WAIT,		::LoadCursor(NULL, IDC_WAIT)));
+	mCursorMap.insert(std::make_pair(CID_CROSS,		::LoadCursor(NULL, IDC_CROSS)));
+	mCursorMap.insert(std::make_pair(CID_UPARROW,		::LoadCursor(NULL, IDC_UPARROW)));
+	mCursorMap.insert(std::make_pair(CID_SIZENWSE,	::LoadCursor(NULL, IDC_SIZENWSE)));
+	mCursorMap.insert(std::make_pair(CID_SIZENESW,	::LoadCursor(NULL, IDC_SIZENESW)));
+	mCursorMap.insert(std::make_pair(CID_SIZEWE,		::LoadCursor(NULL, IDC_SIZEWE)));
+	mCursorMap.insert(std::make_pair(CID_SIZENS,		::LoadCursor(NULL, IDC_SIZENS)));
+	mCursorMap.insert(std::make_pair(CID_SIZEALL,		::LoadCursor(NULL, IDC_SIZEALL)));
+	mCursorMap.insert(std::make_pair(CID_NO,			::LoadCursor(NULL, IDC_NO)));
+	mCursorMap.insert(std::make_pair(CID_APPSTARTING,	::LoadCursor(NULL, IDC_APPSTARTING)));
+	mCursorMap.insert(std::make_pair(CID_HELP,		::LoadCursor(NULL, IDC_HELP)));
+	mCursorMap.insert(std::make_pair(CID_HAND,		::LoadCursor(NULL, IDC_HAND)));
 }
 
 inline void KDxScreen::DestroyAllCursor()
@@ -3286,7 +3287,7 @@ inline void KDxScreen::DestroyAllCursor()
 
 	for(itr = mCursorMap.begin(); itr != mCursorMap.end(); ++itr)
 	{
-		if (itr->first >= CT_USER)
+		if (itr->first >= CID_USER)
 			::DestroyCursor(itr->second);
 	}
 	mCursorMap.clear();
@@ -3457,7 +3458,7 @@ inline BOOL KDxScreen::WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam
 	}
 	else if ((WM_KEYUP == msg) || (WM_SYSKEYUP == msg))
 	{
-		WMKeyMsg(kaUp, wparam, lparam);
+		WMKeyMsg(kaKeyUp, wparam, lparam);
 	}
 	else if (WM_CHAR == msg)
 	{
@@ -3485,31 +3486,31 @@ inline BOOL KDxScreen::WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam
 	}
 	else if (WM_LBUTTONDBLCLK == msg)
 	{
-		WMOtherMouse(maLDblClk, wparam, lparam);
+		WMOtherMouse(maLButtonDblClk, wparam, lparam);
 	}
 	else if (WM_RBUTTONDBLCLK == msg)
 	{
-		WMOtherMouse(maRDblClk, wparam, lparam);
+		WMOtherMouse(maRButtonDblClk, wparam, lparam);
 	}
 	else if (WM_MBUTTONDBLCLK == msg)
 	{
-		WMOtherMouse(maMDblClk, wparam, lparam);
+		WMOtherMouse(maMButtonDblClk, wparam, lparam);
 	}
 	else if (WM_RBUTTONDOWN == msg)
 	{
-		WMOtherMouse(maRDown, wparam, lparam);
+		WMOtherMouse(maRButtonDown, wparam, lparam);
 	}
 	else if (WM_RBUTTONUP == msg)
 	{
-		WMOtherMouse(maRUp, wparam, lparam);
+		WMOtherMouse(maRButtonUp, wparam, lparam);
 	}
 	else if (WM_MBUTTONDOWN == msg)
 	{
-		WMOtherMouse(maMDown, wparam, lparam);
+		WMOtherMouse(maMButtonDown, wparam, lparam);
 	}
 	else if (WM_MBUTTONUP == msg)
 	{
-		WMOtherMouse(maMUp, wparam, lparam);
+		WMOtherMouse(maMButtonUp, wparam, lparam);
 	}
 	else if (WM_SIZE == msg)
 	{
@@ -3561,7 +3562,7 @@ inline void KDxScreen::WMMouseMove(WPARAM wparam, LPARAM lparam)
 	if (NULL != mCaptureView)
 	{
 		pt = mCaptureView->ScreenToClient(SmallPtToPoint(MAKEPOINTS(lparam)));
-		mCaptureView->DoMouse(maMove, shift, pt);
+		mCaptureView->DoMouse(maMouseMove, shift, pt);
 	}
 	else
 	{
@@ -3570,7 +3571,7 @@ inline void KDxScreen::WMMouseMove(WPARAM wparam, LPARAM lparam)
 		if (NULL != view)
 		{
 			pt = view->ScreenToClient(pt);
-			view->DoMouse(maMove, shift, pt);
+			view->DoMouse(maMouseMove, shift, pt);
 		}
 	}								   
 }
@@ -3599,8 +3600,8 @@ inline void KDxScreen::WMLButtonDblClk(WPARAM wparam, LPARAM lparam)
 		if (NULL != mCaptureView)
 		{	
 			pt = mCaptureView->ScreenToClient(pt);
-			mCaptureView->DoMouse(maLDblClk, shift, pt);
-			mCaptureView->DoMouse(maLDown, shift, pt);
+			mCaptureView->DoMouse(maLButtonDblClk, shift, pt);
+			mCaptureView->DoMouse(maLButtonDown, shift, pt);
 			// 焦点
 			if (!OBJECT_DERIVEDFROM(mCaptureView, KDxWindow))
 				mCaptureView->SetFocus();
@@ -3626,7 +3627,7 @@ inline void KDxScreen::WMLButtonDown(WPARAM wparam, LPARAM lparam)
 		if (NULL != mCaptureView)
 		{	
 			pt = mCaptureView->ScreenToClient(pt);
-			mCaptureView->DoMouse(maLDown, shift, pt);
+			mCaptureView->DoMouse(maLButtonDown, shift, pt);
 			// 焦点
 			if (!OBJECT_DERIVEDFROM(mCaptureView, KDxWindow))
 				mCaptureView->SetFocus();
@@ -3651,10 +3652,10 @@ inline void KDxScreen::WMLButtonUp(WPARAM wparam, LPARAM lparam)
 		RECT rc;
 		view->GetClientRect(rc);
 		if (::PtInRect(&rc, pt))
-			view->DoMouse(maClick, shift, pt);
+			view->DoMouse(maMouseClick, shift, pt);
 
 		// 弹起
-		view->DoMouse(maLUp, shift, pt);
+		view->DoMouse(maLButtonUp, shift, pt);
 	}
 	else
 	{
@@ -3662,7 +3663,7 @@ inline void KDxScreen::WMLButtonUp(WPARAM wparam, LPARAM lparam)
 		if (NULL != view)
 		{
 			pt = view->ScreenToClient(pt);
-			view->DoMouse(maLUp, shift, pt);
+			view->DoMouse(maLButtonUp, shift, pt);
 		}
 	}
 }
@@ -3701,11 +3702,11 @@ inline void KDxScreen::WMKeyDown(WPARAM wparam, LPARAM lparam)
 			KDxView* view = mActiveWindow->FocusedView();
 			if (NULL == view) 
 				view = mActiveWindow;
-			view->DoKeyboard(kaDown, key, shift);
+			view->DoKeyboard(kaKeyDown, key, shift);
 		}
 		else
 		{
-			DoKeyboard(kaDown, key, shift);
+			DoKeyboard(kaKeyDown, key, shift);
 		}
 	}
 }
@@ -3739,7 +3740,7 @@ inline void KDxScreen::WMContextMenu(WPARAM wparam, LPARAM lparam)
 			KDxView* view = mActiveWindow->FocusedView();
 			if (NULL == view)
 				view = mActiveWindow;
-			view->DoNotify(ntContextMenu, NULL);
+			view->DoNotify(NID_CONTEXATMENU, NULL);
 		}
 	}
 	else
@@ -3749,7 +3750,7 @@ inline void KDxScreen::WMContextMenu(WPARAM wparam, LPARAM lparam)
 		::ScreenToClient(mHostWnd, &pt);
 		KDxView* view = GetViewAtPos(pt);
 		if (NULL != view)
-			view->DoNotify(ntContextMenu, (DWORD)&pt);
+			view->DoNotify(NID_CONTEXATMENU, (DWORD)&pt);
 	}
 }
 
@@ -3767,7 +3768,7 @@ inline void KDxScreen::WMPostAction(WPARAM wparam, LPARAM lparam)
 
 inline BOOL KDxScreen::WMSetCursor(WPARAM wparam, LPARAM lparam)
 {
-	if (LOWORD(lparam) == HTCLIENT)
+	if (LOWORD(lparam) == HT_CLIENT)
 	{
 		POINT pt = MakePoint(mMouseX, mMouseY);
 		KDxView* view = GetViewAtPos(pt);
@@ -3775,7 +3776,7 @@ inline BOOL KDxScreen::WMSetCursor(WPARAM wparam, LPARAM lparam)
 		{
 			pt = view->ScreenToClient(pt);
 			KDxHitTest htValue = view->HitTestView(pt);
-			if (view->DoQuery(qtSetCursor, htValue))
+			if (view->DoQuery(QID_SETCURSOR, htValue))
 				return TRUE;			
 		}
 	}
