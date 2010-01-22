@@ -1561,6 +1561,34 @@ inline DWORD KGetTickCount()
 	return timeGetTime();
 }
 
+/*
+	取键盘连击延迟
+*/
+inline DWORD KeyBoardDelay()
+{
+	static DWORD delay = 0;
+	if (!delay)
+	{
+		int vParam;
+		SystemParametersInfoW(SPI_GETKEYBOARDDELAY, 0, &vParam, 0);
+		delay = 250 * (vParam + 1);
+	}
+	return delay;
+}
+
+/*
+	取键盘连击速度
+*/
+inline DWORD KeyBoardSpeek()
+{
+	static DWORD speed = 0;
+	if (!speed)
+	{
+		// TODO
+	}
+	return speed;
+}
+
 //------------------------------------------------------------------------------
 // 顶层窗口与消息循环封装类
 

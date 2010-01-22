@@ -1149,7 +1149,7 @@ protected:
 	/*
 		更新，子类处理
 	*/
-	virtual void UpdateFrame(){}
+	virtual void UpdateFrame(DWORD tick){}
 
 	/*
 		绘制，子类处理
@@ -2789,7 +2789,7 @@ inline void KDxApp::Idle()
 		}
 
 		// 更新与绘制
-		UpdateFrame();
+		UpdateFrame(mLastTick);
 		RenderFrame();
 	}
 	else

@@ -959,6 +959,10 @@ IMPLEMENT_RUNTIMEINFO(KDxRadioBox, KDxView)
 #define SB_BTNSIZE			17
 // 滚动块的最小尺寸
 #define SB_MINTHUMBSIZE		5
+// 滚动条连续滚动延迟
+#define SB_SCROLLDELAY		250
+// 滚动条连续滚动速度
+#define SB_SCROLLSPEED		70
 
 /*
 	通知事件
@@ -971,6 +975,7 @@ IMPLEMENT_RUNTIMEINFO(KDxRadioBox, KDxView)
 */
 enum KDxSBArea
 {
+	sbaNone,		// 无
 	sbaButton1,		// 滚动条第1个按钮
 	sbaButton2,		// 滚动条第2个按钮
 	sbaThumb,		// 滚动块
@@ -979,7 +984,7 @@ enum KDxSBArea
 };
 
 /*
-	滚动条的滚动范围是0~mMaxPos，mPos表明当前的滚动位置，这里的数值单位是逻辑单位
+	滚动条的滚动范围是0~mRange，mPos表明当前的滚动位置，这里的数值单位是逻辑单位
 	mPage指定滚动一页需要多少逻辑单位，mLine指定滚动一行需要多少逻辑单位
 */
 
@@ -988,8 +993,11 @@ class KDxScrollBar: public KDxView
 	DECLARE_RUNTIMEINFO(KDxScrollBar)
 public:
 	KDxScrollBar(): 
-		mMaxPos(100), mPos(0), mPage(10), mLine(1),
-		mIsVertScroll(TRUE), mIsAutoThumbSize(TRUE), mThumbSize(17)
+		mRange(100), mPos(0), mPage(20), mLine(1),
+		mIsVertScroll(TRUE), 
+		mThumbSize(SB_BTNSIZE), mThumbPos(SB_BTNSIZE),
+		mMouseArea(sbaNone), mClickArea(sbaNone),
+		mStartScroll(FALSE)
 	{
 		mHeight = 150;
 		mWidth = 17;
@@ -997,75 +1005,74 @@ public:
 		SetTabStop(FALSE);
 	}
 
-	UINT MaxPos()
+	int Range()
 	{
-		return mMaxPos;
+		return mRange;
 	}
 
-	void SetMaxPos(UINT maxPos)
+	void SetRange(int range)
 	{
-		if (maxPos != mMaxPos)
+		if (range != mRange)
 		{
-			mMaxPos = maxPos;
-			if (mPos > mMaxPos)
-				mPos = mMaxPos;
-			if (mPage > mMaxPos)
-				mPage = mMaxPos;
-			if (mLine > mMaxPos)
-				mLine = mMaxPos;
-			CalcThumbSize();
+			mRange = range;
+			if (mRange < 0)
+				mRange = 0;
+			if (mPos > mRange)
+				mPos = mRange;
+			if (mPage > mRange)
+				mPage = mRange;
+			if (mLine > mRange)
+				mLine = mRange;
+			AdjustThumbSize();
 		}
 	}
 
-	UINT Pos()
+	int Pos()
 	{
 		return mPos;
 	}
 
-	void SetPos(UINT pos)
+	void SetPos(int pos)
 	{
-		if (pos > mMaxPos)
-			pos = mMaxPos;
-
 		if (mPos != pos)
 		{
 			mPos = pos;
-			CalcThumbSize();
+			if (mPos > mRange)
+				mPos = mRange;
+			if (mPos < 0)
+				mPos = 0;
+			AdjustThumbSize();
 			DoNotify(NID_SCROLLCHANGED, 0);
 		}
 	}
 
-	UINT Page()
+	int Page()
 	{
 		return mPage;
 	}
 
-	void SetPage(UINT page)
+	void SetPage(int page)
 	{
-		if (page == 0)
-			return; 
-
-		if (page > mMaxPos)
-			page = mMaxPos;
-
 		if (mPage != page)
 		{
 			mPage = page;
-			CalcThumbSize();
+			if (mPage > mRange)
+				mPage = mRange;
+			if (mPage < 0)
+				mPage = 0;
+			AdjustThumbSize();
 		}
 	}
 
-	void SetLine(UINT line)
+	void SetLine(int line)
 	{
-		if (line == 0)
-			return;
-
-		if (line > mMaxPos)
-			line = mMaxPos;
-
 		if (mLine != line)
 		{
 			mLine = line;
+			if (mLine > mRange)
+				mLine = mRange;
+			if (mLine <= 0)
+				mLine = 1;
 		}
 	}
 
@@ -1083,37 +1090,9 @@ public:
 		}
 	}
 
-	BOOL IsAutoThumbSize()
-	{
-		return mIsAutoThumbSize;
-	}
-
-	void SetAutoThumbSize(BOOL isAuto)
-	{
-		if (isAuto != mIsAutoThumbSize)
-		{
-			mIsAutoThumbSize = isAuto;
-			CalcThumbSize();
-		}
-	}
-
-	UINT ThumbSize()
-	{
-		return mThumbSize;
-	}
-
-	void SetThumbSize(UINT size)
-	{
-		if ((size != mThumbSize) && !mIsAutoThumbSize)
-		{
-			mThumbSize = size;
-			CalcThumbSize();
-		}
-	}
-
 	virtual void DoInitialize()
 	{
-		CalcThumbSize();
+		AdjustThumbSize();
 		KDxView::DoInitialize();
 	}
 
@@ -1121,7 +1100,11 @@ public:
 	{
 		if (NID_SIZECHANGED == id)
 		{
-			CalcThumbSize();
+			AdjustThumbSize();
+		}
+		else if (NID_MOUSELEAVE == id)
+		{
+			mMouseArea = sbaNone;
 		}
 		KDxView::DoNotify(id, param);
 	}
@@ -1130,25 +1113,48 @@ public:
 	{
 		if (maMouseMove == action)
 		{
-			if (mIsMouseDown)
-			{
-				// 处理滚动位置
+			mMouseArea = GetAreaAtPos(pt);
 
-			}
-			else
+			if (mIsMouseDown && (mClickArea == sbaThumb))
 			{
-				mMouseArea = GetArea(pt);
+				// 处理滚动块位置
+
 			}
 		}
 		else if (maLButtonDown == action)
 		{
-			mIsMouseDown = TRUE;	
+			mIsMouseDown = TRUE;
+			mClickArea = GetAreaAtPos(pt);
+			
+			// 处理滚动
+			DoScroll(mClickArea);
+
+			// 开始连续滚动
+			if ((mClickArea != sbaThumb) && (mClickArea != sbaNone))
+				StartScrollTime();
 		}
 		else if (maLButtonUp == action)
 		{
 			mIsMouseDown = FALSE;
+			mClickArea = sbaNone;
+			StopScrollTime();
 		}
 		KDxView::DoMouse(action, shift, pt);
+	}
+
+	virtual void DoUpdate(DWORD tick)
+	{
+		if (mStartScroll)
+		{
+			if ((mMouseArea == mClickArea) && (tick - mScrollTick > mScrollTime))
+			{
+				mScrollTick = tick;
+				if (mScrollTime == SB_SCROLLDELAY)
+					mScrollTime = SB_SCROLLSPEED;
+				DoScroll(mClickArea);
+			}
+		}
+		KDxView::DoUpdate(tick);
 	}
 
 	virtual void DoPaint(KDxRender* render)
@@ -1158,46 +1164,42 @@ public:
 	}
 
 protected:
-	void CalcThumbSize()
+	void AdjustThumbSize()
 	{
-		int size = mIsVertScroll ? mHeight : mWidth;
+		int size = mIsVertScroll ? (mHeight - 2 * SB_BTNSIZE) : (mWidth - 2 * SB_BTNSIZE);
 
-		// 高或宽太小的情况
-		if (size <= 2 * SB_BTNSIZE + SB_MINTHUMBSIZE)
+		if (size < SB_MINTHUMBSIZE)
 		{
+			// 滚动条长度太小的情况， 隐藏滚动条
 			mThumbSize = 0;
-			mThumbPos = 0;
-			return;
 		}
-
-		// 最大滚动范围为0的情况
-		if (mMaxPos == 0)
+		else if (mPage == 0)
 		{
-			mThumbSize = 0;
-			mThumbPos = 0;
-			return;
-		}
-
-		// 调整大小
-		if (mIsAutoThumbSize)
-		{
-			mThumbSize = (size - 2 * SB_BTNSIZE) * mPage / mMaxPos;
+			// mPage为0，滚动块固定大小
+			if (size < 3 * SB_BTNSIZE)
+				mThumbSize = 0;
+			else
+				mThumbSize = SB_BTNSIZE;
 		}
 		else
 		{
-			if ((mThumbSize + 2 * SB_BTNSIZE) > (UINT)mHeight)
-				mThumbSize = mHeight - 2 * SB_BTNSIZE;
+			// 否则动态计算滚动块
+			mThumbSize = size * mPage / (mRange + 1);
+			if (mThumbSize < SB_MINTHUMBSIZE)
+				mThumbSize = SB_MINTHUMBSIZE;
 		}
-		if (mThumbSize < SB_MINTHUMBSIZE)
-			mThumbSize = SB_MINTHUMBSIZE;
-
-		// 滚动条位置
-		mThumbPos = (size - 2 * SB_BTNSIZE - mThumbSize) * mPos / mMaxPos;
+		mFactor = (FLOAT)size / (mRange + 1) - mThumbSize;
+		mThumbPos = mFactor * mPos;
 	}
 
-	KDxSBArea GetArea(const POINT& pt)
+	KDxSBArea GetAreaAtPos(const POINT& pt)
 	{
 		RECT rc;
+		int size = mIsVertScroll ? mHeight : mWidth;
+
+		// 滚动条长度过小的情况
+		if (size < 2 * SB_BTNSIZE)
+			return sbaNone;
 
 		// 第1个按钮
 		SetRect(&rc, 0, 0, SB_BTNSIZE, SB_BTNSIZE);
@@ -1212,50 +1214,99 @@ protected:
 		if (PtInRect(&rc, pt))
 			return sbaButton2;
 
+		// 滚动块为0的情况
+		if (mThumbSize = 0)
+			return sbaNone;
+
 		// 滚动块
 		if (mIsVertScroll)
-		{
-			FLOAT factor = (FLOAT)(mHeight - 2 * SB_BTNSIZE) / mMaxPos;
-			int top = SB_BTNSIZE + Round(mPos * factor);
-			SetRect(&rc, 0, top, SB_BTNSIZE, top + mThumbSize);
-		}
+			SetRect(&rc, 0, mThumbPos, SB_BTNSIZE, mThumbPos + mThumbSize);
 		else
-		{
-			FLOAT factor = (FLOAT)(mWidth - 2 * SB_BTNSIZE)	/ mMaxPos;
-			int left = SB_BTNSIZE + Round(mPos * factor);
-			SetRect(&rc, left, 0, left + mThumbSize, SB_BTNSIZE);
-		}
+			SetRect(&rc, mThumbPos, 0, mThumbPos + mThumbSize, SB_BTNSIZE);
 		if (PtInRect(&rc, pt))
 			return sbaThumb;
 
-		// 页区域
+		// 页区域1
 		if (mIsVertScroll)
-		{
-			if (pt.y < rc.top)
-				return sbaPage1;
-			else
-				return sbaPage2;
-		}
+			SetRect(&rc, 0, SB_BTNSIZE, SB_BTNSIZE, mThumbPos);
 		else
+			SetRect(&rc, SB_BTNSIZE, 0, mThumbPos, SB_BTNSIZE);
+		if (PtInRect(&rc, pt))
+			return sbaPage1;
+
+		// 页区域2
+		if (mIsVertScroll)
+			SetRect(&rc, 0, mThumbPos + mThumbSize, SB_BTNSIZE, mHeight - SB_BTNSIZE);
+		else
+			SetRect(&rc, mThumbPos + mThumbSize, 0, mWidth - SB_BTNSIZE, SB_BTNSIZE);
+		if (PtInRect(&rc, pt))
+			return sbaPage2;
+	}
+
+	void StartScrollTime()
+	{
+		mStartScroll = TRUE;
+		mScrollTick = KGetTickCount();
+		mScrollTime = SB_SCROLLDELAY;
+	}
+
+	void StopScrollTime()
+	{
+		mStartScroll = FALSE;
+	}
+
+	void DoScroll(KDxSBArea area)
+	{
+		switch (area)
 		{
-			if (pt.x < rc.left)
-				return sbaPage1;
-			else
-				return sbaPage2;
+		case sbaButton1:
+			{
+				SetPos(mPos - mLine);
+				break;
+			}
+		case sbaButton2:
+			{
+				SetPos(mPos + mLine);
+				break;
+			}
+		case sbaPage1:
+			{
+				if (mPage == 0)
+					SetPos(mPos - mLine);
+				else
+					SetPos(mPos - mPage);
+				break;
+			}
+		case sbaPage2:
+			{
+				if (mPage == 0)
+					SetPos(mPos + mLine);
+				else
+					SetPos(mPos + mPage);
+				break;
+			}
 		}
 	}
 
 protected:
-	UINT				mMaxPos;			// 最大滚动位置
-	UINT				mPos;				// 当前滚动位置
-	UINT				mPage;				// 滚动一页逻辑单位
-	UINT				mLine;				// 滚动一行逻辑单位
-	BOOL				mIsAutoThumbSize;	// 自动调整滚动块的尺寸
-	UINT				mThumbSize;			// 滚动块的尺寸
-	UINT				mThumbPos;			// 滚动块位置
-	BOOL				mIsVertScroll;		// 是否是垂直滚动条，否则为水平滚动条
-	BOOL				mIsMouseDown;	    // 鼠标是否点击
-	KDxSBArea			mMouseArea;			// 当前鼠标所在的区域, 前提是鼠标悬浮在控件上面
+	int				mRange;				// 滚动范围
+	int				mPos;				// 当前滚动位置
+	int				mPage;				// 滚动一页的逻辑单位
+	int				mLine;				// 滚动一行的逻辑单位
+
+	int				mThumbSize;			// 滚动块的尺寸
+	int				mThumbPos;			// 滚动块位置
+	FLOAT			mFactor;			// 滚动条长度与滚动范围的比例系数
+
+	BOOL			mIsVertScroll;		// 是否是垂直滚动条，否则为水平滚动条
+
+	BOOL			mIsMouseDown;	    // 鼠标是否点击
+	KDxSBArea		mMouseArea;			// 当前鼠标所在的区域
+	KDxSBArea		mClickArea;			// 鼠标点击时区域 
+
+	BOOL			mStartScroll;		// 开始连续滚动
+	DWORD			mScrollTick;		// 滚动时间
+	DWORD			mScrollTime;		// 连续滚动的间隔
 };
 IMPLEMENT_RUNTIMEINFO(KDxScrollBar, KDxView)
 

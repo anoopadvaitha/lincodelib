@@ -105,9 +105,9 @@ public:
 		KDxApp::Finalize();
 	}
 protected:
-	virtual void UpdateFrame()
+	virtual void UpdateFrame(DWORD tick)
 	{
-		mScreen->Update();
+		mScreen->Update(tick);
 	}
 	virtual void RenderFrame()
 	{
