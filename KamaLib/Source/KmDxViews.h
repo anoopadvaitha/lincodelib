@@ -267,7 +267,7 @@ interface IDxViewEvent
 	/*
 		更新事件
 	*/
-	virtual void OnUpdate(KDxView* view) 
+	virtual void OnUpdate(KDxView* view, DWORD tick) 
 	{
 
 	}
@@ -700,7 +700,7 @@ public:
 	/*
 		更新
 	*/
-	virtual void DoUpdate();
+	virtual void DoUpdate(DWORD tick);
 
 	/*
 		绘制，注意: Render此时已经调整好绘制坐标的偏移, 
@@ -1263,7 +1263,7 @@ public:
 	/*
 		更新
 	*/
-	virtual void Update();
+	virtual void Update(DWORD tick);
 
 public:
 	/*
@@ -1310,7 +1310,7 @@ protected:
 	/*
 		更新子视图
 	*/
-	void UpdateChilds(KDxView* parentView);
+	void UpdateChilds(KDxView* parentView, DWORD tick);
 
 protected:
 	/*
@@ -2017,10 +2017,10 @@ inline LRESULT KDxView::DoQuery(KDxQueryId id, DWORD param)
 	return 0;
 }
 
-inline void KDxView::DoUpdate()
+inline void KDxView::DoUpdate(DWORD tick)
 {
 	if (mViewEvent)
-		mViewEvent->OnUpdate(this);
+		mViewEvent->OnUpdate(this, tick);
 }
 
 inline void KDxView::DoPaint(KDxRender* render)
@@ -2842,7 +2842,8 @@ inline void KDxMsgLooper::DoIdle(BOOL& isDone)
 {
 	if (mScreen)
 	{
-		mScreen->Update();
+		// TODO
+		mScreen->Update(0);
 		if (KGetTickCount() - mTick >= mScreen->FrameTime())
 		{
 			mScreen->Paint();
@@ -3144,7 +3145,7 @@ inline void KDxScreen::Paint()
 	}
 }
 
-inline void KDxScreen::Update()
+inline void KDxScreen::Update(DWORD tick)
 {
 	// 鼠标移进移出
 	KDxView* view = GetViewAtPos(MakePoint(mMouseX, mMouseY));
@@ -3159,8 +3160,8 @@ inline void KDxScreen::Update()
 
 	if (IsVisible())
 	{
-		DoUpdate();
-		UpdateChilds(this);
+		DoUpdate(tick);
+		UpdateChilds(this, tick);
 	}
 }
 
@@ -3400,7 +3401,7 @@ inline void KDxScreen::PaintChilds(KDxView* parentView, const RECT& rcParentPain
 	mRender->SetPaintOffsetY(orgOffsetY);
 }
 
-inline void KDxScreen::UpdateChilds(KDxView* parentView)
+inline void KDxScreen::UpdateChilds(KDxView* parentView, DWORD tick)
 {
 	KDxView* childView;
 	for (int i = 0; i < parentView->ChildCount(); ++i)
@@ -3408,8 +3409,8 @@ inline void KDxScreen::UpdateChilds(KDxView* parentView)
 		childView = parentView->ChildView(i);
 		if (childView->IsVisible())
 		{
-			childView->DoUpdate();
-			UpdateChilds(childView);
+			childView->DoUpdate(tick);
+			UpdateChilds(childView, tick);
 		}
 	}
 }
