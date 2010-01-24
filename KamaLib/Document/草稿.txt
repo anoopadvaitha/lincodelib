@@ -41,3 +41,12 @@ Map和Hash的比较, 纹理缓存用Hash替换Map
 
 控件颜色_区域[_状态类型1_状态类型2]
 BTNCOLOR_BGTOP_DOWN
+
+
+滚动条：
+	鼠标点住一项，往下拖时，可以选中下面的项．
+	鼠标滚轮支持
+
+BUG：
+	字体的HashCode有问题
+	Render在有些机器上没法渲染图形	

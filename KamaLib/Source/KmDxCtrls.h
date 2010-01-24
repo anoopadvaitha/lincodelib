@@ -957,6 +957,8 @@ IMPLEMENT_RUNTIMEINFO(KDxRadioBox, KDxView)
 
 // 滚动条按钮尺寸
 #define SB_BTNSIZE			17
+// 最小滚动块尺寸
+#define SB_MINTHUMBSIZE		8
 // 滚动条连续滚动延迟
 #define SB_SCROLLDELAY		250
 // 滚动条连续滚动速度
@@ -1011,9 +1013,12 @@ __declspec(selectany) int			gScrollPos;			// 鼠标点下时的滚动位置
 __declspec(selectany) POINT			gThumbPos;			// 开始鼠标拖动滚动块的位置
 
 /*
-	mPos表明当前的滚动位置, 范围是0~mRange-mPage，这里的数值单位是逻辑单位
-	mPage指定滚动一页需要多少逻辑单位, 取值在1~mRange之间, 同时nPage也决定了滚动
-	块的像素长度
+	mRange 表明滚动条的范围, 注意0~mRange代表mRange+1个逻辑单位
+	mPage 指定滚动一页需要多少个逻辑单位, 取值在0~mRange之间, 点击sbaPage1, sbaPage1区域时会滚动一页
+	mLine 指定滚动一行需要多少个逻辑单位, 取值在0~mRange之间, 点击sbaButton1, sbaButton2区域时会滚动一行
+	mPos 表明当前的滚动位置, 其范围是0~mRange-mPage之间
+	mIsAutoThumbSize 指定滚动块大小是否自动调整, 如果是, 其大小由mPage, mRange和滚动条长度决定; 如果否,
+	可手动调整mThumbSize的值.
 */
 
 class KDxScrollBar: public KDxView
@@ -1024,9 +1029,11 @@ public:
 		mRange(100), 
 		mPos(0), 
 		mPage(20),
+		mLine(1),
 		mIsVertScroll(FALSE), 
 		mThumbSize(0), 
 		mThumbPos(SB_BTNSIZE),
+		mIsAutoThumbSize(TRUE),
 		mMouseArea(sbaNone), 
 		mClickArea(sbaNone),
 		mStartScroll(FALSE), 
@@ -1052,6 +1059,8 @@ public:
 				mRange = 0;
 			if (mPage > mRange)
 				mPage = mRange;
+			if (mLine > mRange)
+				mLine = mRange;
 			if (mPos > mRange - mPage + 1)
 				mPos = mRange - mPage + 1;
 			AdjustThumbSize();
@@ -1077,6 +1086,23 @@ public:
 		}
 	}
 
+	int Line()
+	{
+		return mLine;
+	}
+
+	void SetLine(int line)
+	{
+		if(line > mRange)
+			line = mRange;
+		if (line < 0)
+			line = 0;
+		if (line != mLine)
+		{
+			mLine = line;
+		}
+	}
+
 	int Page()
 	{
 		return mPage;
@@ -1091,6 +1117,40 @@ public:
 		if (mPage != page)
 		{
 			mPage = page;
+			AdjustThumbSize();
+		}
+	}
+
+	BOOL IsAutoThumbSize()
+	{
+		return mIsAutoThumbSize;
+	}
+
+	void SetAutoThumbSize(BOOL isAuto)
+	{
+		if (mIsAutoThumbSize != isAuto)
+		{
+			mIsAutoThumbSize = isAuto;
+			if (mIsAutoThumbSize)
+				AdjustThumbSize();
+		}
+	}
+
+	int ThumbSize()
+	{
+		return mThumbSize;
+	}
+
+	void SetThumbSize(int size)
+	{
+		if (!mIsAutoThumbSize)
+		{
+			int len = mIsVertScroll ? (mHeight - 2 * SB_BTNSIZE) : (mWidth - 2 * SB_BTNSIZE);
+			if (size > len)
+				size = len;
+			if (size < SB_MINTHUMBSIZE)
+				size = SB_MINTHUMBSIZE;
+			mThumbSize = size;
 			AdjustThumbSize();
 		}
 	}
@@ -1141,7 +1201,7 @@ public:
 					len = pt.y - gThumbPos.y;
 				else
 					len = pt.x - gThumbPos.x;
-				len = int(len / mFactor);
+				len = Round((FLOAT)len / mFactor);
 				SetScrollPos(len + gScrollPos);
 			}
 		}
@@ -1328,7 +1388,7 @@ protected:
 	{
 		int size = mIsVertScroll ? (mHeight - 2 * SB_BTNSIZE) : (mWidth - 2 * SB_BTNSIZE);
 
-		if (size < 0)
+		if (size < SB_MINTHUMBSIZE)
 		{
 			// 滚动条长度太小的情况， 隐藏滚动条
 			mThumbSize = 0;
@@ -1336,9 +1396,14 @@ protected:
 		}
 		else
 		{
-			// 否则动态计算滚动块
-			mFactor = (FLOAT)size / (mRange + 1);
-			mThumbSize = Round(mFactor * mPage);
+			// 动态计算滚动块
+			if (mIsAutoThumbSize)
+				mThumbSize = Round((FLOAT)size * mPage/ (FLOAT)(mRange + 1));
+			
+			if (mThumbSize < SB_MINTHUMBSIZE)
+				mThumbSize = SB_MINTHUMBSIZE;
+
+			mFactor = (FLOAT)(size - mThumbSize) / (FLOAT)(mRange + 1 - mPage);
 			mThumbPos = SB_BTNSIZE + Round(mFactor * mPos);
 		}
 	}
@@ -1417,12 +1482,12 @@ protected:
 		{
 		case sbaButton1:
 			{
-				SetScrollPos(mPos - 1);
+				SetScrollPos(mPos - mLine);
 				break;
 			}
 		case sbaButton2:
 			{
-				SetScrollPos(mPos + 1);
+				SetScrollPos(mPos + mLine);
 				break;
 			}
 		case sbaPage1:
@@ -1442,10 +1507,12 @@ protected:
 	int				mRange;				// 滚动范围
 	int				mPos;				// 当前滚动位置
 	int				mPage;				// 滚动一页的逻辑单位
+	int				mLine;				// 滚动一行的逻辑单位
 
 	int				mThumbSize;			// 滚动块的尺寸
 	int				mThumbPos;			// 滚动块位置
 	FLOAT			mFactor;			// 滚动条长度与滚动范围的比例系数
+	BOOL			mIsAutoThumbSize;	// 是否自动计算滚动块尺寸
 
 	BOOL			mIsVertScroll;		// 是否是垂直滚动条，否则为水平滚动条
 
@@ -1457,8 +1524,281 @@ protected:
 };
 IMPLEMENT_RUNTIMEINFO(KDxScrollBar, KDxView)
 
+
 //------------------------------------------------------------------------------
 // KDxListBox: 列表控件
+
+
+#define LBCOLOR_BG			D3DCOLOR_RGB(255, 255, 255)
+#define LBCOLOR_SELITEM		D3DCOLOR_RGB(0, 163, 220)
+#define LBCOLOR_FONT_SELECT	D3DCOLOR_RGB(255, 255, 255)
+
+class KDxListBox: public KDxView, public IDxViewEvent
+{
+	typedef std::vector<void*> KDxDataList;
+	DECLARE_RUNTIMEINFO(KDxListBox)
+public:
+	KDxListBox(): 
+		mVertScrollBar(NULL),
+		mSelectIndex(-1),
+		mItemHeight(0),
+		mVisibleNum(0),
+		mTopIndex(0)
+	{
+		mWidth = 140;
+		mHeight = 180;
+	}
+
+	virtual void DoInitialize()
+	{
+		mFont.Initialize(this);
+		InitScrollBar();
+		ResetMetric();
+		KDxView::DoInitialize();
+	}
+
+	virtual void DoFinalize()
+	{
+		mFont.Finalize();
+		KDxView::DoFinalize();
+	}
+
+	virtual void DoNotify(KDxNotifyId id, DWORD param)
+	{
+		if (NID_FONTCHANGED == id)
+		{
+			ResetMetric();
+			ResetScrollBar();
+		}
+		else if (NID_SIZECHANGING == id)
+		{
+			SIZE* sz = (SIZE*)param;
+			mVisibleNum = sz->cy / mItemHeight;
+			sz->cy = mItemHeight * mVisibleNum;
+		}
+		else if (NID_SIZECHANGED == id)
+		{	
+			ResetScrollBar();
+		}
+		else if (NID_ENABLECHANGED == id)
+		{
+			ResetScrollBar();
+		}
+		KDxView::DoNotify(id, param);
+	}
+
+	virtual void DoMouse(KDxMouseAction action, KDxShiftState shift, const POINT& pt)
+	{
+		if (action == maLButtonDown)
+		{
+			mSelectIndex = GetItemAtPos(pt);
+		}
+		KDxView::DoMouse(action, shift, pt);
+	}
+
+	// 滚动条事件
+	virtual void OnNotify(KDxView* view, KDxNotifyId id, DWORD param)
+	{				
+		if (NID_SCROLLCHANGED == id)
+		{
+			mTopIndex = mVertScrollBar->ScrollPos();
+		}
+	}
+
+	virtual void DoPaint(KDxRender* render)
+	{
+		RECT rc;
+		GetClientRect(rc);
+		render->DrawRect(rc, IsEnable() ? CTRLCOLOR_BORDER: CTRLCOLOR_BORDER_DISABLED);
+		InflateRect(&rc, -1, -1);
+		render->FillRect(rc, LBCOLOR_BG);
+
+		int num = min(mVisibleNum, ItemCount());
+		kstring str;
+		D3DCOLOR fontColor;
+		for (int i = mTopIndex; i < mTopIndex + num; ++i)
+		{
+			str = mStrList[i];
+			int top = (i - mTopIndex) * mItemHeight;
+			if (i == mSelectIndex)
+			{
+				fontColor = LBCOLOR_FONT_SELECT;
+				render->FillRect(1, top + 1, mWidth - mVertScrollBar->Width() - 1, top + mItemHeight - 1, LBCOLOR_SELITEM);
+			}
+			else
+			{
+				fontColor = IsEnable() ? mFont.Color() : CTRLCOLOR_FONT_DISABLED;
+			}
+			render->TextOut(2, top + 2, str, str.Length(), fontColor, FALSE, &mFont);
+		}
+
+		KDxView::DoPaint(render);
+	}
+
+	KDxViewFont* Font()
+	{
+		return &mFont;
+	}
+
+	int ItemCount()
+	{
+		return (int)mStrList.size();
+	}
+
+	kstring ItemString(int idx)
+	{
+		if ((idx < 0) || (idx >= (int)mStrList.size()))
+			return kstring(L"");
+		else
+			return mStrList[idx];
+	}
+
+	void* ItemData(int idx)
+	{
+		if ((idx < 0) || (idx >= (int)mDataList.size()))
+			return NULL;
+		else
+			return mDataList[idx];
+	}
+
+	void AddString(const kstring& str, void* data = NULL)
+	{
+		mStrList.push_back(str);
+		mDataList.push_back(data);
+		ResetScrollBar();
+	}
+
+	void DeleteString(int idx)
+	{
+		if ((idx >= 0) && (idx < (int)mStrList.size()))
+		{
+			mStrList.erase(mStrList.begin() + idx);
+			mDataList.erase(mDataList.begin() + idx);
+			ResetScrollBar();
+		}	
+	}
+
+	void SetString(const kstring& str, int idx)
+	{
+		if ((idx >= 0) && (idx < (int)mStrList.size()))
+			mStrList[idx] = str;
+	}
+
+	void SetData(void* data, int idx)
+	{
+		if ((idx >= 0) && (idx < (int)mDataList.size()))
+			mDataList[idx] = data;
+	}
+
+	int FindString(const kstring& str, BOOL IsIgnoreCase = FALSE)
+	{
+		KStringList::iterator itr;
+		for (itr = mStrList.begin(); itr != mStrList.end(); ++itr)
+		{
+			if (IsIgnoreCase)
+			{
+				if (str.CompareNoCase(*itr))
+					return itr - mStrList.begin();
+			}
+			else
+			{
+				if (str.Compare(*itr))
+					return itr - mStrList.begin();
+			}
+		}
+	}
+
+	int MatchString(const kstring& str, BOOL IsIgnoreCase = FALSE)
+	{
+		kstring itemStr;
+		kstring matchstr = str;
+		if (IsIgnoreCase)
+			matchstr.Upper();
+		KStringList::iterator itr;
+		for (itr = mStrList.begin(); itr != mStrList.end(); ++itr)
+		{
+			itemStr = *itr;
+			if (IsIgnoreCase)
+				itemStr.Upper();
+			if (itemStr.Find(matchstr, 0) >= 0)
+				return itr - mStrList.begin();
+		}
+	}
+
+	int SelectIndex()
+	{
+		return mSelectIndex;
+	}
+
+	void SetSelectIndex(int idx)
+	{
+		if (idx != mSelectIndex)
+		{
+			if ((idx >= 0) && (idx < (int)mStrList.size()))
+				mSelectIndex = idx;
+		}
+	}
+
+	int GetItemAtPos(const POINT& pt)
+	{
+		if ((pt.x >= 0) && (pt.x < mWidth - mVertScrollBar->Width() - 1) &&
+			(pt.y >= 0) && (pt.y < mHeight))
+		{
+			int idx = mTopIndex + pt.y / mItemHeight;
+			return min(idx, ItemCount() - 1);
+		}
+		return -1;
+	}
+
+protected:
+	void InitScrollBar()
+	{
+		mVertScrollBar = NEW_CONTROL(KDxScrollBar, this, mOwnerScreen);
+		mVertScrollBar->SetVertScroll(TRUE);
+		mVertScrollBar->SetEnable(FALSE);
+		mVertScrollBar->SetPos(mWidth - mVertScrollBar->Width() - 1, 1);
+		mVertScrollBar->SetSize(17, mHeight - 2);
+		mVertScrollBar->SetViewEvent(this);
+	}
+
+	void ResetMetric()
+	{
+		if (mOwnerScreen->Render() != NULL)
+		{
+			KDxRender* render = mOwnerScreen->Render();
+			mItemHeight = render->TextSize(L"H", 1, FALSE, &mFont).cy + 4;
+			mVisibleNum = mHeight / mItemHeight;
+			SetHeight(mItemHeight * mVisibleNum);
+		}
+	}
+
+	void ResetScrollBar()
+	{
+		mVertScrollBar->SetPos(mWidth - mVertScrollBar->Width() - 1, 1);
+		mVertScrollBar->SetSize(17, mHeight - 2);
+		if (!IsEnable() || (mVisibleNum >= ItemCount() - 1))
+		{
+			mVertScrollBar->SetEnable(FALSE);
+		}
+		else
+		{
+			mVertScrollBar->SetEnable(TRUE);
+			mVertScrollBar->SetRange((int)mStrList.size() - 1);
+			mVertScrollBar->SetPage(mVisibleNum);
+		}
+	}
+
+protected:
+	KDxViewFont			mFont;
+	KStringList			mStrList;
+	KDxDataList			mDataList;
+	KDxScrollBar*		mVertScrollBar;
+	int					mSelectIndex;
+	int					mItemHeight;
+	int					mVisibleNum;			// 可见的项数
+	int					mTopIndex;				// 第一个可见的索引
+};
+IMPLEMENT_RUNTIMEINFO(KDxListBox, KDxView)
 
 
 
