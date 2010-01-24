@@ -134,10 +134,11 @@ public:
 
 	void OnIdle()
 	{
-		mScreen->Update();
-		if (KGetTickCount() - mTick > mScreen->FrameTime())
+		DWORD curTick = KGetTickCount();
+		mScreen->Update(curTick);
+		if (curTick - mTick > mScreen->FrameTime())
 		{
-			mTick = KGetTickCount();
+			mTick = curTick;
 			mScreen->Paint();
 		}
 	}
