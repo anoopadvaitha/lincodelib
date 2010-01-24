@@ -68,7 +68,7 @@ public:
 		btn = NEW_CONTROL(KDxButton, panel, mScreen);
 		btn->SetCaption(L"我是按钮3");
 		btn->SetPos(10, 10);
-		//btn->SetEnable(FALSE);
+		btn->SetEnable(FALSE);
 
 		btn = NEW_CONTROL(KDxButton, panel, mScreen);
 		btn->SetCaption(L"我是按钮4");
@@ -89,6 +89,15 @@ public:
 		rbox->SetPos(10, 120);
 		rbox->SetCaption(L"我是单选框2");
 		rbox->SetGroup(1);
+
+		KDxScrollBar* sbar = NEW_CONTROL(KDxScrollBar, panel, mScreen);
+		sbar->SetPos(10, 150);
+		sbar->SetSize(250, 17);
+		sbar->SetEnable(FALSE);
+
+		sbar = NEW_CONTROL(KDxScrollBar, panel, mScreen);
+		sbar->SetVertScroll(TRUE);
+		sbar->SetPos(10, 180);
 
 
 		KDxApp::Initialize();
