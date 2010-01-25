@@ -182,7 +182,7 @@ public:
 		KDxView::DoNotify(id, param);
 	}
 
-	virtual void DoMouse(KDxMouseAction action, KDxShiftState shift, const POINT& pt)
+	virtual LRESULT DoMouse(KDxMouseAction action, KDxShiftState shift, const POINT& pt)
 	{
 		if (maLButtonDown == action)
 		{
@@ -193,10 +193,10 @@ public:
 			mBtnState = bsNormal;
 		}
 
-		KDxView::DoMouse(action, shift, pt);
+		return KDxView::DoMouse(action, shift, pt);
 	}
 
-	virtual void DoKeyboard(KDxKeyAction action, WORD& key, KDxShiftState shift)
+	virtual LRESULT DoKeyboard(KDxKeyAction action, WORD& key, KDxShiftState shift)
 	{
 		if ((action == kaKeyDown) && (key == VK_RETURN))
 		{
@@ -207,7 +207,7 @@ public:
 			DoMouse(maMouseClick, shift, pt);
 		}
 
-		KDxView::DoKeyboard(action, key, shift);
+		return KDxView::DoKeyboard(action, key, shift);
 	}
 
 	virtual void DoPaint(KDxRender* render)
@@ -563,13 +563,13 @@ public:
 		KDxView::DoFinalize();
 	}
 
-	virtual void DoMouse(KDxMouseAction action, KDxShiftState shift, const POINT& pt)
+	virtual LRESULT DoMouse(KDxMouseAction action, KDxShiftState shift, const POINT& pt)
 	{
 		if (action == maMouseClick)
 		{
 			SetChecked(!mIsChecked);
 		}
-		KDxView::DoMouse(action, shift, pt);
+		return KDxView::DoMouse(action, shift, pt);
 	}
 
 	virtual void DoNotify(KDxNotifyId id, DWORD param)
@@ -589,13 +589,13 @@ public:
 		KDxView::DoNotify(id, param);
 	}
 
-	virtual void DoKeyboard(KDxKeyAction action, WORD& key, KDxShiftState shift)
+	virtual LRESULT DoKeyboard(KDxKeyAction action, WORD& key, KDxShiftState shift)
 	{
 		if ((action == kaKeyDown) && (key == VK_SPACE))
 		{
 			SetChecked(!mIsChecked);
 		}
-		KDxView::DoKeyboard(action, key, shift);
+		return KDxView::DoKeyboard(action, key, shift);
 	}
 
 	virtual void DoPaint(KDxRender* render)
@@ -755,13 +755,13 @@ public:
 		KDxView::DoFinalize();
 	}
 
-	virtual void DoMouse(KDxMouseAction action, KDxShiftState shift, const POINT& pt)
+	virtual LRESULT DoMouse(KDxMouseAction action, KDxShiftState shift, const POINT& pt)
 	{
 		if (action == maMouseClick)
 		{
 			SetChecked(TRUE);
 		}
-		KDxView::DoMouse(action, shift, pt);
+		return KDxView::DoMouse(action, shift, pt);
 	}
 
 	virtual void DoNotify(KDxNotifyId id, DWORD param)
@@ -781,13 +781,13 @@ public:
 		KDxView::DoNotify(id, param);
 	}
 
-	virtual void DoKeyboard(KDxKeyAction action, WORD& key, KDxShiftState shift)
+	virtual LRESULT DoKeyboard(KDxKeyAction action, WORD& key, KDxShiftState shift)
 	{
 		if ((action == kaKeyDown) && (key == VK_SPACE))
 		{
 			SetChecked(TRUE);
 		}
-		KDxView::DoKeyboard(action, key, shift);
+		return KDxView::DoKeyboard(action, key, shift);
 	}
 
 	virtual void DoPaint(KDxRender* render)
@@ -1188,7 +1188,7 @@ public:
 		KDxView::DoNotify(id, param);
 	}
 
-	virtual void DoMouse(KDxMouseAction action, KDxShiftState shift, const POINT& pt)
+	virtual LRESULT DoMouse(KDxMouseAction action, KDxShiftState shift, const POINT& pt)
 	{
 		if (maMouseMove == action)
 		{
@@ -1228,7 +1228,7 @@ public:
 			mClickArea = sbaNone;
 			StopScrollTime();
 		}
-		KDxView::DoMouse(action, shift, pt);
+		return KDxView::DoMouse(action, shift, pt);
 	}
 
 	virtual void DoUpdate(DWORD tick)
@@ -1267,7 +1267,10 @@ public:
 		// 长度过短
 		int size = mIsVertScroll ? mHeight :mWidth;
 		if (size < 2 * SB_BTNSIZE)
+		{
+			KDxView::DoPaint(render);
 			return;
+		}
 
 		// 按钮
 		RECT rcBtn1;
@@ -1528,6 +1531,8 @@ IMPLEMENT_RUNTIMEINFO(KDxScrollBar, KDxView)
 //------------------------------------------------------------------------------
 // KDxListBox: 列表控件
 
+#define LB_WHEELLINE		3
+
 
 #define LBCOLOR_BG			D3DCOLOR_RGB(255, 255, 255)
 #define LBCOLOR_SELITEM		D3DCOLOR_RGB(0, 163, 220)
@@ -1542,8 +1547,9 @@ public:
 		mVertScrollBar(NULL),
 		mSelectIndex(-1),
 		mItemHeight(0),
-		mVisibleNum(0),
-		mTopIndex(0)
+		mVisibleItems(0),
+		mTopIndex(0),
+		mIsMouseDown(FALSE)
 	{
 		mWidth = 140;
 		mHeight = 180;
@@ -1573,8 +1579,8 @@ public:
 		else if (NID_SIZECHANGING == id)
 		{
 			SIZE* sz = (SIZE*)param;
-			mVisibleNum = sz->cy / mItemHeight;
-			sz->cy = mItemHeight * mVisibleNum;
+			mVisibleItems = sz->cy / mItemHeight;
+			sz->cy = mItemHeight * mVisibleItems;
 		}
 		else if (NID_SIZECHANGED == id)
 		{	
@@ -1587,13 +1593,33 @@ public:
 		KDxView::DoNotify(id, param);
 	}
 
-	virtual void DoMouse(KDxMouseAction action, KDxShiftState shift, const POINT& pt)
+	virtual LRESULT DoMouse(KDxMouseAction action, KDxShiftState shift, const POINT& pt)
 	{
 		if (action == maLButtonDown)
 		{
-			mSelectIndex = GetItemAtPos(pt);
+			SetSelectIndex(GetItemAtPos(pt));
+			mIsMouseDown = TRUE;
 		}
-		KDxView::DoMouse(action, shift, pt);
+		else if (action == maLButtonUp)
+		{
+			mIsMouseDown = FALSE;
+		}
+		else if (action == maMouseMove)
+		{
+			if (mIsMouseDown)
+				SetSelectIndex(GetItemAtPos(pt));
+		}
+		else if (action == maMouseWheelDown)
+		{
+			mVertScrollBar->SetScrollPos(mTopIndex + LB_WHEELLINE);
+			return TRUE;
+		}
+		else if (action == maMouseWheelUp)
+		{
+			mVertScrollBar->SetScrollPos(mTopIndex - LB_WHEELLINE);
+			return TRUE;
+		}
+		return KDxView::DoMouse(action, shift, pt);
 	}
 
 	// 滚动条事件
@@ -1613,7 +1639,7 @@ public:
 		InflateRect(&rc, -1, -1);
 		render->FillRect(rc, LBCOLOR_BG);
 
-		int num = min(mVisibleNum, ItemCount());
+		int num = min(mVisibleItems, ItemCount());
 		kstring str;
 		D3DCOLOR fontColor;
 		for (int i = mTopIndex; i < mTopIndex + num; ++i)
@@ -1736,13 +1762,18 @@ public:
 		{
 			if ((idx >= 0) && (idx < (int)mStrList.size()))
 				mSelectIndex = idx;
+
+			// 让选中项可见
+			if (mTopIndex > mSelectIndex)
+				mVertScrollBar->SetScrollPos(mSelectIndex);
+			else if (mTopIndex + mVisibleItems <= mSelectIndex)
+				mVertScrollBar->SetScrollPos(mSelectIndex - mVisibleItems + 1);
 		}
 	}
 
 	int GetItemAtPos(const POINT& pt)
 	{
-		if ((pt.x >= 0) && (pt.x < mWidth - mVertScrollBar->Width() - 1) &&
-			(pt.y >= 0) && (pt.y < mHeight))
+		if ((pt.x >= 0) && (pt.x < mWidth - mVertScrollBar->Width() - 1))
 		{
 			int idx = mTopIndex + pt.y / mItemHeight;
 			return min(idx, ItemCount() - 1);
@@ -1767,8 +1798,8 @@ protected:
 		{
 			KDxRender* render = mOwnerScreen->Render();
 			mItemHeight = render->TextSize(L"H", 1, FALSE, &mFont).cy + 4;
-			mVisibleNum = mHeight / mItemHeight;
-			SetHeight(mItemHeight * mVisibleNum);
+			mVisibleItems = mHeight / mItemHeight;
+			SetHeight(mItemHeight * mVisibleItems);
 		}
 	}
 
@@ -1776,15 +1807,16 @@ protected:
 	{
 		mVertScrollBar->SetPos(mWidth - mVertScrollBar->Width() - 1, 1);
 		mVertScrollBar->SetSize(17, mHeight - 2);
-		if (!IsEnable() || (mVisibleNum >= ItemCount() - 1))
+		if (!IsEnable() || (mVisibleItems >= ItemCount() - 1))
 		{
 			mVertScrollBar->SetEnable(FALSE);
+			mVertScrollBar->SetRange(0);
 		}
 		else
 		{
 			mVertScrollBar->SetEnable(TRUE);
 			mVertScrollBar->SetRange((int)mStrList.size() - 1);
-			mVertScrollBar->SetPage(mVisibleNum);
+			mVertScrollBar->SetPage(mVisibleItems);
 		}
 	}
 
@@ -1795,8 +1827,9 @@ protected:
 	KDxScrollBar*		mVertScrollBar;
 	int					mSelectIndex;
 	int					mItemHeight;
-	int					mVisibleNum;			// 可见的项数
+	int					mVisibleItems;			// 可见的项数
 	int					mTopIndex;				// 第一个可见的索引
+	BOOL				mIsMouseDown;
 };
 IMPLEMENT_RUNTIMEINFO(KDxListBox, KDxView)
 

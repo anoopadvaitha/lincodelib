@@ -36,7 +36,9 @@ enum KDxMouseAction
 	maLButtonDblClk,					// 左键双击
 	maRButtonDblClk,					// 右键双击
 	maMButtonDblClk,					// 中键双击
-	maMouseClick						// 点击
+	maMouseClick,						// 点击
+	maMouseWheelDown,					// 滚轮向下滚动
+	maMouseWheelUp,						// 滚轮向上滚动
 };					
 
 /*
@@ -56,6 +58,9 @@ typedef DWORD KDxShiftState;
 #define ssShift					0x01	// Shift键按下
 #define ssAlt					0x02	// Alt键按下
 #define ssCtrl					0x04	// Ctrl键按下
+#define ssLeft					0x08	// 鼠标左键点下	
+#define ssRight					0x08	// 鼠标右键点下
+#define ssMiddle				0x10	// 鼠标中键点下
 
 
 // 用户ID起始值, 自定义控件可以使用这个ID以上的值
@@ -235,17 +240,17 @@ interface IDxViewEvent
 	/*
 		鼠标事件，点下，弹起，移动
 	*/
-	virtual void OnMouse(KDxView* view, KDxMouseAction action, KDxShiftState shift, const POINT& pt) 
+	virtual LRESULT OnMouse(KDxView* view, KDxMouseAction action, KDxShiftState shift, const POINT& pt) 
 	{
-
+		return 0;
 	}
 
 	/*
 		键盘事件，按下，弹起，字符
 	*/
-	virtual void OnKeyboard(KDxView* view, KDxKeyAction action, WORD& key, KDxShiftState shift) 
+	virtual LRESULT OnKeyboard(KDxView* view, KDxKeyAction action, WORD& key, KDxShiftState shift) 
 	{
-
+		return 0;
 	}
 
 	/*
@@ -345,7 +350,8 @@ public:
 		mHeight(60), 
 		mGroup(0),
 		mIsVisible(TRUE), 
-		mIsEnable(TRUE)
+		mIsEnable(TRUE),
+		mWheelAccumulator(0)
 	{
 		mMinSize.cx = 0;
 		mMinSize.cy = 0;
@@ -676,16 +682,21 @@ public:
 	*/
 	IDxViewEvent* SetViewEvent(IDxViewEvent* event);
 
+	/*
+		处理滚轮
+	*/
+	void HandleMouseWheel(KDxShiftState shift, short delta, const POINT& pt);
+
 public:
 	/*
 		鼠标事件
 	*/
-	virtual void DoMouse(KDxMouseAction action, KDxShiftState shift, const POINT& pt);
+	virtual LRESULT DoMouse(KDxMouseAction action, KDxShiftState shift, const POINT& pt);
 
 	/*
 		键盘事件
 	*/
-	virtual void DoKeyboard(KDxKeyAction action, WORD& key, KDxShiftState shift);
+	virtual LRESULT DoKeyboard(KDxKeyAction action, WORD& key, KDxShiftState shift);
 
 	/*
 		通知事件
@@ -712,6 +723,11 @@ public:
 		处理投递事件
 	*/
 	virtual void HandlePostEvent(KDxPostId id, DWORD param1, DWORD param2);
+
+	/*
+		处理滚轮事件
+	*/
+	virtual BOOL DoMouseWheel(KDxShiftState shift, short delta, const POINT& pt);
 
 protected:
 	/*
@@ -772,6 +788,7 @@ protected:
 	SIZE				mMaxSize;			// 最大尺寸，为0表示无限制
 	BOOL				mIsVisible;			// 可见
 	BOOL				mIsEnable;			// 可用
+	int					mWheelAccumulator;	// 鼠标滚轮累加器
 };
 
 class KDxShortcutMgr;
@@ -1036,7 +1053,7 @@ public:
 public:
 	virtual void Finalize();
 
-	virtual void DoMouse(KDxMouseAction action, KDxShiftState state, const POINT& pt);
+	virtual LRESULT DoMouse(KDxMouseAction action, KDxShiftState state, const POINT& pt);
 
 	virtual void DoNotify(KDxNotifyId id, DWORD param);
 
@@ -1167,6 +1184,12 @@ public:
 		取活动窗口
 	*/
 	KDxWindow* ActiveWindow(); 
+
+	/*
+		取焦点视图, 整个屏幕只有一个视图可以接收键盘输入, 这个视图就是焦点视图
+		焦点视图必须在活动窗口中
+	*/
+	KDxView* FocusedView();
 
 	/*
 		设置活动窗口
@@ -1348,6 +1371,7 @@ protected:
 	void WMLButtonUp(WPARAM wparam, LPARAM lparam);
 	void WMCancelMode(WPARAM wparam, LPARAM lparam);
 	void WMOtherMouse(KDxMouseAction action, WPARAM wparam, LPARAM lparam);
+	void WMMouseWheel(WPARAM wparam, LPARAM lparam);
 	void WMKeyDown(WPARAM wparam, LPARAM lparam);
 	void WMKeyMsg(KDxKeyAction action, WPARAM wparam, LPARAM lparam);
 	void WMContextMenu(WPARAM wparam, LPARAM lparam);
@@ -1400,6 +1424,9 @@ inline KDxShiftState VKeyToShiftState(WORD key)
 	if (HAS_FLAG(key, MK_SHIFT))	ADD_FLAG(shift, ssShift);
 	if (HAS_FLAG(key, MK_CONTROL))  ADD_FLAG(shift, ssCtrl);
 	if (::GetKeyState(VK_MENU) < 0) ADD_FLAG(shift, ssAlt);
+	if (HAS_FLAG(key, MK_LBUTTON))	ADD_FLAG(shift, ssLeft);
+	if (HAS_FLAG(key, MK_RBUTTON))	ADD_FLAG(shift, ssRight);
+	if (HAS_FLAG(key, MK_MBUTTON))	ADD_FLAG(shift, ssMiddle);
 	return shift;
 }
 
@@ -1992,16 +2019,29 @@ inline IDxViewEvent* KDxView::SetViewEvent(IDxViewEvent* event)
 	return preEvent;
 }
 
-inline void KDxView::DoMouse(KDxMouseAction action, KDxShiftState shift, const POINT& pt)
+inline void KDxView::HandleMouseWheel(KDxShiftState shift, short delta, const POINT& pt)
 {
-	if (mViewEvent)
-		mViewEvent->OnMouse(this, action, shift, pt);
+	if (!DoMouseWheel(shift, delta, pt))
+	{
+		if (mParentView)
+			mParentView->HandleMouseWheel(shift, delta, pt);
+	}
 }
 
-inline void KDxView::DoKeyboard(KDxKeyAction action, WORD& key, KDxShiftState shift)
+inline LRESULT KDxView::DoMouse(KDxMouseAction action, KDxShiftState shift, const POINT& pt)
 {
 	if (mViewEvent)
-		mViewEvent->OnKeyboard(this, action, key, shift);
+		return mViewEvent->OnMouse(this, action, shift, pt);
+	else
+		return 0;
+}
+
+inline LRESULT KDxView::DoKeyboard(KDxKeyAction action, WORD& key, KDxShiftState shift)
+{
+	if (mViewEvent)
+		return mViewEvent->OnKeyboard(this, action, key, shift);
+	else
+		return 0;
 }
 
 inline void KDxView::DoNotify(KDxNotifyId id, DWORD param)
@@ -2033,6 +2073,27 @@ inline void KDxView::HandlePostEvent(KDxPostId id, DWORD param1, DWORD param2)
 {
 
 }
+
+inline BOOL KDxView::DoMouseWheel(KDxShiftState shift, short delta, const POINT& pt)
+{
+	BOOL bRet = FALSE;
+	mWheelAccumulator += delta;
+	while (abs(mWheelAccumulator) >= WHEEL_DELTA)
+	{
+		if (mWheelAccumulator < 0)
+		{
+			mWheelAccumulator += WHEEL_DELTA;
+			bRet = DoMouse(maMouseWheelDown, shift, pt);
+		}
+		else
+		{
+			mWheelAccumulator -= WHEEL_DELTA;
+			bRet = DoMouse(maMouseWheelUp, shift, pt);
+		}
+	}
+	return bRet;
+}
+
 inline void KDxView::UpdateVisible(BOOL isVisible)
 {
 	if (!isVisible)
@@ -2635,7 +2696,7 @@ inline void KDxWindow::Finalize()
 	KDxView::Finalize();
 }
 
-inline void KDxWindow::DoMouse(KDxMouseAction action, KDxShiftState state, const POINT& pt)
+inline LRESULT KDxWindow::DoMouse(KDxMouseAction action, KDxShiftState state, const POINT& pt)
 {
 	// 下面代码处理拖动
 	if (action == maMouseMove)	
@@ -2658,7 +2719,7 @@ inline void KDxWindow::DoMouse(KDxMouseAction action, KDxShiftState state, const
 		EndDrag(pt);
 	}
 
-	KDxView::DoMouse(action, state, pt);
+	return KDxView::DoMouse(action, state, pt);
 }
 
 inline void KDxWindow::DoNotify(KDxNotifyId id, DWORD param)
@@ -2923,6 +2984,13 @@ inline KDxWindow* KDxScreen::ChildWindow(int idx)
 inline KDxWindow* KDxScreen::ActiveWindow() 
 { 
 	return mActiveWindow; 
+}
+
+inline KDxView* KDxScreen::FocusedView()
+{
+	if (!mActiveWindow)
+		return NULL;
+	return mActiveWindow->FocusedView();
 }
 
 inline BOOL KDxScreen::SetActiveWindow(KDxWindow* wnd)
@@ -3513,6 +3581,11 @@ inline BOOL KDxScreen::WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam
 	{
 		WMOtherMouse(maMButtonUp, wparam, lparam);
 	}
+	else if (WM_MOUSEWHEEL == msg)
+	{
+		WMMouseWheel(wparam, lparam);
+		return TRUE;
+	}
 	else if (WM_SIZE == msg)
 	{
 		WMSize(wparam, lparam);
@@ -3728,6 +3801,20 @@ inline void KDxScreen::WMKeyMsg(KDxKeyAction action, WPARAM wparam, LPARAM lpara
 	{
 		DoKeyboard(action, key, shift);
 	}	
+}
+
+inline void KDxScreen::WMMouseWheel(WPARAM wparam, LPARAM lparam)
+{
+	KDxView* view = FocusedView();
+	if (view)
+	{
+		short delta = (short)HIWORD(wparam);
+		KDxShiftState shift = VKeyToShiftState(LOWORD(wparam));
+		POINT pt = SmallPtToPoint(MAKEPOINTS(lparam));
+		::ScreenToClient(mHostWnd, &pt);
+		pt = view->ScreenToClient(pt);
+		view->HandleMouseWheel(shift, delta, pt);
+	}
 }
 
 inline void KDxScreen::WMContextMenu(WPARAM wparam, LPARAM lparam)

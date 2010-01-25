@@ -11,6 +11,7 @@ using namespace kama;
 class KTestApp: public KDxApp
 {
 public:
+
 	virtual void Initialize()
 	{
 		mRunAlways = TRUE;

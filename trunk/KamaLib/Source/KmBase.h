@@ -24,6 +24,15 @@
 #include <ShlObj.h>
 #include <Mmsystem.h>
 
+// 一些低版本Windows未定义的宏
+#ifndef WM_MOUSEWHEEL
+#define WM_MOUSEWHEEL                   0x020A
+#endif
+
+#ifndef WHEEL_DELTA
+#define WHEEL_DELTA						120
+#endif
+
 #pragma comment(lib, "Winmm.lib")
 
 // OLE 导入
