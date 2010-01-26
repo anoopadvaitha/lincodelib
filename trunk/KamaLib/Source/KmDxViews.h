@@ -37,8 +37,8 @@ enum KDxMouseAction
 	maRButtonDblClk,					// 右键双击
 	maMButtonDblClk,					// 中键双击
 	maMouseClick,						// 点击
-	maMouseWheelDown,					// 滚轮向下滚动
-	maMouseWheelUp,						// 滚轮向上滚动
+	maMouseWheelDown,					// 滚轮向下滚动, 如果处理了该消息, DoMouse应该返回TRUE
+	maMouseWheelUp,						// 滚轮向上滚动, 如果处理了该消息, DoMouse应该返回TRUE
 };					
 
 /*
@@ -2856,8 +2856,10 @@ inline BOOL KDxWindow::PreKeyHandle(WORD& key, KDxShiftState shift)
 
 			KDxView* pNextView = FindNexTabtView(mFocusedView, !HAS_FLAG(shift, ssShift));
 			if (NULL != pNextView)
+			{
 				pNextView->SetFocus();
-			return TRUE;
+				return TRUE;
+			}
 		}
 		else if ((VK_LEFT <= key) && (key <= VK_DOWN))
 		{
@@ -2866,8 +2868,10 @@ inline BOOL KDxWindow::PreKeyHandle(WORD& key, KDxShiftState shift)
 
 			KDxView* pNextView = FindNextArrowView(mFocusedView, (VK_RIGHT == key) || (VK_DOWN == key));
 			if (NULL != pNextView)
+			{
 				pNextView->SetFocus();
-			return TRUE;
+				return TRUE;
+			}			
 		}
 	}
 

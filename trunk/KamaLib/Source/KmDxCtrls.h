@@ -1531,11 +1531,24 @@ IMPLEMENT_RUNTIMEINFO(KDxScrollBar, KDxView)
 //------------------------------------------------------------------------------
 // KDxListBox: 列表控件
 
+// 鼠标滚轮滚动的行
 #define LB_WHEELLINE		3
+#define LB_SCROLLTIME1		20
+#define	LB_SCROLLTIME2		80
 
+/*
+	通知事件, param: NULL
+*/
+#define NID_SELECTCHANGED	NID_USER + 1
 
+/*
+	颜色配置
+*/
+// 背景色
 #define LBCOLOR_BG			D3DCOLOR_RGB(255, 255, 255)
+// 选中项颜色
 #define LBCOLOR_SELITEM		D3DCOLOR_RGB(0, 163, 220)
+// 选中项字体颜色
 #define LBCOLOR_FONT_SELECT	D3DCOLOR_RGB(255, 255, 255)
 
 class KDxListBox: public KDxView, public IDxViewEvent
@@ -1549,7 +1562,8 @@ public:
 		mItemHeight(0),
 		mVisibleItems(0),
 		mTopIndex(0),
-		mIsMouseDown(FALSE)
+		mIsMouseDown(FALSE),
+		mStartScroll(FALSE)
 	{
 		mWidth = 140;
 		mHeight = 180;
@@ -1597,17 +1611,75 @@ public:
 	{
 		if (action == maLButtonDown)
 		{
-			SetSelectIndex(GetItemAtPos(pt));
-			mIsMouseDown = TRUE;
+			int idx = GetItemAtPos(pt);
+			if (idx >= 0)
+			{
+				if (idx == mTopIndex)
+				{
+					mStartScroll = TRUE;
+					mIsScrollUp = TRUE;
+					gScrollTime = LB_SCROLLTIME1 + LB_SCROLLTIME2;
+					gScrollTick = KGetTickCount();
+				}
+				else if (idx == mTopIndex + mVisibleItems - 1)
+				{
+					mStartScroll = TRUE;
+					mIsScrollUp = FALSE;
+					gScrollTime = LB_SCROLLTIME1 + LB_SCROLLTIME2;
+					gScrollTick = KGetTickCount();
+				}
+				else
+				{
+					mStartScroll = FALSE;
+				}
+				SetSelectIndex(idx);
+				mIsMouseDown = TRUE;
+			}
 		}
 		else if (action == maLButtonUp)
 		{
 			mIsMouseDown = FALSE;
+			mStartScroll = FALSE;
 		}
 		else if (action == maMouseMove)
 		{
 			if (mIsMouseDown)
-				SetSelectIndex(GetItemAtPos(pt));
+			{
+				int idx = GetItemAtPos(pt);
+				if (idx >= 0)
+				{
+					if (idx == mTopIndex)
+					{
+						mStartScroll = TRUE;
+						mIsScrollUp = TRUE;
+						gScrollTime = LB_SCROLLTIME1 + LB_SCROLLTIME2;
+					}
+					else if (idx == mTopIndex + mVisibleItems - 1)
+					{
+						mStartScroll = TRUE;
+						mIsScrollUp = FALSE;
+						gScrollTime = LB_SCROLLTIME1 + LB_SCROLLTIME2;
+					}
+					else
+					{
+						mStartScroll = FALSE;
+						SetSelectIndex(idx);
+					}
+				}
+				else if (mStartScroll)
+				{
+					if (pt.y < 0)
+					{
+						int d = abs(pt.y);
+						gScrollTime = LB_SCROLLTIME1 + LB_SCROLLTIME2 - min(d, LB_SCROLLTIME2);
+					}
+					else if (pt.y > mHeight)
+					{
+						int d = pt.y - mHeight;
+						gScrollTime = LB_SCROLLTIME1 + LB_SCROLLTIME2 - min(d, LB_SCROLLTIME2);
+					}
+				}
+			}
 		}
 		else if (action == maMouseWheelDown)
 		{
@@ -1622,13 +1694,79 @@ public:
 		return KDxView::DoMouse(action, shift, pt);
 	}
 
-	// 滚动条事件
-	virtual void OnNotify(KDxView* view, KDxNotifyId id, DWORD param)
-	{				
-		if (NID_SCROLLCHANGED == id)
+	virtual LRESULT DoKeyboard(KDxKeyAction action, WORD& key, KDxShiftState shift)
+	{
+		if (action == kaChar)
 		{
-			mTopIndex = mVertScrollBar->ScrollPos();
+			if (KGetTickCount() - mFilterTick > 500)
+				mFilter.Clear();
+			mFilterTick = KGetTickCount();
+
+			if (key != VK_BACK)
+				mFilter	+= WCHAR(key);
+			else
+				mFilter.Delete(mFilter.Length() - 1);
+
+			if (mFilter.Length() > 0)
+			{
+				int idx = MatchString(mFilter);
+				if (idx >= 0)
+					SetSelectIndex(idx);
+			}
+			else
+				SetSelectIndex(0);
 		}
+		else if (action == kaKeyDown)
+		{
+			if (key == VK_DOWN)
+				SetSelectIndex(mSelectIndex + 1);
+			else if (key == VK_UP)
+				SetSelectIndex(mSelectIndex - 1);
+			else if (key == VK_HOME)
+				SetSelectIndex(0);
+			else if (key == VK_END)
+				SetSelectIndex(ItemCount() - 1);
+			else if (key == VK_PRIOR)
+			{
+				int idx = mSelectIndex - mVisibleItems;
+				if (idx < 0)
+					SetSelectIndex(0);
+				else
+					SetSelectIndex(idx);
+			}
+			else if (key == VK_NEXT)
+			{
+				int idx = mSelectIndex + mVisibleItems;
+				if (idx >= ItemCount())
+					SetSelectIndex(ItemCount() - 1);
+				else
+					SetSelectIndex(idx);
+			}
+		}
+		return KDxView::DoKeyboard(action, key, shift);
+	}
+
+	virtual LRESULT DoQuery(KDxQueryId id, DWORD param)
+	{
+		if (id == QID_WANTARROWS)
+			return TRUE;
+		return KDxView::DoQuery(id, param);
+	}
+
+	virtual void DoUpdate(DWORD tick)
+	{
+		if (mStartScroll)
+		{
+			if (tick - gScrollTick > gScrollTime)
+			{
+				gScrollTick = tick;
+				if (mIsScrollUp)
+					SetSelectIndex(mSelectIndex - 1);
+				else 
+					SetSelectIndex(mSelectIndex + 1);
+			}
+		}
+		KDxView::DoUpdate(tick);
 	}
 
 	virtual void DoPaint(KDxRender* render)
@@ -1659,6 +1797,15 @@ public:
 		}
 
 		KDxView::DoPaint(render);
+	}
+
+	// 滚动条事件
+	virtual void OnNotify(KDxView* view, KDxNotifyId id, DWORD param)
+	{				
+		if (NID_SCROLLCHANGED == id)
+		{
+			mTopIndex = mVertScrollBar->ScrollPos();
+		}
 	}
 
 	KDxViewFont* Font()
@@ -1749,6 +1896,7 @@ public:
 			if (itemStr.Find(matchstr, 0) >= 0)
 				return itr - mStrList.begin();
 		}
+		return -1;
 	}
 
 	int SelectIndex()
@@ -1761,19 +1909,24 @@ public:
 		if (idx != mSelectIndex)
 		{
 			if ((idx >= 0) && (idx < (int)mStrList.size()))
+			{
 				mSelectIndex = idx;
 
-			// 让选中项可见
-			if (mTopIndex > mSelectIndex)
-				mVertScrollBar->SetScrollPos(mSelectIndex);
-			else if (mTopIndex + mVisibleItems <= mSelectIndex)
-				mVertScrollBar->SetScrollPos(mSelectIndex - mVisibleItems + 1);
+				// 让选中项可见
+				if (mTopIndex > mSelectIndex)
+					mVertScrollBar->SetScrollPos(mSelectIndex);
+				else if (mTopIndex + mVisibleItems <= mSelectIndex)
+					mVertScrollBar->SetScrollPos(mSelectIndex - mVisibleItems + 1);
+
+				DoNotify(NID_SELECTCHANGED, 0);
+			}
 		}
 	}
 
 	int GetItemAtPos(const POINT& pt)
 	{
-		if ((pt.x >= 0) && (pt.x < mWidth - mVertScrollBar->Width() - 1))
+		if ((pt.x >= 0) && (pt.x < mWidth - mVertScrollBar->Width() - 1) &&
+			(pt.y >= 0) && (pt.y < mHeight))
 		{
 			int idx = mTopIndex + pt.y / mItemHeight;
 			return min(idx, ItemCount() - 1);
@@ -1817,23 +1970,26 @@ protected:
 			mVertScrollBar->SetEnable(TRUE);
 			mVertScrollBar->SetRange((int)mStrList.size() - 1);
 			mVertScrollBar->SetPage(mVisibleItems);
+			mVertScrollBar->SetLine(1);
 		}
 	}
 
 protected:
-	KDxViewFont			mFont;
-	KStringList			mStrList;
-	KDxDataList			mDataList;
-	KDxScrollBar*		mVertScrollBar;
-	int					mSelectIndex;
-	int					mItemHeight;
+	KDxViewFont			mFont;					// 字体
+	KStringList			mStrList;				// 字符串列表
+	KDxDataList			mDataList;				// 附加数据列表
+	KDxScrollBar*		mVertScrollBar;			// 垂直滚动条
+	int					mSelectIndex;			// 选中项
+	int					mItemHeight;			// 项高度
 	int					mVisibleItems;			// 可见的项数
 	int					mTopIndex;				// 第一个可见的索引
-	BOOL				mIsMouseDown;
+	BOOL				mIsMouseDown;			// 鼠标是否下
+	kstring				mFilter;				// 过滤搜索
+	DWORD				mFilterTick;
+	BOOL				mStartScroll;
+	BOOL				mIsScrollUp;
 };
 IMPLEMENT_RUNTIMEINFO(KDxListBox, KDxView)
-
-
 
 }
 #endif // __KAMA_KMDXCTRLS_H__
