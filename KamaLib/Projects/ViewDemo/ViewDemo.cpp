@@ -136,11 +136,8 @@ public:
 	{
 		DWORD curTick = KGetTickCount();
 		mScreen->Update(curTick);
-		if (curTick - mTick > mScreen->FrameTime())
-		{
-			mTick = curTick;
-			mScreen->Paint();
-		}
+		mTick = curTick;
+		mScreen->Paint();
 	}
 protected:
 	virtual void DoCreate()

@@ -2603,8 +2603,8 @@ inline void KDxText::CacheTex(DWORD code, KDxTexture* tex)
 
 DWORD KDxText::GetTextCode(KDxFont* font, LPCWSTR text, int textLen)
 {
-	static DWORD code[2];
-	code[0] = GetHashCode((BYTE*)text, textLen);
+	DWORD code[2];
+	code[0] = GetHashCode((BYTE*)text, textLen * sizeof(WCHAR));
 	code[1] = font->Code();
 
 	return GetHashCode((BYTE*)code, 8);
