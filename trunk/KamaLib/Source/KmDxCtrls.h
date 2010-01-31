@@ -45,6 +45,25 @@ namespace kama
 // 悬浮线框
 #define CTRLCOLOR_HOVERFRAME		D3DCOLOR_RGB(51, 179, 239)
 
+/*
+	三角形箭头方向
+*/
+enum KDxArrowDirection
+{
+	adLeft,
+	adRight,
+	adUp,
+	adDown
+};
+
+/*
+	画控件的三角形箭头：TODO
+*/
+inline void DrawArrow(KDxRender* render, KDxArrowDirection dir, const RECT& rc)
+{
+		
+}
+
 //------------------------------------------------------------------------------
 // KDxFont: 视图字体类
 
@@ -520,7 +539,6 @@ IMPLEMENT_RUNTIMEINFO(KDxLabel, KDxView)
 
 //------------------------------------------------------------------------------
 // KDxCheckBox: 复选框, 只支持二态, 不打算支持三态
-// KDxRaidoBox: 单选框
 // TODO: 用图片来绘那个选择框
 
 #define CB_BOX_CX	20
@@ -533,8 +551,11 @@ IMPLEMENT_RUNTIMEINFO(KDxLabel, KDxView)
 // 背景
 #define CBCOLOR_BG				D3DCOLOR_RGB(255, 255, 255)
 
+/*
+	通知事件
+*/
 // 选择改变, param: BOOL=选择状态
-#define NID_CHECKCHANGED	NID_USER + 1
+#define NID_CB_CHECKCHANGED	NID_USER + 1
 
 class KDxCheckBox: public KDxView
 {
@@ -686,7 +707,7 @@ public:
 		if (isChecked != mIsChecked)
 		{
 			mIsChecked = isChecked;
-			DoNotify(NID_CHECKCHANGED, mIsChecked);
+			DoNotify(NID_CB_CHECKCHANGED, mIsChecked);
 		}
 	}
 
@@ -727,6 +748,29 @@ protected:
 };
 IMPLEMENT_RUNTIMEINFO(KDxCheckBox, KDxView)
 
+
+//------------------------------------------------------------------------------
+// KDxRaidoBox: 单选框
+// TODO: 用图片来绘那个选择框
+
+#define RB_BOX_CX	20
+#define RB_BOX_CY	20
+
+// 选中钩的颜色
+#define RBCOLOR_CHECK			D3DCOLOR_RGB(62, 156, 10)
+// 禁用时选中钩的颜色
+#define RBCOLOR_CHECK_DISABLED	D3DCOLOR_RGB(133, 193, 72)
+// 背景
+#define RBCOLOR_BG				D3DCOLOR_RGB(255, 255, 255)
+
+// 选择框大小
+#define RB_BOX_CX	20
+#define RB_BOX_CY	20
+
+/*
+	通知事件
+*/
+#define NID_RB_CHECKCHANGED		NID_USER + 1
 
 class KDxRadioBox: public KDxView
 {
@@ -813,7 +857,7 @@ public:
 
 		if (IsEnable())
 		{
-			render->FillPolygon(pts, 8, CBCOLOR_BG);
+			render->FillPolygon(pts, 8, RBCOLOR_BG);
 			render->DrawPolygon(pts, 8, CTRLCOLOR_BORDER, TRUE);
 
 			// 鼠标盘旋
@@ -830,7 +874,7 @@ public:
 			if (IsChecked())
 			{
 				InflateRect(&rcBox, -3, -3);
-				render->FillRect(rcBox, CBCOLOR_CHECK);
+				render->FillRect(rcBox, RBCOLOR_CHECK);
 			}
 
 			// 文字
@@ -845,14 +889,14 @@ public:
 		}
 		else
 		{
-			render->FillPolygon(pts, 8, CBCOLOR_BG);
+			render->FillPolygon(pts, 8, RBCOLOR_BG);
 			render->DrawPolygon(pts, 8, CTRLCOLOR_BORDER_DISABLED, TRUE);
 
 			// 选择
 			if (IsChecked())
 			{
 				InflateRect(&rcBox, -3, -3);
-				render->FillRect(rcBox, CBCOLOR_CHECK_DISABLED);
+				render->FillRect(rcBox, RBCOLOR_CHECK_DISABLED);
 			}
 
 			// 文字
@@ -911,7 +955,7 @@ public:
 				}
 			}
 
-			DoNotify(NID_CHECKCHANGED, mIsChecked);
+			DoNotify(NID_RB_CHECKCHANGED, mIsChecked);
 		}
 	}
 
@@ -936,8 +980,8 @@ protected:
 		mCapSize = mOwnerScreen->Render()->TextSize(mCaption, mCaption.Length(), FALSE, &mFont);
 		if (mIsAutoSize)
 		{
-			mSize.cx = mCapSize.cx + CB_BOX_CX + 2;
-			mSize.cy = max(mCapSize.cy, CB_BOX_CY);
+			mSize.cx = mCapSize.cx + RB_BOX_CX + 2;
+			mSize.cy = max(mCapSize.cy, RB_BOX_CY);
 			SetSize(mSize.cx, mSize.cy);
 		}
 	}
@@ -968,26 +1012,26 @@ IMPLEMENT_RUNTIMEINFO(KDxRadioBox, KDxView)
 	通知事件
 */
 // 滚动位置改变, param: NULL
-#define NID_SCROLLCHANGED		NID_USER
+#define NID_SB_SCROLLCHANGED		NID_USER
 
 /*
 	颜色配置
 */
-#define SBCOLOR_BORDER				D3DCOLOR_RGB(4, 151, 219)
+#define SBCOLOR_BORDER				D3DCOLOR_RGB(134, 213, 253)
 // 背景色1
-#define SBCOLOR_BG1					D3DCOLOR_RGB(228, 238, 240)
+#define SBCOLOR_BG1					D3DCOLOR_RGB(238, 237, 229)
 // 背景色2
 #define SBCOLOR_BG2					D3DCOLOR_RGB(255, 255, 255)
 // 按钮和滚动块颜色1
 #define SBCOLOR_BTNCOLOR1			D3DCOLOR_RGB(255, 255, 255)
 // 按钮和滚动块颜色2
-#define SBCOLOR_BTNCOLOR2			D3DCOLOR_RGB(173, 225, 251)
+#define SBCOLOR_BTNCOLOR2			D3DCOLOR_RGB(169, 220, 246)
 // 禁用时的按钮和滚动块颜色1
 #define SBCOLOR_BTNCOLOR1_DISABLED	D3DCOLOR_RGB(224, 237, 248)
 // 禁用时的按钮和滚动块颜色2
 #define SBCOLOR_BTNCOLOR2_DISABLED	D3DCOLOR_RGB(179, 209, 236)
 // 按钮和滚动块点下时的颜色1
-#define SBCOLOR_BTNCOLOR1_DOWN		D3DCOLOR_RGB(173, 225, 251)
+#define SBCOLOR_BTNCOLOR1_DOWN		D3DCOLOR_RGB(169, 220, 246)
 // 按钮和滚动块点下时的颜色1
 #define SBCOLOR_BTNCOLOR2_DOWN		D3DCOLOR_RGB(255, 255, 255)
 
@@ -1082,7 +1126,7 @@ public:
 		{
 			mPos = pos;
 			AdjustThumbSize();
-			DoNotify(NID_SCROLLCHANGED, 0);
+			DoNotify(NID_SB_SCROLLCHANGED, 0);
 		}
 	}
 
@@ -1533,13 +1577,17 @@ IMPLEMENT_RUNTIMEINFO(KDxScrollBar, KDxView)
 
 // 鼠标滚轮滚动的行
 #define LB_WHEELLINE		3
+// 连续滚动的时间1
 #define LB_SCROLLTIME1		20
+// 连续滚动的时间2
 #define	LB_SCROLLTIME2		80
+// 四周空白
+#define LB_MARGIN			2
 
 /*
 	通知事件, param: NULL
 */
-#define NID_SELECTCHANGED	NID_USER + 1
+#define NID_LB_SELECTCHANGED	NID_USER + 1
 
 /*
 	颜色配置
@@ -1593,8 +1641,8 @@ public:
 		else if (NID_SIZECHANGING == id)
 		{
 			SIZE* sz = (SIZE*)param;
-			mVisibleItems = sz->cy / mItemHeight;
-			sz->cy = mItemHeight * mVisibleItems;
+			mVisibleItems = (sz->cy - 2 * LB_MARGIN) / mItemHeight;
+			sz->cy = mItemHeight * mVisibleItems + 2 * LB_MARGIN;
 		}
 		else if (NID_SIZECHANGED == id)
 		{	
@@ -1614,24 +1662,7 @@ public:
 			int idx = GetItemAtPos(pt);
 			if (idx >= 0)
 			{
-				if (idx == mTopIndex)
-				{
-					mStartScroll = TRUE;
-					mIsScrollUp = TRUE;
-					gScrollTime = LB_SCROLLTIME1 + LB_SCROLLTIME2;
-					gScrollTick = KGetTickCount();
-				}
-				else if (idx == mTopIndex + mVisibleItems - 1)
-				{
-					mStartScroll = TRUE;
-					mIsScrollUp = FALSE;
-					gScrollTime = LB_SCROLLTIME1 + LB_SCROLLTIME2;
-					gScrollTick = KGetTickCount();
-				}
-				else
-				{
-					mStartScroll = FALSE;
-				}
+				mStartScroll = FALSE;
 				SetSelectIndex(idx);
 				mIsMouseDown = TRUE;
 			}
@@ -1648,36 +1679,19 @@ public:
 				int idx = GetItemAtPos(pt);
 				if (idx >= 0)
 				{
-					if (idx == mTopIndex)
-					{
-						mStartScroll = TRUE;
-						mIsScrollUp = TRUE;
-						gScrollTime = LB_SCROLLTIME1 + LB_SCROLLTIME2;
-					}
-					else if (idx == mTopIndex + mVisibleItems - 1)
-					{
-						mStartScroll = TRUE;
-						mIsScrollUp = FALSE;
-						gScrollTime = LB_SCROLLTIME1 + LB_SCROLLTIME2;
-					}
-					else
-					{
-						mStartScroll = FALSE;
-						SetSelectIndex(idx);
-					}
+					mStartScroll = FALSE;
+					SetSelectIndex(idx);
 				}
-				else if (mStartScroll)
+				else if (!mStartScroll)
 				{
-					if (pt.y < 0)
-					{
-						int d = abs(pt.y);
-						gScrollTime = LB_SCROLLTIME1 + LB_SCROLLTIME2 - min(d, LB_SCROLLTIME2);
-					}
-					else if (pt.y > mHeight)
-					{
-						int d = pt.y - mHeight;
-						gScrollTime = LB_SCROLLTIME1 + LB_SCROLLTIME2 - min(d, LB_SCROLLTIME2);
-					}
+					mStartScroll = TRUE;
+					mIsScrollUp = (pt.y < LB_MARGIN);
+					gScrollTime = LB_SCROLLTIME1 + LB_SCROLLTIME2;
+				}
+				else
+				{
+					int d = mIsScrollUp ? abs(pt.y) : (pt.y - mHeight);
+					gScrollTime = LB_SCROLLTIME1 + LB_SCROLLTIME2 - min(d, LB_SCROLLTIME2);
 				}
 			}
 		}
@@ -1748,6 +1762,7 @@ public:
 
 	virtual LRESULT DoQuery(KDxQueryId id, DWORD param)
 	{
+		// 使用方向键来选择上下行
 		if (id == QID_WANTARROWS)
 			return TRUE;
 		return KDxView::DoQuery(id, param);
@@ -1783,17 +1798,17 @@ public:
 		for (int i = mTopIndex; i < mTopIndex + num; ++i)
 		{
 			str = mStrList[i];
-			int top = (i - mTopIndex) * mItemHeight;
+			int top = (i - mTopIndex) * mItemHeight + LB_MARGIN;
 			if (i == mSelectIndex)
 			{
 				fontColor = LBCOLOR_FONT_SELECT;
-				render->FillRect(1, top + 1, mWidth - mVertScrollBar->Width() - 1, top + mItemHeight - 1, LBCOLOR_SELITEM);
+				render->FillRect(LB_MARGIN, top, mWidth - mVertScrollBar->Width() - LB_MARGIN, top + mItemHeight, LBCOLOR_SELITEM);
 			}
 			else
 			{
 				fontColor = IsEnable() ? mFont.Color() : CTRLCOLOR_FONT_DISABLED;
 			}
-			render->TextOut(2, top + 2, str, str.Length(), fontColor, FALSE, &mFont);
+			render->TextOut(LB_MARGIN + 1, top + LB_MARGIN, str, str.Length(), fontColor, FALSE, &mFont);
 		}
 
 		KDxView::DoPaint(render);
@@ -1802,7 +1817,7 @@ public:
 	// 滚动条事件
 	virtual void OnNotify(KDxView* view, KDxNotifyId id, DWORD param)
 	{				
-		if (NID_SCROLLCHANGED == id)
+		if (NID_SB_SCROLLCHANGED == id)
 		{
 			mTopIndex = mVertScrollBar->ScrollPos();
 		}
@@ -1918,17 +1933,17 @@ public:
 				else if (mTopIndex + mVisibleItems <= mSelectIndex)
 					mVertScrollBar->SetScrollPos(mSelectIndex - mVisibleItems + 1);
 
-				DoNotify(NID_SELECTCHANGED, 0);
+				DoNotify(NID_LB_SELECTCHANGED, 0);
 			}
 		}
 	}
 
 	int GetItemAtPos(const POINT& pt)
 	{
-		if ((pt.x >= 0) && (pt.x < mWidth - mVertScrollBar->Width() - 1) &&
-			(pt.y >= 0) && (pt.y < mHeight))
+		if ((pt.x >= LB_MARGIN) && (pt.x <= mWidth - mVertScrollBar->Width() - LB_MARGIN) &&
+			(pt.y >= LB_MARGIN) && (pt.y <= mHeight - LB_MARGIN))
 		{
-			int idx = mTopIndex + pt.y / mItemHeight;
+			int idx = mTopIndex + (pt.y - LB_MARGIN) / mItemHeight;
 			return min(idx, ItemCount() - 1);
 		}
 		return -1;
@@ -1940,8 +1955,8 @@ protected:
 		mVertScrollBar = NEW_CONTROL(KDxScrollBar, this, mOwnerScreen);
 		mVertScrollBar->SetVertScroll(TRUE);
 		mVertScrollBar->SetEnable(FALSE);
-		mVertScrollBar->SetPos(mWidth - mVertScrollBar->Width() - 1, 1);
-		mVertScrollBar->SetSize(17, mHeight - 2);
+		mVertScrollBar->SetPos(mWidth - mVertScrollBar->Width() - LB_MARGIN, LB_MARGIN);
+		mVertScrollBar->SetSize(17, mHeight - 2 * LB_MARGIN);
 		mVertScrollBar->SetViewEvent(this);
 	}
 
@@ -1950,16 +1965,16 @@ protected:
 		if (mOwnerScreen->Render() != NULL)
 		{
 			KDxRender* render = mOwnerScreen->Render();
-			mItemHeight = render->TextSize(L"H", 1, FALSE, &mFont).cy + 4;
-			mVisibleItems = mHeight / mItemHeight;
-			SetHeight(mItemHeight * mVisibleItems);
+			mItemHeight = render->TextSize(L"H", 1, FALSE, &mFont).cy +  2 * LB_MARGIN;
+			mVisibleItems = (mHeight - 2 * LB_MARGIN) / mItemHeight;
+			SetHeight(mItemHeight * mVisibleItems + 2 * LB_MARGIN);
 		}
 	}
 
 	void ResetScrollBar()
 	{
-		mVertScrollBar->SetPos(mWidth - mVertScrollBar->Width() - 1, 1);
-		mVertScrollBar->SetSize(17, mHeight - 2);
+		mVertScrollBar->SetPos(mWidth - mVertScrollBar->Width() - LB_MARGIN, LB_MARGIN);
+		mVertScrollBar->SetSize(17, mHeight - 2 * LB_MARGIN);
 		if (!IsEnable() || (mVisibleItems >= ItemCount() - 1))
 		{
 			mVertScrollBar->SetEnable(FALSE);

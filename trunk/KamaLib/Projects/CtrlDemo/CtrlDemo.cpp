@@ -32,6 +32,7 @@ public:
 		mScreen = NEW_SCREEN(KDxScreen);
 		mScreen->SetHostWnd(mMainFrame.Handle());
 		mScreen->SetRender(&mRender);
+		mScreen->SetMsgLooper(this);
 		// 有问题
 		//mScreen->SetClip(TRUE);
 
@@ -94,16 +95,16 @@ public:
 		KDxScrollBar* sbar = NEW_CONTROL(KDxScrollBar, panel, mScreen);
 		sbar->SetPos(10, 150);
 		sbar->SetSize(250, 17);
+		sbar->SetEnable(FALSE);
 
 		KDxListBox* lbox = NEW_CONTROL(KDxListBox, panel, mScreen);
 		lbox->SetPos(10, 200);
-		for (int i = 0; i < 40; i++)
+		for (int i = 0; i < 100; i++)
 		{
 			kstring str;
-			str.Format(L"%d 我是列表项啊 ", i);
+			str.Format(L"我是列表项啊%d", i);
 			lbox->AddString(str);
 		}
-
 
 		KDxApp::Initialize();
 	}

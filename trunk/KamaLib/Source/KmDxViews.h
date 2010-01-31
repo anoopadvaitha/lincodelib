@@ -105,6 +105,8 @@ typedef DWORD KDxNotifyId;
 #define NID_TEXTCHANGED				15
 // 字体改变， param: NULL
 #define NID_FONTCHANGED				16
+// 定时器事件，param: 定时器ID
+#define NID_TIMER					17
 
 /*
 	请求事件ID, 0~QID_USER-1由框架保留，用户可以使用其他的值
@@ -1080,24 +1082,6 @@ protected:
 };
 
 /*
-	默认的消息循环
-*/
-class KDxMsgLooper: public KMsgLooper
-{
-public:
-	KDxMsgLooper(KDxScreen* screen): mScreen(screen)
-	{
-		mTick = KGetTickCount();
-	}
-
-	virtual void DoIdle(BOOL& isDone);
-
-private:
-	DWORD		mTick;
-	KDxScreen*	mScreen;
-};
-
-/*
 	创建屏幕类
 */
 #define NEW_SCREEN(theclass) NEW_VIEW(theclass, NULL, NULL)
@@ -1126,6 +1110,7 @@ class KDxScreen: public KDxView, public KDxShortcutMgr
 {
 	typedef std::map<KDxCursorId, HCURSOR> KDxCursorMap;
 	typedef std::list<KDxPostInfo> KDxPostInfoList;
+	typedef std::vector<KDxView*> KDxTimerVector;
 	DECLARE_RUNTIMEINFO(KDxScreen)
 public:
 	KDxScreen(): 
@@ -1137,11 +1122,10 @@ public:
 		mMouseY(0),
 		mModalLevel(0),
 		mMsgLooper(NULL),
-		mDefMsgLooper(NULL),
-		mFrameTime(30),
 		mHoverView(NULL),
 		mRender(NULL),
-		mCanClip(FALSE)
+		mCanClip(FALSE),
+		mTimerVector(512)
 	{
 	}
 
@@ -1259,16 +1243,6 @@ public:
 	void SetMsgLooper(KMsgLooper* msgLooper);
 
 	/*
-		取更新和绘制的帧间隔
-	*/
-	DWORD FrameTime();
-
-	/*
-		设更新和绘制的帧间隔
-	*/
-	void SetFrameTime(DWORD time);
-
-	/*
 		取鼠标盘旋在上面的视图
 	*/
 	KDxView* HoverView(); 
@@ -1287,6 +1261,21 @@ public:
 		更新
 	*/
 	virtual void Update(DWORD tick);
+
+	/*
+		设置定时器, 返回定时器ID，如果为NULL，表现函数失败
+	*/
+	UINT SetTimer(KDxView* view, UINT elapse);
+
+	/*
+		取消定时器，id为SetTimer返回的值
+	*/
+	BOOL KillTimer(KDxView* view, UINT id);
+
+	/*
+		清除视图相关的定时器
+	*/
+	void ClearTimer(KDxView* view);
 
 public:
 	/*
@@ -1335,6 +1324,12 @@ protected:
 	*/
 	void UpdateChilds(KDxView* parentView, DWORD tick);
 
+	/*
+		定时器函数
+	*/
+	BOOL RestoreTimer(KDxView* view, UINT id);
+	UINT AllocTimer(KDxView* view);
+
 protected:
 	/*
 		子类化宿主窗口
@@ -1377,6 +1372,7 @@ protected:
 	void WMContextMenu(WPARAM wparam, LPARAM lparam);
 	void WMPostAction(WPARAM wparam, LPARAM lparam);
 	BOOL WMSetCursor(WPARAM wparam, LPARAM lparam);
+	BOOL WMTimer(WPARAM wparam, LPARAM lparam);
 
 protected:
 	WNDPROC				mDefHostWndProc;		// 宿主窗口默认的窗口过程
@@ -1389,11 +1385,10 @@ protected:
 	int					mMouseY;				// 当前光标位置Y
 	int					mModalLevel;			// 模态层次
 	KMsgLooper*			mMsgLooper;				// 消息循环
-	KDxMsgLooper*		mDefMsgLooper;			// 默认消息循环
-	DWORD				mFrameTime;				// 每更新或绘制一帧的时间(ms)
 	KDxView*			mHoverView;				// 鼠标盘旋的视图
 	KDxRender*			mRender;				// 渲染器
-	BOOL				mCanClip;			// 支持剪裁，可能会明显降低性能，慎用
+	BOOL				mCanClip;				// 支持剪裁，可能会明显降低性能，慎用
+	KDxTimerVector		mTimerVector;			// 定时器列表
 };
 
 
@@ -1480,6 +1475,10 @@ inline void KDxView::Finalize()
 
 	// 删除属于该视图的投递动作
 	DelScreenPostEvent();
+
+	// 清除定时器
+	if (mOwnerScreen)
+		mOwnerScreen->ClearTimer(this);
 }
 
 inline void KDxView::DoInitialize()
@@ -2901,25 +2900,6 @@ inline void KDxWindow::GenTabList(KDxViewVector& viewVector, KDxView* parentView
 }
 
 //------------------------------------------------------------------------------
-// KDxMsgLooper
-
-inline void KDxMsgLooper::DoIdle(BOOL& isDone)
-{
-	if (mScreen)
-	{
-		// TODO
-		mScreen->Update(0);
-		if (KGetTickCount() - mTick >= mScreen->FrameTime())
-		{
-			mScreen->Paint();
-			mTick = KGetTickCount();
-		}
-	}
-	KMsgLooper::DoIdle(isDone);
-}
-
-
-//------------------------------------------------------------------------------
 // KDxScreen
 
 #define KAMA_DXSCREEN_ATOM  L"Kama.DxScreen.Atom"
@@ -3169,28 +3149,13 @@ inline void KDxScreen::EndModal(KDxWindow* wnd, KDxWindowList& wndList)
 
 inline KMsgLooper* KDxScreen::MsgLooper()
 {
-	if (NULL == mMsgLooper)
-	{
-		if (NULL == mDefMsgLooper)
-			mDefMsgLooper = new KDxMsgLooper(this);
-		return mDefMsgLooper;
-	}
+	KASSERT(mMsgLooper != NULL);
 	return mMsgLooper;
 }
 
 inline void KDxScreen::SetMsgLooper(KMsgLooper* msgLooper)
 {
 	mMsgLooper = msgLooper;
-}
-
-inline DWORD KDxScreen::FrameTime() 
-{ 
-	return mFrameTime; 
-}
-
-inline void KDxScreen::SetFrameTime(DWORD time) 
-{ 
-	mFrameTime = time; 
 }
 
 inline KDxView* KDxScreen::HoverView() 
@@ -3255,11 +3220,73 @@ inline void KDxScreen::Finalize()
 
 	DestroyAllCursor();
 
-	if (mDefMsgLooper)
-		delete mDefMsgLooper;
-
 	SetHostWnd(NULL);
 	mRender = NULL;
+}
+
+inline UINT KDxScreen::AllocTimer(KDxView* view)
+{
+	KDxTimerVector::iterator itr;
+	for (itr = mTimerVector.begin(); itr != mTimerVector.end(); ++itr)
+	{
+		if (NULL == *itr)
+		{
+			*itr = view;
+			return (itr - mTimerVector.begin() + 1);
+		}
+	}
+	mTimerVector.push_back(view);
+	return (int)mTimerVector.size();
+}
+
+inline BOOL KDxScreen::RestoreTimer(KDxView* view, UINT id)
+{
+	if ((id > mTimerVector.size()) || (id <= 0))
+		return FALSE;
+
+	KDxView* timeView = mTimerVector[id-1];
+	if (!timeView || (timeView != view))
+		return FALSE;
+
+	mTimerVector[id-1] = NULL;
+	return TRUE;
+}
+
+inline void KDxScreen::ClearTimer(KDxView* view)
+{	
+	if (!mHostWnd)
+		return;
+
+	KDxView* timeView;
+	for (UINT i = 0; i < mTimerVector.size(); ++i)
+	{
+		timeView = mTimerVector[i];
+		if (timeView == view)
+		{
+			::KillTimer(mHostWnd, i+1);
+			mTimerVector[i] = NULL;
+		}
+	}
+}
+
+inline UINT KDxScreen::SetTimer(KDxView* view, UINT elapse)
+{
+	if (!mHostWnd)
+		return 0;
+
+	UINT id = AllocTimer(view);
+	if (::SetTimer(mHostWnd, id, elapse, NULL))
+		return id;
+	else
+		return 0;
+}
+
+inline BOOL KDxScreen::KillTimer(KDxView* view, UINT id)
+{
+	if (!mHostWnd || !RestoreTimer(view, id))
+		return FALSE;
+	else
+		return ::KillTimer(mHostWnd, id);
 }
 
 inline BOOL KDxScreen::InsertChild(KDxView* childView, int pos , BOOL isCheck)
@@ -3619,6 +3646,11 @@ inline BOOL KDxScreen::WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam
 	{
 		SetHostWnd(NULL);
 	}
+	else if (WM_TIMER == msg)
+	{
+		if (WMTimer(wparam, lparam))
+			return TRUE;
+	}
 
 	return FALSE;
 }
@@ -3873,6 +3905,20 @@ inline BOOL KDxScreen::WMSetCursor(WPARAM wparam, LPARAM lparam)
 		}
 	}
 	return FALSE;
+}
+
+inline BOOL KDxScreen::WMTimer(WPARAM wparam, LPARAM lparam)
+{
+	UINT id = wparam;
+	if ((id <= 0) || (id > (int)mTimerVector.size()))
+		return FALSE;
+
+	KDxView* view = mTimerVector[id-1];
+	if (!view)
+		return FALSE;
+
+	view->DoNotify(NID_TIMER, id);
+	return TRUE;
 }
 
 }
