@@ -15,15 +15,18 @@
 #ifndef __KAMA_KMBASE_H__
 #define __KAMA_KMBASE_H__
 
+//------------------------------------------------------------------------------
 // C Runtime
 #include <time.h>
 
+//------------------------------------------------------------------------------
 // Windows 导入
 #include <Windows.h>
 #include <ShellAPI.h>
 #include <ShlObj.h>
 #include <Mmsystem.h>
 
+//------------------------------------------------------------------------------
 // 一些低版本Windows未定义的宏
 #ifndef WM_MOUSEWHEEL
 #define WM_MOUSEWHEEL                   0x020A
@@ -35,10 +38,12 @@
 
 #pragma comment(lib, "Winmm.lib")
 
+//------------------------------------------------------------------------------
 // OLE 导入
 #include <ole2.h>
 #include <olectl.h>
 
+//------------------------------------------------------------------------------
 // STL 导入
 #include <map>
 #include <vector>

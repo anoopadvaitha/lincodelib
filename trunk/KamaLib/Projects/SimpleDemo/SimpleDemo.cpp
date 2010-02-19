@@ -186,17 +186,64 @@ void TestIniUtuils()
 
 }
 
-int _tmain(int argc, _TCHAR* argv[])
+void TestMd5()
 {
-	//TestStringList();
-	//TestWndUtils();
-	//TestKString();
-	//TestFileUtils();
-	//TestIniUtuils();
 
+	BYTE md5[16];
+	GenMD5(L"e:\\code\\lincodelib\\3rdparty\\encode\\crc32.c", md5);
+	kstring str = Md5Str(md5);
+	KTRACE(L"%s", str);
+}
+
+void TestCrc32()
+{
+	DWORD code = GenCRC32(L"e:\\code\\lincodelib\\3rdparty\\encode\\crc32.c");
+	KTRACE(L"%x", code);
+}
+
+void TestHashCode()
+{
 	WCHAR* str = L"Helloo0";
 	DWORD code = GetHashCode((BYTE*)str, wcslen(str) * 2);
 	KTRACE(L"%d", code);
+}
+
+void TestBase64()
+{
+	// ±àÂë
+	{
+		KMemoryStream srcStream;
+		srcStream.LoadFromFile(L"e:\\code\\lincodelib\\KamaLib\\Document\\bmptext.rar");
+		KMemoryStream destStream;
+		int encodeSize = Base64EncodeLength(srcStream.Size());
+		destStream.SetSize(encodeSize);
+		Base64Encode(destStream.Data(), srcStream.Data(), srcStream.Size());
+		destStream.SaveToFile(L"e:\\code\\lincodelib\\KamaLib\\Document\\bmptext.eb64");
+	}
+
+	// ½âÂë
+	{
+		KMemoryStream srcStream;
+		srcStream.LoadFromFile(L"e:\\code\\lincodelib\\KamaLib\\Document\\bmptext.eb64");
+		KMemoryStream destStream;
+		int encodeSize = Base64DecodeLength(srcStream.Size());
+		destStream.SetSize(encodeSize);
+		Base64Decode(destStream.Data(), srcStream.Data(), srcStream.Size());
+		destStream.SaveToFile(L"e:\\code\\lincodelib\\KamaLib\\Document\\bmptext.db64");
+	}
+}
+
+int _tmain(int argc, _TCHAR* argv[])
+{
+// 	TestStringList();
+// 	TestWndUtils();
+// 	TestKString();
+// 	TestFileUtils();
+// 	TestIniUtuils();
+// 	TestHashCode();
+//	TestMd5();
+//	TestCrc32();
+//	TestBase64();
 	return 0;
 }
 

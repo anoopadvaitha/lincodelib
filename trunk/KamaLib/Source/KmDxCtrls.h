@@ -2006,5 +2006,581 @@ protected:
 };
 IMPLEMENT_RUNTIMEINFO(KDxListBox, KDxView)
 
+//------------------------------------------------------------------------------
+// KDxEdit: 单行编辑框
+
+/*
+	通知事件
+*/
+// 文本改变
+#define NID_ED_TEXTCHANGED		NID_USER + 1
+
+/*
+	Edit的行为更像Delphi的编辑器，因为相较于VC编辑器，人个觉得Delphi的操作方式
+	效率更高
+*/
+class KDxEdit: public KDxView
+{
+	DECLARE_RUNTIMEINFO(KDxEdit)
+public:
+	KDxEdit(): 
+	  mSelStart(0),
+	  mSelLen(0),
+	  mCaretPos(0),
+	  mMaxLen(0),
+	  mReadOnly(FALSE),
+	  mPassChar(0),
+	  mAutoHeight(TRUE)
+	  {}
+
+	virtual void DoInitialize()
+	{
+		mFont.Initialize(this);
+		if (mAutoHeight)
+			SetSize(mWidth, CalcHeight());
+	}
+
+	virtual void DoFinalize()
+	{
+		mFont.Finalize();
+	}
+
+	virtual void DoNotify(KDxNotifyId id, DWORD param)
+	{
+		if (NID_FONTCHANGED == id)
+		{
+			if (mAutoHeight)
+				SetSize(mWidth, CalcHeight());
+		}
+		if (NID_SIZECHANGING == id)
+		{
+			if (mAutoHeight)
+			{
+				SIZE* sz = (SIZE*)param;
+				sz->cy = CalcHeight();
+			}
+		}
+		KDxView::DoNotify(id, param);
+	}
+
+	virtual LRESULT DoMouse(KDxMouseAction action, KDxShiftState shift, const POINT& pt)
+	{
+		// TODO
+		return KDxView::DoMouse(action, shift, pt);
+	}
+
+	virtual LRESULT DoKeyboard(KDxKeyAction action, WORD& key, KDxShiftState shift)
+	{
+		if (action == kaChar)
+		{
+			WCHAR ch = key;
+			// 过滤控制字符
+			if (!IsCtrlChar(ch))
+				TypeChar(ch);
+		}
+		else if (action == kaKeyDown)
+		{
+			switch (key)
+			{
+				case VK_HOME:
+					{
+						if (HAS_FLAG(shift, ssAlt | ssCtrl))
+							break;
+
+						if (HAS_FLAG(shift, ssShift))
+						{
+							// 选到行头
+							SelHome();
+						}
+						{
+							// 移到行头
+							//MoveHome();
+							mSelStart = 0;
+							mCaretPos = mSelStart;
+							mSelLen = 0;
+						}
+						break;
+					}
+				case VK_END:
+					{
+						// 移到行尾
+						mSelStart = mText.Length();
+						mCaretPos = mSelStart;
+						mSelLen = 0;
+						break;
+					}
+				case VK_LEFT:
+				case VK_RIGHT:
+					{
+						if (HAS_FLAG(shift, ssAlt))
+							break;
+
+						if (!HAS_FLAG(shift, ssShift | ssCtrl))
+						{
+							// 没有按Shift，Ctrl键，光标移1位
+							if (key == VK_LEFT)
+								mCaretPos = max(0, mCaretPos-1);
+							else
+								mCaretPos = min(mText.Length(), mCaretPos+1);
+							mSelStart = mCaretPos;
+							mSelLen = 0;
+						}
+						if (HAS_FLAG(shift, ssCtrl) && !HAS_FLAG(shift, ssShift))
+						{
+							// 只按下Ctrl，找到下一个词的起始位置
+							int start = (mText.Length() == mCaretPos) ? mCaretPos - 1 : mCaretPos;
+							mCaretPos = NextWordPos(start, (VK_LEFT == key));
+							mSelStart = mCaretPos;
+							mSelLen = 0;
+						}
+						else if (HAS_FLAG(shift, ssShift) && !HAS_FLAG(shift, ssCtrl))
+						{
+							// 只按下Shift，选择下一个字符
+							if (key == VK_LEFT)
+							{
+								if (mCaretPos == mSelStart)
+								{
+									if (mSelStart > 0)
+									{
+										--mSelStart;
+										--mCaretPos;
+										++mSelLen;
+									}
+								}
+								else
+								{
+									--mSelLen;
+									--mCaretPos;
+								}
+							}
+							else
+							{
+								if (mCaretPos == mSelStart + mSelLen)
+								{
+									if (mSelStart + mSelLen < mText.Length())
+									{
+										++mSelLen;
+										mCaretPos = mSelStart + mSelLen;
+									}
+								}
+								else
+								{
+									--mSelLen;
+									++mSelStart;
+									++mCaretPos;
+								}
+							}
+						}
+						else if (HAS_FLAG(shift, ssShift | ssCtrl))
+						{
+							// 同时按下Shift，Ctrl键，选择下一个词
+							int start = (mText.Length() == mCaretPos) ? mCaretPos - 1 : mCaretPos;
+							int newPos = NextWordPos(start, (VK_LEFT == key));
+							if (VK_LEFT == key)
+							{
+								mCaretPos = newPos;
+								mSelLen = abs(mCaretPos - mSelStart);
+								if (mCaretPos < mSelStart)
+									mSelStart = mCaretPos;
+							}
+							else
+							{
+								int start;
+								if (mCaretPos == mSelStart)
+									start = mSelStart + mSelLen;
+								else
+									start = mSelStart;
+								
+								if (newPos <= start)
+								{
+									mCaretPos = newPos;
+									mSelStart = newPos;
+									mSelLen = start - newPos;
+								}
+								else
+								{
+									mCaretPos = start;
+									mSelStart = start;
+									mSelLen = newPos - start;
+								}
+							}
+						}
+						break;
+					}
+				case VK_BACK:
+				case VK_DELETE:
+					{
+						if (HAS_FLAG(shift, ssAlt | ssShift))
+							break;
+
+						if (HAS_FLAG(shift, ssCtrl))
+						{
+							if (mSelLen)
+								DeleteSel();
+							else
+								DeleteWord(key == VK_BACK);
+						}
+						else
+						{
+							if (mSelLen)
+								DeleteSel();
+							else
+								DeleteChar(key == VK_BACK);
+						}
+						break;
+					}
+			}
+		}
+		return KDxView::DoKeyboard(action, key, shift);
+	}
+
+	virtual LRESULT DoQuery(KDxQueryId id, DWORD param)
+	{
+		if (QID_WANTARROWS == id)
+			return TRUE;
+		else if (QID_SETCURSOR == id)
+		{
+			if (param == HT_CLIENT)
+			{
+				HCURSOR hc = mOwnerScreen->GetCursor(CID_IBEAM);
+				if (hc)
+				{
+					::SetCursor(hc);
+					return TRUE;
+				}
+			}
+		}
+			
+		return KDxView::DoQuery(id, param);
+	}
+
+	virtual void DoPaint(KDxRender* render)
+	{
+		RECT rc;
+		GetClientRect(rc);
+		render->DrawRect(rc, CTRLCOLOR_BORDER);
+
+		render->TextOut(1, 1, mText, mText.Length(), CTRLCOLOR_FONT, 0, &mFont);
+		KDxView::DoPaint(render);
+	}
+
+	KDxViewFont* Font()
+	{
+		return &mFont;
+	}
+
+	kstring Text()
+	{
+		return mText;
+	}
+
+	void SetText(const kstring& text)
+	{
+		// 如果是只读或相等
+		if (mReadOnly || (text == mText))
+			return;
+
+		if (!mMaxLen)
+			mText = text;
+		else
+		{
+			int len = (mMaxLen < text.Length()) ? mMaxLen : text.Length();
+			mText.Copy(text, 0, len);
+		}
+
+		mSelStart = mText.Length();
+		mCaretPos = mSelStart;
+		mSelLen = 0;
+
+		// 事件
+		DoNotify(NID_ED_TEXTCHANGED, NULL);
+	}
+
+	int SelStart()
+	{
+		return mSelStart;
+	}
+
+	void SetSelStart(int selStart)
+	{
+		if ((selStart == mSelStart) || 
+			(selStart < 0) || (selStart > mText.Length()))
+			return;
+		mSelStart = selStart;
+		mCaretPos = mSelStart;
+		mSelLen = 0;
+	}
+
+	int SelLen()
+	{
+		return mSelLen;
+	}
+
+	void SetSelLen(int selLen)
+	{
+		if ((selLen == mSelLen) || 
+			(selLen < 0)|| (mSelStart + mSelLen > mText.Length()))
+			return;
+		mSelLen = selLen;
+		mCaretPos = mSelStart + mSelLen;
+	}
+
+	int MaxLen()
+	{
+		return mMaxLen;
+	}
+
+	void SetMaxLen(int len)
+	{
+		if (len == mMaxLen)
+			return;
+		mMaxLen = len;
+		if (mMaxLen && (mMaxLen < mText.Length()))
+		{
+			mSelStart = 0;
+			mCaretPos = mSelStart;
+			mSelLen = 0;
+			mText.Delete(mMaxLen-1, mText.Length() - mMaxLen);
+			DoNotify(NID_ED_TEXTCHANGED, NULL);
+		}
+	}
+
+	BOOL IsReadOnly()
+	{
+		return mReadOnly;
+	}
+
+	void SetReadOnly(BOOL readOnly)
+	{
+		mReadOnly = readOnly;
+	}
+
+	WCHAR PassChar()
+	{
+		return mPassChar;
+	}
+
+	void SetPassChar(WCHAR ch)
+	{
+		mPassChar = ch;
+	}
+
+	BOOL IsAutoHeight()
+	{
+		return mAutoHeight;
+	}
+
+	void SetAutoHeight(BOOL autoHeight)
+	{
+		if (autoHeight != mAutoHeight)
+		{
+			mAutoHeight = autoHeight;
+			if (mAutoHeight)
+				SetSize(mWidth, CalcHeight());
+		}
+	}
+
+protected:
+	int CalcHeight()
+	{
+		return 20;
+	}
+
+	int CalcCaretPos()
+	{
+		return 0;
+	}
+
+	BOOL IsCtrlChar(WCHAR ch)
+	{
+		// 控制字符
+		return (ch >= 0x01) && (ch <= 0x1A);
+	}
+
+	void TypeChar(WCHAR ch)
+	{
+		// 只读
+		if (mReadOnly)
+			return;
+
+		// 删除选中的部分
+		DeleteSel();
+
+		// 最大长度
+		if (mMaxLen &&(mMaxLen >= mText.Length()))
+			return;
+
+		// 插入字符
+		mText.Insert(mCaretPos, ch);
+		++mSelStart;
+		++mCaretPos;
+	}
+
+	BOOL IsSymbol(WCHAR ch)
+	{
+		// 是否为符号，先确保字符是半角的
+		LCMapStringW(LOCALE_USER_DEFAULT, LCMAP_HALFWIDTH, &ch, 1, &ch, 1);
+		return	((ch >= 0x20) && (ch <= 0x2F)) ||
+				((ch >= 0x3A) && (ch <= 0x40)) ||
+				((ch >= 0x5B) && (ch <= 0x60)) ||
+				((ch >= 0x7B) && (ch <= 0x7E));
+	}
+
+	int NextWordPos(int start, BOOL isBack)
+	{
+		if ((start < 0) || (start > mText.Length()))
+			return 0;
+
+		if (isBack)
+		{
+			if (0 == start)
+				return start;
+
+			WCHAR* ptrEnd = &mText[0];
+			WCHAR* ptrCur = &mText[start];
+
+			// 先遍历符号
+			while ((ptrCur != ptrEnd) && IsSymbol(*ptrCur))
+				--ptrCur;
+
+			// 到达开始
+			if (ptrCur == ptrEnd)
+				return 0;
+
+			// 再遍历字符
+			while ((ptrCur != ptrEnd) && !IsSymbol(*ptrCur))
+				--ptrCur;
+
+			// 到达开始
+			if (ptrCur == ptrEnd)
+				return 0;
+			else
+				return ptrCur - ptrEnd + 1;
+
+		}
+		else
+		{
+			if (mText.Length() == start)
+				return start;
+
+			WCHAR* ptrStart = &mText[start];
+			WCHAR* ptrCur = ptrStart;
+			
+			// 先遍历字符
+			while (ptrCur && !IsSymbol(*ptrCur))
+				++ptrCur;
+
+			// 到达结尾
+			if (!ptrCur)
+				return mText.Length();
+
+			// 再遍历符号
+			while (ptrCur && IsSymbol(*ptrCur))
+				++ptrCur;
+
+			// 到达结尾
+			if (!ptrCur)
+				return mText.Length();
+			else
+				return start + (ptrCur - ptrStart);
+		}
+	}
+
+	void DeleteChar(BOOL isBack)
+	{
+		if (mText.IsEmpty())
+			return;
+
+		if (isBack)
+		{
+			if (!mCaretPos)
+				return;
+
+			mText.Delete(mCaretPos-1);
+			--mCaretPos;
+			--mSelStart;
+			mSelLen = 0;
+		}
+		else
+		{
+			if (mCaretPos >= mText.Length())
+				return;
+
+			mText.Delete(mCaretPos);
+			mSelLen = 0;
+		}
+	}
+
+	void DeleteSel()
+	{
+		if (mText.IsEmpty())
+			return;
+
+		if (mSelLen > 0)
+		{
+			mText.Delete(mSelStart, mSelLen);
+			mCaretPos = mSelStart;
+			mSelLen = 0;
+		}
+	}
+
+	void DeleteWord(BOOL isBack)
+	{
+		if (mText.IsEmpty())
+			return;
+
+		if (isBack)
+		{
+			if (!mCaretPos)
+				return;
+
+			int newPos = NextWordPos(mCaretPos, isBack);
+			mText.Delete(newPos, mCaretPos - newPos);
+			mCaretPos = newPos;
+			mSelStart = mCaretPos;
+			mSelLen = 0;
+		}
+		else
+		{
+			if (mCaretPos >= mText.Length())
+				return;
+
+			int newPos = NextWordPos(mCaretPos, isBack);
+			mText.Delete(mCaretPos, newPos - mCaretPos);
+			mSelStart = mCaretPos;
+			mSelLen = 0;
+		}
+	}
+
+	void SelHome()
+	{
+		if (mText.IsEmpty())
+			return;
+		mSelLen = mCaretPos;
+		mSelStart = 0;
+		mCaretPos = 0;
+	}
+
+	void SelEnd()
+	{
+		if (mText.IsEmpty())
+			return;
+		mSelLen = mText.Length() - mSelStart;
+		mCaretPos = mText.Length();
+	}
+
+protected:
+	kstring				mText;			// 文本
+	int					mSelStart;		// 选择开始位置
+	int					mSelLen;		// 选择长度，如果为负值，表示从右向左选择文本，光标在被选文本段的左边
+	int					mCaretPos;		// 光标位置
+	int					mMaxLen;		// 文本最大长度
+	BOOL				mReadOnly;		// 是否只读
+	WCHAR				mPassChar;		// 密码字符
+	BOOL				mAutoHeight;	// 自动调整高度
+	KDxViewFont			mFont;			// 字体
+};
+IMPLEMENT_RUNTIMEINFO(KDxEdit, KDxView)
+
 }
 #endif // __KAMA_KMDXCTRLS_H__

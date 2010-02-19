@@ -94,7 +94,7 @@ public:
 
 		KDxScrollBar* sbar = NEW_CONTROL(KDxScrollBar, panel, mScreen);
 		sbar->SetPos(10, 150);
-		sbar->SetSize(250, 17);
+		sbar->SetSize(150, 17);
 		sbar->SetEnable(FALSE);
 
 		KDxListBox* lbox = NEW_CONTROL(KDxListBox, panel, mScreen);
@@ -105,6 +105,9 @@ public:
 			str.Format(L"我是列表项啊%d", i);
 			lbox->AddString(str);
 		}
+
+		KDxEdit* edit = NEW_CONTROL(KDxEdit, panel, mScreen);
+		edit->SetPos(210, 10);
 
 		KDxApp::Initialize();
 	}
