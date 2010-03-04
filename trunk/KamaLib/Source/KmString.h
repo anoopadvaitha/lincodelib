@@ -135,6 +135,20 @@ public:
 		return Data()->mStrLen;
 	}
 
+	void SetLength(int newLen)
+	{
+		if (!newLen)
+			Clear();
+		else
+		{
+			if(GetBuffer(newLen))
+			{
+				Data()->mStrLen = newLen;
+				mData[newLen] = '\0';
+			}
+		}
+	}
+
 	BOOL IsEmpty() const
 	{
 		return Data()->mStrLen == 0;
