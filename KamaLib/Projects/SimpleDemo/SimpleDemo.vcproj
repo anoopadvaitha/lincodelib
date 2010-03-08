@@ -19,7 +19,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\3rdparty;..\..\Source"
+				AdditionalIncludeDirectories="..\..\3rdparty\zip;..\..\Source"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE,_UNICODE,UNICODE"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
@@ -67,7 +67,7 @@
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="..\..\3rdparty;..\..\Source"
+				AdditionalIncludeDirectories="..\..\3rdparty\zip;..\..\Source"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="4"
 				UsePrecompiledHeader="3"
@@ -151,6 +151,9 @@
 			<File
 				RelativePath="..\..\Source\KmString.h">
 			</File>
+			<File
+				RelativePath="..\..\Source\KmZipUtils.h">
+			</File>
 		</Filter>
 		<Filter
 			Name="resource"
@@ -158,6 +161,22 @@
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}">
 			<File
 				RelativePath=".\ReadMe.txt">
+			</File>
+		</Filter>
+		<Filter
+			Name="zip"
+			Filter="">
+			<File
+				RelativePath="..\..\3rdparty\zip\unzip.cpp">
+			</File>
+			<File
+				RelativePath="..\..\3rdparty\zip\unzip.h">
+			</File>
+			<File
+				RelativePath="..\..\3rdparty\zip\zip.cpp">
+			</File>
+			<File
+				RelativePath="..\..\3rdparty\zip\zip.h">
 			</File>
 		</Filter>
 	</Files>

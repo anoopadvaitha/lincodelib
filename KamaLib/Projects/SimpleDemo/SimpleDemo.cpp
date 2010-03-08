@@ -5,6 +5,7 @@
 #include "KmDebug.h"
 #include "KmCommons.h"
 #include "KmString.h"
+#include "KmZipUtils.h"
 using namespace kama;
 
 void TestStringList()
@@ -148,6 +149,16 @@ void TestFileUtils()
 	KLOG(path2);
 	path2 = SlToBsl(path1);
 	KLOG(path2);
+	path2 = AddPathDelimiter(path1);
+	KLOG(path2);
+	path2 = DelPathDelimiter(path1);
+	KLOG(path2);
+	path2 = AddPathDelimiter(path2);
+	KLOG(path2);
+	path2 = DelPathDelimiter(path2);
+	KLOG(path2);
+	path2 = DelPathDelimiter(path2);
+	KLOG(path2);
 }
 
 void TestIniUtuils()
@@ -233,6 +244,17 @@ void TestBase64()
 	}
 }
 
+void TestZip()
+{
+	KFileZip fileZip;
+	fileZip.CompressFolder(
+		L"E:\\mycode\\KamaLib\\Projects\\SimpleDemo\\build\\≤‚ ‘", 
+		L"E:\\mycode\\KamaLib\\Projects\\SimpleDemo\\build\\1.zip");
+
+	fileZip.Decompress(L"E:\\mycode\\KamaLib\\Projects\\SimpleDemo\\build\\1.zip",
+		L"E:\\mycode\\KamaLib\\Projects\\SimpleDemo\\build\\test");
+}
+
 int _tmain(int argc, _TCHAR* argv[])
 {
 // 	TestStringList();
@@ -244,6 +266,7 @@ int _tmain(int argc, _TCHAR* argv[])
 //	TestMd5();
 //	TestCrc32();
 //	TestBase64();
+	TestZip();
 	return 0;
 }
 

@@ -1276,65 +1276,65 @@ inline BOOL IsDirExists(LPCWSTR dir)
 /*
 	提取文件全路径中的路径部分，包括反斜杠"\"或斜杠"/"
 */
-inline kstring ExtractFilePath(const kstring& fullPath)
+inline kstring ExtractFilePath(LPCWSTR path)
 {	
-	kstring path;
-	int pos = fullPath.ReverseFind('\\');
+	kstring newPath = path;
+	int pos = newPath.ReverseFind('\\');
 	if (pos < 0)
-		pos = fullPath.ReverseFind('/');
+		pos = newPath.ReverseFind('/');
 	if (pos >= 0)
-		path = fullPath.Left(pos+1);
-
-	return path;
+		return newPath.Left(pos+1);
+	else
+		return newPath;
 }
 
 /*
 	提取文件全路径中的路径部分，不包括反斜杠"\"或斜杠"/"
 */
-inline kstring ExtractFileDir(const kstring& fullPath)
+inline kstring ExtractFileDir(LPCWSTR path)
 {
-	kstring dir;
-	int pos = fullPath.ReverseFind('\\');
+	kstring newPath = path;
+	int pos = newPath.ReverseFind('\\');
 	if (pos < 0)
-		pos = fullPath.ReverseFind('/');
-	 if (pos >= 0)
-		 dir = fullPath.Left(pos);
-
-	return dir;
+		pos = newPath.ReverseFind('/');
+	if (pos >= 0)
+		return newPath.Left(pos+1);
+	else
+		return newPath;
 }
 
 /*
 	提取文件全路径名中的文件名
 */
-inline kstring ExtractFileName(const kstring& fullPath)
+inline kstring ExtractFileName(LPCWSTR path)
 {
-	kstring fileName;
-	int pos = fullPath.ReverseFind('\\');
+	kstring fileName = path;
+	int pos = fileName.ReverseFind('\\');
 	if (pos < 0)
-		pos = fullPath.ReverseFind('/');
+		pos = fileName.ReverseFind('/');
 	if (pos >= 0)
-		fileName = fullPath.Right(fullPath.Length() - pos - 1);
-
-	return fileName;
+		return fileName.Right(fileName.Length() - pos - 1);
+	else
+		return fileName;
 }
 
 /*
 	提取文件名中的扩展名，不包括"."
 */
-inline kstring ExtractFileExt(const kstring& fullPath)
+inline kstring ExtractFileExt(LPCWSTR path)
 {
-	kstring fileExt;
-	int pos = fullPath.ReverseFind('.');
+	kstring fileExt = path;
+	int pos = fileExt.ReverseFind('.');
 	if (pos >= 0)
-		fileExt = fullPath.Right(fullPath.Length() - pos - 1);
-
-	return fileExt;
+		return fileExt.Right(fileExt.Length() - pos - 1);
+	else
+		return fileExt;
 }
 
 /*
 	改变文件扩展名, fileExt不包括"."
 */
-inline kstring ChangeFileExt(const kstring& fileName, LPCWSTR fileExt)
+inline kstring ChangeFileExt(LPCWSTR fileName, LPCWSTR fileExt)
 {
 	kstring newFileName = fileName;
 	int pos = newFileName.ReverseFind('.');
@@ -1346,11 +1346,36 @@ inline kstring ChangeFileExt(const kstring& fileName, LPCWSTR fileExt)
 	return newFileName;
 }
 
+/*
+	给文件路径的尾部加一个反斜杠
+*/
+inline kstring AddPathDelimiter(LPCWSTR path)
+{
+	kstring newPath = path;
+	if (!newPath.IsEmpty() &&
+		(newPath[newPath.Length() - 1] != '\\') &&
+		(newPath[newPath.Length() - 1] != '/'))
+		newPath += '\\';
+	return newPath;
+}
+
+/*
+	去掉文件路径尾部的反斜杠
+*/
+inline kstring DelPathDelimiter(LPCWSTR path)
+{
+	kstring newPath = path;
+	if (!newPath.IsEmpty() &&
+		((newPath[newPath.Length() - 1] == '\\') ||
+		(newPath[newPath.Length() - 1] == '/')))
+		newPath.Delete(newPath.Length() - 1);
+	return newPath;
+}
 
 /*
 	将路径中的反斜杠转为斜杠："\"-->"/"
 */
-inline kstring BslToSl(const kstring& path)
+inline kstring BslToSl(LPCWSTR path)
 {
 	kstring newPath = path;
 	newPath.Replace('\\', '/');
@@ -1360,7 +1385,7 @@ inline kstring BslToSl(const kstring& path)
 /*
 	将路径中的斜杠转为反斜杠："/"-->"\"
 */
-inline kstring SlToBsl(const kstring& path)
+inline kstring SlToBsl(LPCWSTR path)
 {
 	kstring newPath = path;
 	newPath.Replace('/', '\\');
@@ -1370,7 +1395,7 @@ inline kstring SlToBsl(const kstring& path)
 /*
 	确保目录存在
 */
-inline void MakeSureDirExsits(const kstring& dir)
+inline void MakeSureDirExsits(LPCWSTR dir)
 {
 	if (IsDirExists(dir))
 		return;
