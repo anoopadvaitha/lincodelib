@@ -102,7 +102,7 @@ public:
 		}
 	}
 
-	kstring(LPCSTR str)
+	kstring(LPCSTR str, UINT cp = CP_THREAD_ACP)
 	{
 		Init();
 		int srcLen = (str != NULL) ? (int)strlen(str) : 0;
@@ -110,8 +110,8 @@ public:
 		{
 			if(AllocBuffer(srcLen))
 			{
-				StrToWStr(mData, str, srcLen + 1);
-				ReleaseBuffer();
+				srcLen = StrToWStr(mData, str, srcLen + 1, cp);
+				Data()->mStrLen = srcLen - 1;
 			}
 		}
 	}
@@ -184,22 +184,47 @@ public:
 		mData[idx] = ch;
 	}
 
-	void Copy(LPCWSTR str, int start, int count)
+	kstring& Copy(LPCWSTR str, int start = 0, int count = -1)
 	{
 		int len = SafeStrlen(str);
-		if (len <= start) return;
-		if (len < start + count)
+		if (len <= start) 
+			return *this;
+		else if (-1 == count)
+			count = len;
+		else if (len < start + count)
 			count = len - start;
 		AssignCopy(count, LPCWSTR(str + start));
+		return *this;
 	}
 
-	void Copy(kstring& str, int start, int count)
+	kstring& Copy(kstring& str, int start = 0, int count = -1)
 	{
 		int len = str.Length();
-		if (len <= start) return;
-		if (len < start + count)
+		if (len <= start) 
+			return *this;
+		else if (-1 == count)
+			count = len;
+		else if (len < start + count)
 			count = len - start;
 		AssignCopy(count, LPCWSTR(str.mData + start));
+		return *this;
+	}
+
+	kstring& Copy(LPCSTR str, UINT cp = CP_THREAD_ACP, int start = 0, int count = -1)
+	{
+		int len = (str == NULL) ? 0 : (int)lstrlenA(str);
+		if (len <= start) 
+			return *this;
+		else if (-1 == count)
+			count = len;
+		else if (len < start + count)
+			count = len - start;
+		if(AllocBeforeWrite(count))
+		{
+			len = StrToWStr(mData, LPCSTR(str + start), count + 1, cp);
+			Data()->mStrLen = len - 1;
+		}
+		return *this;
 	}
 
 	WCHAR& operator [](int idx) const
@@ -257,35 +282,60 @@ public:
 		int srcLen = (str != NULL) ? lstrlenA(str) : 0;
 		if(AllocBeforeWrite(srcLen))
 		{
-			StrToWStr(mData, str, srcLen + 1);
-			ReleaseBuffer();
+			srcLen = StrToWStr(mData, str, srcLen + 1);
+			Data()->mStrLen = srcLen - 1;
 		}
 		return *this;
 	}
 
-	kstring& operator +=(const kstring& string)
+	kstring& Append(const kstring& str)
 	{
-		ConcatInPlace(string.Data()->mStrLen, string.mData);
+		ConcatInPlace(str.Data()->mStrLen, str.mData);
 		return *this;
 	}
 
-	kstring& operator +=(WCHAR ch)
+	kstring& Append(WCHAR ch)
 	{
 		ConcatInPlace(1, &ch);
 		return *this;
 	}
 
-	kstring& operator +=(char ch)
+	kstring& Append(char ch)
 	{
-		*this += (WCHAR)ch;
-		return *this;
+		return Append((WCHAR)ch);
 	}
 
-	kstring& operator +=(LPCWSTR str)
+	kstring& Append(LPCWSTR str)
 	{
 		KASSERT(str != NULL);
 		ConcatInPlace(SafeStrlen(str), str);
 		return *this;
+	}
+
+	kstring& Append(LPCSTR str, UINT cp = CP_THREAD_ACP)
+	{
+		kstring wstr(str, cp);
+		return Append(wstr);
+	}
+
+	kstring& operator +=(const kstring& str)
+	{
+		return Append(str);
+	}
+
+	kstring& operator +=(WCHAR ch)
+	{
+		return Append(ch);
+	}
+
+	kstring& operator +=(char ch)
+	{
+		return Append(ch);
+	}
+
+	kstring& operator +=(LPCWSTR str)
+	{
+		return Append(str);
 	}
 
 	BOOL operator!() const
@@ -984,19 +1034,6 @@ public:
 		return (len > 0);
 	}
 
-	BSTR AllocBStr() const
-	{
-		BSTR bstr = ::SysAllocStringLen(mData, Data()->mStrLen);
-		return bstr;
-	}
-
-	BSTR SetBStr(BSTR* pbstr) const
-	{
-		::SysReAllocStringLen(pbstr, mData, Data()->mStrLen);
-		KASSERT(*pbstr != NULL);
-		return *pbstr;
-	}
-
 	LPWSTR GetBuffer(int len)
 	{
 		KASSERT(len >= 0);
@@ -1288,12 +1325,12 @@ protected:
 		return *(kstring*)&tmpStrNil;
 	}
 
-	static int __cdecl StrToWStr(wchar_t* wcstr, const char* mbstr, size_t count)
+	static int __cdecl StrToWStr(wchar_t* wcstr, const char* mbstr, size_t count, UINT cp = CP_THREAD_ACP)
 	{
 		if (count == 0 && wcstr != NULL)
 			return 0;
 
-		int result = ::MultiByteToWideChar(CP_THREAD_ACP, 0, mbstr, -1, wcstr, (int)count);
+		int result = ::MultiByteToWideChar(cp, 0, mbstr, -1, wcstr, (int)count);
 		KASSERT(wcstr == NULL || result <= (int)count);
 		if (result > 0)
 			wcstr[result - 1] = 0;
