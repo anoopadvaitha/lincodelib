@@ -248,11 +248,16 @@ void TestZip()
 {
 	KFileZip fileZip;
 	fileZip.CompressFolder(
-		L"E:\\mycode\\KamaLib\\Projects\\SimpleDemo\\build\\≤‚ ‘", 
-		L"E:\\mycode\\KamaLib\\Projects\\SimpleDemo\\build\\1.zip");
+		L"E:\\mycode\\KamaLib\\Projects\\SimpleDemo\\build\\test", 
+		L"E:\\mycode\\KamaLib\\Projects\\SimpleDemo\\build\\1.zip",
+		FALSE);
 
-	fileZip.Decompress(L"E:\\mycode\\KamaLib\\Projects\\SimpleDemo\\build\\1.zip",
-		L"E:\\mycode\\KamaLib\\Projects\\SimpleDemo\\build\\test");
+// 	fileZip.Decompress(L"E:\\mycode\\KamaLib\\Projects\\SimpleDemo\\build\\1.zip",
+// 		L"E:\\mycode\\KamaLib\\Projects\\SimpleDemo\\build\\");
+
+	fileZip.CompressFile(		
+		L"E:\\mycode\\KamaLib\\Projects\\SimpleDemo\\build\\test.log", 
+		L"E:\\mycode\\KamaLib\\Projects\\SimpleDemo\\build\\2.zip");
 }
 
 int _tmain(int argc, _TCHAR* argv[])
