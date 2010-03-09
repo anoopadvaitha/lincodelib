@@ -13,6 +13,10 @@
   使用指南:
 	1. 把KamaLib\3rdparty\zip加入工程的搜索路径
 	2. 把KamaLib\3rdparty\zip里面的代码加入工程
+	3. 为工程增加宏UINCODE, _UNICODE
+
+  TODO:
+	*. 压缩解压内存流
 
 *******************************************************************************/
 #ifndef __KAMA_KMZIPUTILS_H__
@@ -47,7 +51,6 @@ public:
 		zipFile 为生成的压缩包路径
 		includeRoot 是否包含根文件夹
 		password 密码
-		TODO：怎么压缩空目录
 	*/
 	BOOL CompressFolder(LPCWSTR folder, LPCWSTR zipFile, BOOL includeRoot = TRUE, LPCSTR password = NULL)
 	{
@@ -74,7 +77,7 @@ public:
 		zipFile生成的压缩文件名
 		password 密码
 	*/
-	BOOL ZipFile(LPCWSTR file, LPCWSTR zipFile, LPCSTR password = NULL)
+	BOOL CompressFile(LPCWSTR file, LPCWSTR zipFile, LPCSTR password = NULL)
 	{
 		if (!BeginCompress(zipFile, password))
 			return FALSE;
@@ -100,11 +103,24 @@ public:
 		把文件加入压缩包里，必须先BeginCompress
 		file 文件路径
 		name 文件加入压缩包的名字
+		isDir 是否是文件夹类型
 	*/
 	BOOL AddFile(LPCWSTR file, LPCWSTR name)
 	{
-		if (!mZipHandle) return FALSE;
-		return (ZipAdd(mZipHandle, name, file) == ZR_OK);
+		if (!mZipHandle) 
+			return FALSE;
+		return ZipAdd(mZipHandle, name, file) == ZR_OK;
+	}
+
+	/*
+		把文件夹加入压缩包里，必须先BeginCompress，只加文件夹本身，不加里面的文件或子文件夹
+		folder 文件夹名
+	*/
+	BOOL AddFolder(LPCWSTR folder)
+	{
+		if (!mZipHandle) 
+			return FALSE;
+		return ZipAddFolder(mZipHandle, folder) == ZR_OK;
 	}
 
 	/*
@@ -185,11 +201,13 @@ private:
 			if ((FILE_ATTRIBUTE_DIRECTORY & fd.dwFileAttributes) != 0) 
 			{
 				kstring strBaseDir = base;
-				strBaseDir += L"\\";
+				if (!strBaseDir.IsEmpty())
+					strBaseDir += L"\\";
 				strBaseDir += fd.cFileName;
 				kstring strFolder = folder;
 				strFolder += L"\\";
 				strFolder += fd.cFileName;
+				AddFolder(strBaseDir);
 				CompressFiles(strFolder, strBaseDir);
 			}
 			else
@@ -198,7 +216,8 @@ private:
 				strFile +=  L"\\";
 				strFile += fd.cFileName;
 				kstring strName = base;
-				strName += L"\\";
+				if (!strName.IsEmpty())
+					strName += L"\\";
 				strName += fd.cFileName;
 				AddFile(strFile, strName);
 			}
