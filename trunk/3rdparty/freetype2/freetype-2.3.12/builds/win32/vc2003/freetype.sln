@@ -3,6 +3,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "freetype", "freetype.vcproj
 	ProjectSection(ProjectDependencies) = postProject
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "demo1", "..\..\..\mydemo\demo1\demo1.vcproj", "{94AE2162-E23D-4200-9B5B-1DBAE9029F87}"
+	ProjectSection(ProjectDependencies) = postProject
+		{1D39EE6D-A028-490A-A3B8-7AC9B4F26AC1} = {1D39EE6D-A028-490A-A3B8-7AC9B4F26AC1}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfiguration) = preSolution
 		Debug = Debug
@@ -25,6 +30,18 @@ Global
 		{1D39EE6D-A028-490A-A3B8-7AC9B4F26AC1}.Release Multithreaded.Build.0 = Release Multithreaded|Win32
 		{1D39EE6D-A028-490A-A3B8-7AC9B4F26AC1}.Release Singlethreaded.ActiveCfg = Release Singlethreaded|Win32
 		{1D39EE6D-A028-490A-A3B8-7AC9B4F26AC1}.Release Singlethreaded.Build.0 = Release Singlethreaded|Win32
+		{94AE2162-E23D-4200-9B5B-1DBAE9029F87}.Debug.ActiveCfg = Debug|Win32
+		{94AE2162-E23D-4200-9B5B-1DBAE9029F87}.Debug.Build.0 = Debug|Win32
+		{94AE2162-E23D-4200-9B5B-1DBAE9029F87}.Debug Multithreaded.ActiveCfg = Debug|Win32
+		{94AE2162-E23D-4200-9B5B-1DBAE9029F87}.Debug Multithreaded.Build.0 = Debug|Win32
+		{94AE2162-E23D-4200-9B5B-1DBAE9029F87}.Debug Singlethreaded.ActiveCfg = Debug|Win32
+		{94AE2162-E23D-4200-9B5B-1DBAE9029F87}.Debug Singlethreaded.Build.0 = Debug|Win32
+		{94AE2162-E23D-4200-9B5B-1DBAE9029F87}.Release.ActiveCfg = Release|Win32
+		{94AE2162-E23D-4200-9B5B-1DBAE9029F87}.Release.Build.0 = Release|Win32
+		{94AE2162-E23D-4200-9B5B-1DBAE9029F87}.Release Multithreaded.ActiveCfg = Release|Win32
+		{94AE2162-E23D-4200-9B5B-1DBAE9029F87}.Release Multithreaded.Build.0 = Release|Win32
+		{94AE2162-E23D-4200-9B5B-1DBAE9029F87}.Release Singlethreaded.ActiveCfg = Release|Win32
+		{94AE2162-E23D-4200-9B5B-1DBAE9029F87}.Release Singlethreaded.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 	EndGlobalSection
