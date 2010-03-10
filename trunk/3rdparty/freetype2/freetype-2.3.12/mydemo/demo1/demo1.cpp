@@ -134,7 +134,7 @@ void DrawFont(HDC hdc)
 		{
 			
 			BYTE v = bmp->buffer[j * bmp->pitch + i];
-			COLORREF clr = RGB(v, v, v);
+			COLORREF clr = RGB(255 - v, 255 - v, 255 - v);
 			SetPixel(hdc, x + i, y + j, clr);
 		}
 }
