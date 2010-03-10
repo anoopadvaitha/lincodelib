@@ -246,7 +246,7 @@ void TestBase64()
 
 void TestZip()
 {
-	KFileZip fileZip;
+	KZipCompress fileZip;
 	fileZip.CompressFolder(
 		L"E:\\mycode\\KamaLib\\Projects\\SimpleDemo\\build\\test", 
 		L"E:\\mycode\\KamaLib\\Projects\\SimpleDemo\\build\\1.zip",

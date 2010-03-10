@@ -30,16 +30,16 @@ namespace kama
 {
 
 /*
-	文件压缩解压器 
+	压缩解压器 
 */
-class KFileZip
+class KZipCompress
 {
 public:
-	KFileZip(): mZipHandle(NULL)
+	KZipCompress(): mZipHandle(NULL)
 	{
 	}
 
-	~KFileZip()
+	~KZipCompress()
 	{
 		if (mZipHandle)
 			CloseZip(mZipHandle);
@@ -47,14 +47,14 @@ public:
 
 	/*
 		压缩文件夹
-		strFolder 为要压缩的文件夹路径
-		zipFile 为生成的压缩包路径
-		includeRoot 是否包含根文件夹
+		strFolder 要压缩的源文件夹路径
+		zipFile 生成的压缩包
+		includeRoot 是否包含源的根文件夹
 		password 密码
 	*/
 	BOOL CompressFolder(LPCWSTR folder, LPCWSTR zipFile, BOOL includeRoot = TRUE, LPCSTR password = NULL)
 	{
-		if (!BeginCompress(zipFile, password))
+		if (!BeginCompressFile(zipFile, password))
 			return FALSE;
 
 		kstring strFolder = folder;
@@ -68,39 +68,39 @@ public:
 			strBaseDir = ExtractFileName(folder);
 		CompressFiles(folder, strBaseDir);
 
-		return EndCompress();
+		return EndCompressFile();
 	}
 
 	/*
 		压缩一个文件
 		file 要压缩的源文件
-		zipFile生成的压缩文件名
+		zipFile 生成的压缩文件名
 		password 密码
 	*/
 	BOOL CompressFile(LPCWSTR file, LPCWSTR zipFile, LPCSTR password = NULL)
 	{
-		if (!BeginCompress(zipFile, password))
+		if (!BeginCompressFile(zipFile, password))
 			return FALSE;
 
 		kstring strName = ExtractFileName(file);
 		BOOL ret = AddFile(file, strName);
-		EndCompress();
+		EndCompressFile();
 		return ret;
 	}
 
 	/*
-		开始压缩，必须与EndCompress成对使用
+		开始压缩，必须与EndCompressFile成对使用
 		zipFile 压缩文件名
 		password 密码
 	*/
-	BOOL BeginCompress(LPCWSTR zipFile, LPCSTR password = NULL)
+	BOOL BeginCompressFile(LPCWSTR zipFile, LPCSTR password = NULL)
 	{
 		mZipHandle = CreateZip(zipFile, password);
 		return (NULL != mZipHandle);
 	}
 
 	/*
-		把文件加入压缩包里，必须先BeginCompress
+		把文件加入压缩包里，必须先BeginCompressFile
 		file 文件路径
 		name 文件加入压缩包的名字
 		isDir 是否是文件夹类型
@@ -113,7 +113,7 @@ public:
 	}
 
 	/*
-		把文件夹加入压缩包里，必须先BeginCompress，只加文件夹本身，不加里面的文件或子文件夹
+		把文件夹加入压缩包里，必须先BeginCompressFile，只加文件夹本身，不加里面的文件或子文件夹
 		folder 文件夹名
 	*/
 	BOOL AddFolder(LPCWSTR folder)
@@ -124,9 +124,9 @@ public:
 	}
 
 	/*
-		结束压缩，必须与BeginCompress成对使用
+		结束压缩，必须与BeginCompressFile成对使用
 	*/
-	BOOL EndCompress()
+	BOOL EndCompressFile()
 	{
 		if (mZipHandle)
 		{
@@ -142,7 +142,7 @@ public:
 		root 解压的根目录
 		password 解压密码
 	*/
-	BOOL Decompress(LPCWSTR zipFile, LPCWSTR root, LPCSTR password = NULL)
+	BOOL DecompressFiles(LPCWSTR zipFile, LPCWSTR root, LPCSTR password = NULL)
 	{
 		HZIP hz = OpenZip(zipFile, password);
 		if (!hz) return FALSE;
