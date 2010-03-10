@@ -1,0 +1,588 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<!-- saved from url=(0033)http://www.zlib.net/zlib_how.html -->
+<HTML><HEAD><META http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+
+<TITLE>zlib Usage Example</TITLE>
+<SCRIPT type="text/javascript">
+<!--
+function mail_to(name, domain)
+{
+  document.write("<a class=\"link\" href=\"mail" + "to:" + name +
+                 "&#64;" + domain + "\">");
+}
+//-->
+</SCRIPT>
+<STYLE type="text/css">
+  P { margin-bottom: 0em }	<!-- http://www.w3.org/TR/REC-CSS2/box.html -->
+</STYLE>
+<!--  Copyright (c) 2004, 2005 Mark Adler.  -->
+</HEAD><BODY bgcolor="#FFFFFF" text="#000000" link="#0000FF" vlink="#00A000">
+<H1 align="center">
+ <IMG width="369" height="204" align="middle" src="./zlib Usage Example_files/zlib3d-b1.png" alt="zlib">
+</H1>
+<H2 align="center"> Usage Example </H2>
+We often get questions about how the <TT>deflate()</TT> and <TT>inflate()</TT> functions should be used.
+Users wonder when they should provide more input, when they should use more output,
+what to do with a <TT>Z_BUF_ERROR</TT>, how to make sure the process terminates properly, and
+so on.  So for those who have read <TT>zlib.h</TT> (a few times), and
+would like further edification, below is an annotated example in C of simple routines to compress and decompress
+from an input file to an output file using <TT>deflate()</TT> and <TT>inflate()</TT> respectively.  The
+annotations are interspersed between lines of the code.  So please read between the lines.
+We hope this helps explain some of the intricacies of <EM>zlib</EM>.
+<P>
+Without further adieu, here is the program <A href="http://www.zlib.net/zpipe.c"><TT>zpipe.c</TT></A>:
+</P><PRE><B>
+/* zpipe.c: example of proper use of zlib's inflate() and deflate()
+   Not copyrighted -- provided to the public domain
+   Version 1.4  11 December 2005  Mark Adler */
+
+/* Version history:
+   1.0  30 Oct 2004  First version
+   1.1   8 Nov 2004  Add void casting for unused return values
+                     Use switch statement for inflate() return values
+   1.2   9 Nov 2004  Add assertions to document zlib guarantees
+   1.3   6 Apr 2005  Remove incorrect assertion in inf()
+   1.4  11 Dec 2005  Add hack to avoid MSDOS end-of-line conversions
+                     Avoid some compiler warnings for input and output buffers
+ */
+</B></PRE><!-- -->
+We now include the header files for the required definitions.  From
+<TT>stdio.h</TT> we use <TT>fopen()</TT>, <TT>fread()</TT>, <TT>fwrite()</TT>,
+<TT>feof()</TT>, <TT>ferror()</TT>, and <TT>fclose()</TT> for file i/o, and
+<TT>fputs()</TT> for error messages.  From <TT>string.h</TT> we use
+<TT>strcmp()</TT> for command line argument processing.
+From <TT>assert.h</TT> we use the <TT>assert()</TT> macro.
+From <TT>zlib.h</TT>
+we use the basic compression functions <TT>deflateInit()</TT>,
+<TT>deflate()</TT>, and <TT>deflateEnd()</TT>, and the basic decompression
+functions <TT>inflateInit()</TT>, <TT>inflate()</TT>, and
+<TT>inflateEnd()</TT>.
+<PRE><B>
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+#include &lt;assert.h&gt;
+#include "zlib.h"
+</B></PRE><!-- -->
+This is an ugly hack required to avoid corruption of the input and output data on
+Windows/MS-DOS systems.  Without this, those systems would assume that the input and output
+files are text, and try to convert the end-of-line characters from one standard to
+another.  That would corrupt binary data, and in particular would render the compressed data unusable.
+This sets the input and output to binary which suppresses the end-of-line conversions.
+<TT>SET_BINARY_MODE()</TT> will be used later on <TT>stdin</TT> and <TT>stdout</TT>, at the beginning of <TT>main()</TT>.
+<PRE><B>
+#if defined(MSDOS) || defined(OS2) || defined(WIN32) || defined(__CYGWIN__)
+#  include &lt;fcntl.h&gt;
+#  include &lt;io.h&gt;
+#  define SET_BINARY_MODE(file) setmode(fileno(file), O_BINARY)
+#else
+#  define SET_BINARY_MODE(file)
+#endif
+</B></PRE><!-- -->
+<TT>CHUNK</TT> is simply the buffer size for feeding data to and pulling data
+from the <EM>zlib</EM> routines.  Larger buffer sizes would be more efficient,
+especially for <TT>inflate()</TT>.  If the memory is available, buffers sizes
+on the order of 128K or 256K bytes should be used.
+<PRE><B>
+#define CHUNK 16384
+</B></PRE><!-- -->
+The <TT>def()</TT> routine compresses data from an input file to an output file.  The output data
+will be in the <EM>zlib</EM> format, which is different from the <EM>gzip</EM> or <EM>zip</EM>
+formats.  The <EM>zlib</EM> format has a very small header of only two bytes to identify it as
+a <EM>zlib</EM> stream and to provide decoding information, and a four-byte trailer with a fast
+check value to verify the integrity of the uncompressed data after decoding.
+<PRE><B>
+/* Compress from file source to file dest until EOF on source.
+   def() returns Z_OK on success, Z_MEM_ERROR if memory could not be
+   allocated for processing, Z_STREAM_ERROR if an invalid compression
+   level is supplied, Z_VERSION_ERROR if the version of zlib.h and the
+   version of the library linked do not match, or Z_ERRNO if there is
+   an error reading or writing the files. */
+int def(FILE *source, FILE *dest, int level)
+{
+</B></PRE>
+Here are the local variables for <TT>def()</TT>.  <TT>ret</TT> will be used for <EM>zlib</EM>
+return codes.  <TT>flush</TT> will keep track of the current flushing state for <TT>deflate()</TT>,
+which is either no flushing, or flush to completion after the end of the input file is reached.
+<TT>have</TT> is the amount of data returned from <TT>deflate()</TT>.  The <TT>strm</TT> structure
+is used to pass information to and from the <EM>zlib</EM> routines, and to maintain the
+<TT>deflate()</TT> state.  <TT>in</TT> and <TT>out</TT> are the input and output buffers for
+<TT>deflate()</TT>.
+<PRE><B>
+    int ret, flush;
+    unsigned have;
+    z_stream strm;
+    unsigned char in[CHUNK];
+    unsigned char out[CHUNK];
+</B></PRE><!-- -->
+The first thing we do is to initialize the <EM>zlib</EM> state for compression using
+<TT>deflateInit()</TT>.  This must be done before the first use of <TT>deflate()</TT>.
+The <TT>zalloc</TT>, <TT>zfree</TT>, and <TT>opaque</TT> fields in the <TT>strm</TT>
+structure must be initialized before calling <TT>deflateInit()</TT>.  Here they are
+set to the <EM>zlib</EM> constant <TT>Z_NULL</TT> to request that <EM>zlib</EM> use
+the default memory allocation routines.  An application may also choose to provide
+custom memory allocation routines here.  <TT>deflateInit()</TT> will allocate on the
+order of 256K bytes for the internal state.
+(See <A href="http://www.zlib.net/zlib_tech.html"><EM>zlib Technical Details</EM></A>.)
+<P>
+<TT>deflateInit()</TT> is called with a pointer to the structure to be initialized and
+the compression level, which is an integer in the range of -1 to 9.  Lower compression
+levels result in faster execution, but less compression.  Higher levels result in
+greater compression, but slower execution.  The <EM>zlib</EM> constant Z_DEFAULT_COMPRESSION,
+equal to -1,
+provides a good compromise between compression and speed and is equivalent to level 6.
+Level 0 actually does no compression at all, and in fact expands the data slightly to produce
+the <EM>zlib</EM> format (it is not a byte-for-byte copy of the input).
+More advanced applications of <EM>zlib</EM>
+may use <TT>deflateInit2()</TT> here instead.  Such an application may want to reduce how
+much memory will be used, at some price in compression.  Or it may need to request a
+<EM>gzip</EM> header and trailer instead of a <EM>zlib</EM> header and trailer, or raw
+encoding with no header or trailer at all.
+</P><P>
+We must check the return value of <TT>deflateInit()</TT> against the <EM>zlib</EM> constant
+<TT>Z_OK</TT> to make sure that it was able to
+allocate memory for the internal state, and that the provided arguments were valid.
+<TT>deflateInit()</TT> will also check that the version of <EM>zlib</EM> that the <TT>zlib.h</TT>
+file came from matches the version of <EM>zlib</EM> actually linked with the program.  This
+is especially important for environments in which <EM>zlib</EM> is a shared library.
+</P><P>
+Note that an application can initialize multiple, independent <EM>zlib</EM> streams, which can
+operate in parallel.  The state information maintained in the structure allows the <EM>zlib</EM>
+routines to be reentrant.
+</P><PRE><B>
+    /* allocate deflate state */
+    strm.zalloc = Z_NULL;
+    strm.zfree = Z_NULL;
+    strm.opaque = Z_NULL;
+    ret = deflateInit(&amp;strm, level);
+    if (ret != Z_OK)
+        return ret;
+</B></PRE><!-- -->
+With the pleasantries out of the way, now we can get down to business.  The outer <TT>do</TT>-loop
+reads all of the input file and exits at the bottom of the loop once end-of-file is reached.
+This loop contains the only call of <TT>deflate()</TT>.  So we must make sure that all of the
+input data has been processed and that all of the output data has been generated and consumed
+before we fall out of the loop at the bottom.
+<PRE><B>
+    /* compress until end of file */
+    do {
+</B></PRE>
+We start off by reading data from the input file.  The number of bytes read is put directly
+into <TT>avail_in</TT>, and a pointer to those bytes is put into <TT>next_in</TT>.  We also
+check to see if end-of-file on the input has been reached using feof().
+If we are at the end of file, then <TT>flush</TT> is set to the
+<EM>zlib</EM> constant <TT>Z_FINISH</TT>, which is later passed to <TT>deflate()</TT> to
+indicate that this is the last chunk of input data to compress.
+If we are not yet at the end of the input, then the <EM>zlib</EM>
+constant <TT>Z_NO_FLUSH</TT> will be passed to <TT>deflate</TT> to indicate that we are still
+in the middle of the uncompressed data.
+<P>
+If there is an error in reading from the input file, the process is aborted with
+<TT>deflateEnd()</TT> being called to free the allocated <EM>zlib</EM> state before returning
+the error.  We wouldn't want a memory leak, now would we?  <TT>deflateEnd()</TT> can be called
+at any time after the state has been initialized.  Once that's done, <TT>deflateInit()</TT> (or
+<TT>deflateInit2()</TT>) would have to be called to start a new compression process.  There is
+no point here in checking the <TT>deflateEnd()</TT> return code.  The deallocation can't fail.
+</P><PRE><B>
+        strm.avail_in = fread(in, 1, CHUNK, source);
+        if (ferror(source)) {
+            (void)deflateEnd(&amp;strm);
+            return Z_ERRNO;
+        }
+        flush = feof(source) ? Z_FINISH : Z_NO_FLUSH;
+        strm.next_in = in;
+</B></PRE><!-- -->
+The inner <TT>do</TT>-loop passes our chunk of input data to <TT>deflate()</TT>, and then
+keeps calling <TT>deflate()</TT> until it is done producing output.  Once there is no more
+new output, <TT>deflate()</TT> is guaranteed to have consumed all of the input, i.e.,
+<TT>avail_in</TT> will be zero.
+<PRE><B>
+        /* run deflate() on input until output buffer not full, finish
+           compression if all of source has been read in */
+        do {
+</B></PRE>
+Output space is provided to <TT>deflate()</TT> by setting <TT>avail_out</TT> to the number
+of available output bytes and <TT>next_out</TT> to a pointer to that space.
+<PRE><B>
+            strm.avail_out = CHUNK;
+            strm.next_out = out;
+</B></PRE>
+Now we call the compression engine itself, <TT>deflate()</TT>.  It takes as many of the
+<TT>avail_in</TT> bytes at <TT>next_in</TT> as it can process, and writes as many as
+<TT>avail_out</TT> bytes to <TT>next_out</TT>.  Those counters and pointers are then
+updated past the input data consumed and the output data written.  It is the amount of
+output space available that may limit how much input is consumed.
+Hence the inner loop to make sure that
+all of the input is consumed by providing more output space each time.  Since <TT>avail_in</TT>
+and <TT>next_in</TT> are updated by <TT>deflate()</TT>, we don't have to mess with those
+between <TT>deflate()</TT> calls until it's all used up.
+<P>
+The parameters to <TT>deflate()</TT> are a pointer to the <TT>strm</TT> structure containing
+the input and output information and the internal compression engine state, and a parameter
+indicating whether and how to flush data to the output.  Normally <TT>deflate</TT> will consume
+several K bytes of input data before producing any output (except for the header), in order
+to accumulate statistics on the data for optimum compression.  It will then put out a burst of
+compressed data, and proceed to consume more input before the next burst.  Eventually,
+<TT>deflate()</TT>
+must be told to terminate the stream, complete the compression with provided input data, and
+write out the trailer check value.  <TT>deflate()</TT> will continue to compress normally as long
+as the flush parameter is <TT>Z_NO_FLUSH</TT>.  Once the <TT>Z_FINISH</TT> parameter is provided,
+<TT>deflate()</TT> will begin to complete the compressed output stream.  However depending on how
+much output space is provided, <TT>deflate()</TT> may have to be called several times until it
+has provided the complete compressed stream, even after it has consumed all of the input.  The flush
+parameter must continue to be <TT>Z_FINISH</TT> for those subsequent calls.
+</P><P>
+There are other values of the flush parameter that are used in more advanced applications.  You can
+force <TT>deflate()</TT> to produce a burst of output that encodes all of the input data provided
+so far, even if it wouldn't have otherwise, for example to control data latency on a link with
+compressed data.  You can also ask that <TT>deflate()</TT> do that as well as erase any history up to
+that point so that what follows can be decompressed independently, for example for random access
+applications.  Both requests will degrade compression by an amount depending on how often such
+requests are made.
+</P><P>
+<TT>deflate()</TT> has a return value that can indicate errors, yet we do not check it here.  Why
+not?  Well, it turns out that <TT>deflate()</TT> can do no wrong here.  Let's go through
+<TT>deflate()</TT>'s return values and dispense with them one by one.  The possible values are
+<TT>Z_OK</TT>, <TT>Z_STREAM_END</TT>, <TT>Z_STREAM_ERROR</TT>, or <TT>Z_BUF_ERROR</TT>.  <TT>Z_OK</TT>
+is, well, ok.  <TT>Z_STREAM_END</TT> is also ok and will be returned for the last call of
+<TT>deflate()</TT>.  This is already guaranteed by calling <TT>deflate()</TT> with <TT>Z_FINISH</TT>
+until it has no more output.  <TT>Z_STREAM_ERROR</TT> is only possible if the stream is not
+initialized properly, but we did initialize it properly.  There is no harm in checking for
+<TT>Z_STREAM_ERROR</TT> here, for example to check for the possibility that some
+other part of the application inadvertently clobbered the memory containing the <EM>zlib</EM> state.
+<TT>Z_BUF_ERROR</TT> will be explained further below, but
+suffice it to say that this is simply an indication that <TT>deflate()</TT> could not consume
+more input or produce more output.  <TT>deflate()</TT> can be called again with more output space
+or more available input, which it will be in this code.
+</P><PRE><B>
+            ret = deflate(&amp;strm, flush);    /* no bad return value */
+            assert(ret != Z_STREAM_ERROR);  /* state not clobbered */
+</B></PRE>
+Now we compute how much output <TT>deflate()</TT> provided on the last call, which is the
+difference between how much space was provided before the call, and how much output space
+is still available after the call.  Then that data, if any, is written to the output file.
+We can then reuse the output buffer for the next call of <TT>deflate()</TT>.  Again if there
+is a file i/o error, we call <TT>deflateEnd()</TT> before returning to avoid a memory leak.
+<PRE><B>
+            have = CHUNK - strm.avail_out;
+            if (fwrite(out, 1, have, dest) != have || ferror(dest)) {
+                (void)deflateEnd(&amp;strm);
+                return Z_ERRNO;
+            }
+</B></PRE>
+The inner <TT>do</TT>-loop is repeated until the last <TT>deflate()</TT> call fails to fill the
+provided output buffer.  Then we know that <TT>deflate()</TT> has done as much as it can with
+the provided input, and that all of that input has been consumed.  We can then fall out of this
+loop and reuse the input buffer.
+<P>
+The way we tell that <TT>deflate()</TT> has no more output is by seeing that it did not fill
+the output buffer, leaving <TT>avail_out</TT> greater than zero.  However suppose that
+<TT>deflate()</TT> has no more output, but just so happened to exactly fill the output buffer!
+<TT>avail_out</TT> is zero, and we can't tell that <TT>deflate()</TT> has done all it can.
+As far as we know, <TT>deflate()</TT>
+has more output for us.  So we call it again.  But now <TT>deflate()</TT> produces no output
+at all, and <TT>avail_out</TT> remains unchanged as <TT>CHUNK</TT>.  That <TT>deflate()</TT> call
+wasn't able to do anything, either consume input or produce output, and so it returns
+<TT>Z_BUF_ERROR</TT>.  (See, I told you I'd cover this later.)  However this is not a problem at
+all.  Now we finally have the desired indication that <TT>deflate()</TT> is really done,
+and so we drop out of the inner loop to provide more input to <TT>deflate()</TT>.
+</P><P>
+With <TT>flush</TT> set to <TT>Z_FINISH</TT>, this final set of <TT>deflate()</TT> calls will
+complete the output stream.  Once that is done, subsequent calls of <TT>deflate()</TT> would return
+<TT>Z_STREAM_ERROR</TT> if the flush parameter is not <TT>Z_FINISH</TT>, and do no more processing
+until the state is reinitialized.
+</P><P>
+Some applications of <EM>zlib</EM> have two loops that call <TT>deflate()</TT>
+instead of the single inner loop we have here.  The first loop would call
+without flushing and feed all of the data to <TT>deflate()</TT>.  The second loop would call
+<TT>deflate()</TT> with no more
+data and the <TT>Z_FINISH</TT> parameter to complete the process.  As you can see from this
+example, that can be avoided by simply keeping track of the current flush state.
+</P><PRE><B>
+        } while (strm.avail_out == 0);
+        assert(strm.avail_in == 0);     /* all input will be used */
+</B></PRE><!-- -->
+Now we check to see if we have already processed all of the input file.  That information was
+saved in the <TT>flush</TT> variable, so we see if that was set to <TT>Z_FINISH</TT>.  If so,
+then we're done and we fall out of the outer loop.  We're guaranteed to get <TT>Z_STREAM_END</TT>
+from the last <TT>deflate()</TT> call, since we ran it until the last chunk of input was
+consumed and all of the output was generated.
+<PRE><B>
+        /* done when last data in file processed */
+    } while (flush != Z_FINISH);
+    assert(ret == Z_STREAM_END);        /* stream will be complete */
+</B></PRE><!-- -->
+The process is complete, but we still need to deallocate the state to avoid a memory leak
+(or rather more like a memory hemorrhage if you didn't do this).  Then
+finally we can return with a happy return value.
+<PRE><B>
+    /* clean up and return */
+    (void)deflateEnd(&amp;strm);
+    return Z_OK;
+}
+</B></PRE><!-- -->
+Now we do the same thing for decompression in the <TT>inf()</TT> routine. <TT>inf()</TT>
+decompresses what is hopefully a valid <EM>zlib</EM> stream from the input file and writes the
+uncompressed data to the output file.  Much of the discussion above for <TT>def()</TT>
+applies to <TT>inf()</TT> as well, so the discussion here will focus on the differences between
+the two.
+<PRE><B>
+/* Decompress from file source to file dest until stream ends or EOF.
+   inf() returns Z_OK on success, Z_MEM_ERROR if memory could not be
+   allocated for processing, Z_DATA_ERROR if the deflate data is
+   invalid or incomplete, Z_VERSION_ERROR if the version of zlib.h and
+   the version of the library linked do not match, or Z_ERRNO if there
+   is an error reading or writing the files. */
+int inf(FILE *source, FILE *dest)
+{
+</B></PRE>
+The local variables have the same functionality as they do for <TT>def()</TT>.  The
+only difference is that there is no <TT>flush</TT> variable, since <TT>inflate()</TT>
+can tell from the <EM>zlib</EM> stream itself when the stream is complete.
+<PRE><B>
+    int ret;
+    unsigned have;
+    z_stream strm;
+    unsigned char in[CHUNK];
+    unsigned char out[CHUNK];
+</B></PRE><!-- -->
+The initialization of the state is the same, except that there is no compression level,
+of course, and two more elements of the structure are initialized.  <TT>avail_in</TT>
+and <TT>next_in</TT> must be initialized before calling <TT>inflateInit()</TT>.  This
+is because the application has the option to provide the start of the zlib stream in
+order for <TT>inflateInit()</TT> to have access to information about the compression
+method to aid in memory allocation.  In the current implementation of <EM>zlib</EM>
+(up through versions 1.2.x), the method-dependent memory allocations are deferred to the first call of
+<TT>inflate()</TT> anyway.  However those fields must be initialized since later versions
+of <EM>zlib</EM> that provide more compression methods may take advantage of this interface.
+In any case, no decompression is performed by <TT>inflateInit()</TT>, so the
+<TT>avail_out</TT> and <TT>next_out</TT> fields do not need to be initialized before calling.
+<P>
+Here <TT>avail_in</TT> is set to zero and <TT>next_in</TT> is set to <TT>Z_NULL</TT> to
+indicate that no input data is being provided.
+</P><PRE><B>
+    /* allocate inflate state */
+    strm.zalloc = Z_NULL;
+    strm.zfree = Z_NULL;
+    strm.opaque = Z_NULL;
+    strm.avail_in = 0;
+    strm.next_in = Z_NULL;
+    ret = inflateInit(&amp;strm);
+    if (ret != Z_OK)
+        return ret;
+</B></PRE><!-- -->
+The outer <TT>do</TT>-loop decompresses input until <TT>inflate()</TT> indicates
+that it has reached the end of the compressed data and has produced all of the uncompressed
+output.  This is in contrast to <TT>def()</TT> which processes all of the input file.
+If end-of-file is reached before the compressed data self-terminates, then the compressed
+data is incomplete and an error is returned.
+<PRE><B>
+    /* decompress until deflate stream ends or end of file */
+    do {
+</B></PRE>
+We read input data and set the <TT>strm</TT> structure accordingly.  If we've reached the
+end of the input file, then we leave the outer loop and report an error, since the
+compressed data is incomplete.  Note that we may read more data than is eventually consumed
+by <TT>inflate()</TT>, if the input file continues past the <EM>zlib</EM> stream.
+For applications where <EM>zlib</EM> streams are embedded in other data, this routine would
+need to be modified to return the unused data, or at least indicate how much of the input
+data was not used, so the application would know where to pick up after the <EM>zlib</EM> stream.
+<PRE><B>
+        strm.avail_in = fread(in, 1, CHUNK, source);
+        if (ferror(source)) {
+            (void)inflateEnd(&amp;strm);
+            return Z_ERRNO;
+        }
+        if (strm.avail_in == 0)
+            break;
+        strm.next_in = in;
+</B></PRE><!-- -->
+The inner <TT>do</TT>-loop has the same function it did in <TT>def()</TT>, which is to
+keep calling <TT>inflate()</TT> until has generated all of the output it can with the
+provided input.
+<PRE><B>
+        /* run inflate() on input until output buffer not full */
+        do {
+</B></PRE>
+Just like in <TT>def()</TT>, the same output space is provided for each call of <TT>inflate()</TT>.
+<PRE><B>
+            strm.avail_out = CHUNK;
+            strm.next_out = out;
+</B></PRE>
+Now we run the decompression engine itself.  There is no need to adjust the flush parameter, since
+the <EM>zlib</EM> format is self-terminating. The main difference here is that there are
+return values that we need to pay attention to.  <TT>Z_DATA_ERROR</TT>
+indicates that <TT>inflate()</TT> detected an error in the <EM>zlib</EM> compressed data format,
+which means that either the data is not a <EM>zlib</EM> stream to begin with, or that the data was
+corrupted somewhere along the way since it was compressed.  The other error to be processed is
+<TT>Z_MEM_ERROR</TT>, which can occur since memory allocation is deferred until <TT>inflate()</TT>
+needs it, unlike <TT>deflate()</TT>, whose memory is allocated at the start by <TT>deflateInit()</TT>.
+<P>
+Advanced applications may use
+<TT>deflateSetDictionary()</TT> to prime <TT>deflate()</TT> with a set of likely data to improve the
+first 32K or so of compression.  This is noted in the <EM>zlib</EM> header, so <TT>inflate()</TT>
+requests that that dictionary be provided before it can start to decompress.  Without the dictionary,
+correct decompression is not possible.  For this routine, we have no idea what the dictionary is,
+so the <TT>Z_NEED_DICT</TT> indication is converted to a <TT>Z_DATA_ERROR</TT>.
+</P><P>
+<TT>inflate()</TT> can also return <TT>Z_STREAM_ERROR</TT>, which should not be possible here,
+but could be checked for as noted above for <TT>def()</TT>.  <TT>Z_BUF_ERROR</TT> does not need to be
+checked for here, for the same reasons noted for <TT>def()</TT>.  <TT>Z_STREAM_END</TT> will be
+checked for later.
+</P><PRE><B>
+            ret = inflate(&amp;strm, Z_NO_FLUSH);
+            assert(ret != Z_STREAM_ERROR);  /* state not clobbered */
+            switch (ret) {
+            case Z_NEED_DICT:
+                ret = Z_DATA_ERROR;     /* and fall through */
+            case Z_DATA_ERROR:
+            case Z_MEM_ERROR:
+                (void)inflateEnd(&amp;strm);
+                return ret;
+            }
+</B></PRE>
+The output of <TT>inflate()</TT> is handled identically to that of <TT>deflate()</TT>.
+<PRE><B>
+            have = CHUNK - strm.avail_out;
+            if (fwrite(out, 1, have, dest) != have || ferror(dest)) {
+                (void)inflateEnd(&amp;strm);
+                return Z_ERRNO;
+            }
+</B></PRE>
+The inner <TT>do</TT>-loop ends when <TT>inflate()</TT> has no more output as indicated
+by not filling the output buffer, just as for <TT>deflate()</TT>.  In this case, we cannot
+assert that <TT>strm.avail_in</TT> will be zero, since the deflate stream may end before the file
+does.
+<PRE><B>
+        } while (strm.avail_out == 0);
+</B></PRE><!-- -->
+The outer <TT>do</TT>-loop ends when <TT>inflate()</TT> reports that it has reached the
+end of the input <EM>zlib</EM> stream, has completed the decompression and integrity
+check, and has provided all of the output.  This is indicated by the <TT>inflate()</TT>
+return value <TT>Z_STREAM_END</TT>.  The inner loop is guaranteed to leave <TT>ret</TT>
+equal to <TT>Z_STREAM_END</TT> if the last chunk of the input file read contained the end
+of the <EM>zlib</EM> stream.  So if the return value is not <TT>Z_STREAM_END</TT>, the
+loop continues to read more input.
+<PRE><B>
+        /* done when inflate() says it's done */
+    } while (ret != Z_STREAM_END);
+</B></PRE><!-- -->
+At this point, decompression successfully completed, or we broke out of the loop due to no
+more data being available from the input file.  If the last <TT>inflate()</TT> return value
+is not <TT>Z_STREAM_END</TT>, then the <EM>zlib</EM> stream was incomplete and a data error
+is returned.  Otherwise, we return with a happy return value.  Of course, <TT>inflateEnd()</TT>
+is called first to avoid a memory leak.
+<PRE><B>
+    /* clean up and return */
+    (void)inflateEnd(&amp;strm);
+    return ret == Z_STREAM_END ? Z_OK : Z_DATA_ERROR;
+}
+</B></PRE><!-- -->
+That ends the routines that directly use <EM>zlib</EM>.  The following routines make this
+a command-line program by running data through the above routines from <TT>stdin</TT> to
+<TT>stdout</TT>, and handling any errors reported by <TT>def()</TT> or <TT>inf()</TT>.
+<P>
+<TT>zerr()</TT> is used to interpret the possible error codes from <TT>def()</TT>
+and <TT>inf()</TT>, as detailed in their comments above, and print out an error message.
+Note that these are only a subset of the possible return values from <TT>deflate()</TT>
+and <TT>inflate()</TT>.
+</P><PRE><B>
+/* report a zlib or i/o error */
+void zerr(int ret)
+{
+    fputs("zpipe: ", stderr);
+    switch (ret) {
+    case Z_ERRNO:
+        if (ferror(stdin))
+            fputs("error reading stdin\n", stderr);
+        if (ferror(stdout))
+            fputs("error writing stdout\n", stderr);
+        break;
+    case Z_STREAM_ERROR:
+        fputs("invalid compression level\n", stderr);
+        break;
+    case Z_DATA_ERROR:
+        fputs("invalid or incomplete deflate data\n", stderr);
+        break;
+    case Z_MEM_ERROR:
+        fputs("out of memory\n", stderr);
+        break;
+    case Z_VERSION_ERROR:
+        fputs("zlib version mismatch!\n", stderr);
+    }
+}
+</B></PRE><!-- -->
+Here is the <TT>main()</TT> routine used to test <TT>def()</TT> and <TT>inf()</TT>.  The
+<TT>zpipe</TT> command is simply a compression pipe from <TT>stdin</TT> to <TT>stdout</TT>, if
+no arguments are given, or it is a decompression pipe if <TT>zpipe -d</TT> is used.  If any other
+arguments are provided, no compression or decompression is performed.  Instead a usage
+message is displayed.  Examples are <TT>zpipe &lt; foo.txt &gt; foo.txt.z</TT> to compress, and
+<TT>zpipe -d &lt; foo.txt.z &gt; foo.txt</TT> to decompress.
+<PRE><B>
+/* compress or decompress from stdin to stdout */
+int main(int argc, char **argv)
+{
+    int ret;
+
+    /* avoid end-of-line conversions */
+    SET_BINARY_MODE(stdin);
+    SET_BINARY_MODE(stdout);
+
+    /* do compression if no arguments */
+    if (argc == 1) {
+        ret = def(stdin, stdout, Z_DEFAULT_COMPRESSION);
+        if (ret != Z_OK)
+            zerr(ret);
+        return ret;
+    }
+
+    /* do decompression if -d specified */
+    else if (argc == 2 &amp;&amp; strcmp(argv[1], "-d") == 0) {
+        ret = inf(stdin, stdout);
+        if (ret != Z_OK)
+            zerr(ret);
+        return ret;
+    }
+
+    /* otherwise, report usage */
+    else {
+        fputs("zpipe usage: zpipe [-d] &lt; source &gt; dest\n", stderr);
+        return 1;
+    }
+}
+</B></PRE>
+You can download <TT>zpipe.c</TT> <A href="http://www.zlib.net/zpipe.c">here</A>.
+<HR>
+<I>Last modified 24 June 2007
+</I>
+<HR>
+
+<TABLE width="100%" border="0" cellpadding="0">
+  <TBODY><TR>
+    <TD align="left">
+      <FONT size="-1">
+      Web page copyright © 2004, 2005
+      <A href="http://www.alumni.caltech.edu/~madler/">Mark Adler</A>.<BR>
+      zlib software copyright © 1995-2005
+      <A href="http://gailly.net/">Jean-loup Gailly</A> and
+      <A href="http://www.alumni.caltech.edu/~madler/">Mark Adler</A>.
+      </FONT>
+    </TD>
+    <TD align="right" valign="top">
+      <FONT size="-1">
+<!--  <A HREF="http://www.info-zip.org/pub/infozip/zlib/">Primary site</A>
+      hosted by
+      <A HREF="http://www.freesoftware.com/"><B>FreeSoftware.com</B></A>.
+-->
+      <A href="http://www.zlib.net/index.html">Primary site</A>
+      hosted by
+      <A href="http://www.teaser.fr/"><B>France Teaser</B></A>.<BR>
+      <I>zlib.org</I> domain name donated by
+         <A><SCRIPT type="text/javascript">mail_to("ag","em.net")</SCRIPT></A><A class="link" href="javascript:void(0)" onclick="window.open(&#39;http://mail.google.com/mail/?view=cm&amp;fs=1&amp;tf=1&amp;to=ag@em.net&#39;,&#39;Compose new message&#39;,&#39;width=640,height=480&#39;)" rel="noreferrer">Andrew Green</A>.
+      </FONT>
+    </TD>
+  </TR>
+</TBODY></TABLE>
+
+
+
+</BODY></HTML>
