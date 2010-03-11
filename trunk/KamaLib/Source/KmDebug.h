@@ -7,8 +7,11 @@
   Brief:    	这是KamaLib代码库的一部分，由Tramper创建并维护，版权没有，
 				请自由使用！
  -------------------------------------------------------------------------------
-  Description:
-	调试辅助函数，实现简洁的断言，跟踪和日志; 提供高性能计数器
+  Description: 
+	调试辅助函数
+	1. 断言，跟踪和日志; 
+	2. 高性能计数器
+	3. 动态对象内存测漏
 
 *******************************************************************************/
 #ifndef __KAMA_KMDEBUG_H__
@@ -184,6 +187,69 @@ inline double EndTimeCounter()
 	LARGE_INTEGER counter = _QueryCounter();
 	return double(counter.QuadPart - _gCounter.QuadPart) / double(_gFrequency.QuadPart);
 }
+
+//------------------------------------------------------------------------------
+/*
+	动态类实例测漏，在类声明里增加宏：DECLARE_OBJCHECKER(ClassName)
+	ClassName是类的名字，比如：
+		class MyClass
+		{
+		private:
+			DECLARE_OBJCHECKER(MyClass)
+		};
+	程序结束时，如果存在该类的实例未释放，则会在Output窗口里打印出来
+*/
+
+/*
+	类实例计数器，内部使用
+*/
+class _KObjectCounter
+{
+public:
+	_KObjectCounter(const char* szClass, const char* szFile, int nLine)
+		: mRef(0), mClass(szClass), mFile(szFile), mLine(nLine) 
+	{
+	}
+
+	~_KObjectCounter()
+	{ 
+		if (mRef > 0)
+			KTRACE(L"object leak:\n\tclass: %s\n\tinstance count: %d\n\tfile: %s\n\tline: %d\n", 
+			mClass, mRef, mFile, mLine);
+	}
+
+	void operator++()	
+	{ 
+		++mRef; 
+	}
+
+	void operator--()	
+	{ 
+		--mRef; 
+	}
+public:
+	unsigned	mRef;
+	const char* mClass;
+	const char* mFile;
+	int			mLine;
+};
+
+#ifndef _DEBUG
+#	define DECLARE_CLASSCHECKER(Class)
+#else
+#	define DECLARE_CLASSCHECKER(Class)									\
+class KObjectChecker													\
+{																		\
+public:																	\
+	KObjectChecker() { ++Counter(); }									\
+	~KObjectChecker() { --Counter(); }									\
+private:																\
+	CCounteChecker& Counter()											\
+	{ static _KObjectCounter c(#Class, __FILE__, __LINE__);				\
+		return c; }														\
+} mChecker;												
+#endif
+
 
 
 }

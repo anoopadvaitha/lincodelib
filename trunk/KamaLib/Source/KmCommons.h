@@ -2628,6 +2628,23 @@ protected:
 };
 
 //------------------------------------------------------------------------------
+// GDI应用
+/*
+	每英寸多少象素
+*/
+inline int PixelsPerInch()
+{
+	static int gPixelsPerInch = 0;
+	if (gPixelsPerInch == 0)
+	{
+		HDC hDC = GetDC(0);
+		gPixelsPerInch = GetDeviceCaps(hDC, LOGPIXELSY);
+		ReleaseDC(0, hDC);
+	}
+	return gPixelsPerInch;
+}
+
+//------------------------------------------------------------------------------
 // 编码解码
 
 /*
