@@ -1,7 +1,7 @@
 /*******************************************************************************
   Filename:		KmDebug.h
   Author:		Tramper
-  Email:		linzhenqun@gmail.com
+  Email:		lingoooooooooo@gmail.com
   Date:			2009/12/15
 
   Brief:    	这是KamaLib代码库的一部分，由Tramper创建并维护，版权没有，
@@ -19,14 +19,14 @@
 	*. 压缩解压内存流
 
 *******************************************************************************/
-#ifndef __KAMA_KMZIPUTILS_H__
-#define __KAMA_KMZIPUTILS_H__
+#ifndef __LIN_KMZIPUTILS_H__
+#define __LIN_KMZIPUTILS_H__
 
 #include "zip.h"
 #include "unzip.h"
 #include "KmCommons.h"
 
-namespace kama
+namespace lin
 {
 
 /*
@@ -231,4 +231,4 @@ private:
 };
 
 }
-#endif // __KAMA_KMZIPUTILS_H__
+#endif // __LIN_KMZIPUTILS_H__

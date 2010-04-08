@@ -1,7 +1,7 @@
 /*******************************************************************************
   Filename:		KmDxCtrls.h
   Author:		Tramper
-  Email:		linzhenqun@gmail.com
+  Email:		lingoooooooooo@gmail.com
   Date:			2009/12/22
 
   Brief:    	这是KamaLib代码库的一部分，由Tramper创建并维护，版权没有，
@@ -12,11 +12,11 @@
 				可定制的控件，比如像一般游戏UI一样，通过图片确定UI风格。
 	
 *******************************************************************************/
-#ifndef __KAMA_KMDXCTRLS_H__
-#define __KAMA_KMDXCTRLS_H__
+#ifndef __LIN_KMDXCTRLS_H__
+#define __LIN_KMDXCTRLS_H__
 #include "KmDxViews.h"
 
-namespace kama
+namespace lin
 {
 
 //------------------------------------------------------------------------------
@@ -2583,4 +2583,4 @@ protected:
 IMPLEMENT_RUNTIMEINFO(KDxEdit, KDxView)
 
 }
-#endif // __KAMA_KMDXCTRLS_H__
+#endif // __LIN_KMDXCTRLS_H__
