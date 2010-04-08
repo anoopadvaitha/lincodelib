@@ -1,7 +1,7 @@
 /*******************************************************************************
   Filename:		KmDxRender.h
   Author:		Tramper
-  Email:		linzhenqun@gmail.com
+  Email:		lingoooooooooo@gmail.com
   Date:			2009/12/22
 
   Brief:    	这是KamaLib代码库的一部分，由Tramper创建并维护，版权没有，
@@ -20,8 +20,8 @@
 	KDxApp: 主程序类，提供消息循环，及FPS计算。
 
 *******************************************************************************/
-#ifndef __KAMA_KMDXRENDER_H__
-#define __KAMA_KMDXRENDER_H__
+#ifndef __LIN_KMDXRENDER_H__
+#define __LIN_KMDXRENDER_H__
 #include "KmCommons.h"
 
 #pragma warning(disable: 4244)
@@ -32,7 +32,7 @@
 #pragma comment(lib, "d3d9.lib")
 #include "d3dx9.h"
 
-namespace kama
+namespace lin
 {
 
 //////////////////////////////////////////////////////////////////////////
@@ -2817,4 +2817,4 @@ inline BOOL KDxMainFrame::IsActive()
 }
 
 }
-#endif // __KAMA_KMDXRENDER_H__
+#endif // __LIN_KMDXRENDER_H__

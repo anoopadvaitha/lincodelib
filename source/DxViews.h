@@ -1,7 +1,7 @@
 /*******************************************************************************
   Filename:		KmDxViews.h
   Author:		Tramper
-  Email:		linzhenqun@gmail.com
+  Email:		lingoooooooooo@gmail.com
   Date:			2009/12/19
 
   Brief:    	这是KamaLib代码库的一部分，由Tramper创建并维护，版权没有，
@@ -10,12 +10,12 @@
   Description:
 	Dx视图框架
 *******************************************************************************/
-#ifndef __KAMA_KMDXVIEWS_H__
-#define __KAMA_KMDXVIEWS_H__
+#ifndef __LIN_KMDXVIEWS_H__
+#define __LIN_KMDXVIEWS_H__
 #include "KmCommons.h"
 #include "KmDxRender.h"
 
-namespace kama
+namespace lin
 {
 
 //////////////////////////////////////////////////////////////////////////
@@ -2902,9 +2902,9 @@ inline void KDxWindow::GenTabList(KDxViewVector& viewVector, KDxView* parentView
 //------------------------------------------------------------------------------
 // KDxScreen
 
-#define KAMA_DXSCREEN_ATOM  L"Kama.DxScreen.Atom"
-#define KAMA_DXSCREEN_POST L"Kama.DxScreen.PostEvent"
-_declspec(selectany) UINT WM_POSTEVENT = ::RegisterWindowMessageW(KAMA_DXSCREEN_POST);
+#define LIN_DXSCREEN_ATOM  L"Kama.DxScreen.Atom"
+#define LIN_DXSCREEN_POST L"Kama.DxScreen.PostEvent"
+_declspec(selectany) UINT WM_POSTEVENT = ::RegisterWindowMessageW(LIN_DXSCREEN_POST);
 
 IMPLEMENT_RUNTIMEINFO(KDxScreen, KDxView)
 
@@ -3517,20 +3517,20 @@ inline void KDxScreen::UpdateChilds(KDxView* parentView, DWORD tick)
 inline void KDxScreen::SubclassWindow(HWND hwnd)
 {
 	// 一个窗口只能与一个Screen关联
-	HANDLE handle = GetPropW(hwnd, KAMA_DXSCREEN_ATOM);
+	HANDLE handle = GetPropW(hwnd, LIN_DXSCREEN_ATOM);
 	KASSERT(handle == NULL);
 
 	mDefHostWndProc = (WNDPROC)::SetWindowLongW(hwnd, GWL_WNDPROC, (LONG)&StdWndProc);
 	KASSERT(NULL != mDefHostWndProc);
 
-	::SetPropW(hwnd, KAMA_DXSCREEN_ATOM, (HANDLE)this);
+	::SetPropW(hwnd, LIN_DXSCREEN_ATOM, (HANDLE)this);
 }
 
 inline void KDxScreen::UnsubclassWindow(HWND hwnd)
 {
 	KASSERT(NULL != mDefHostWndProc);
 
-	::RemovePropW(hwnd, KAMA_DXSCREEN_ATOM);
+	::RemovePropW(hwnd, LIN_DXSCREEN_ATOM);
 	::SetWindowLongW(hwnd, GWL_WNDPROC, (LONG)mDefHostWndProc);
 }
 
@@ -3540,7 +3540,7 @@ inline LRESULT CALLBACK	KDxScreen::StdWndProc(HWND hwnd, UINT msg, WPARAM wparam
 	BOOL bDone = FALSE;
 	KDxScreen* screen = NULL;
 
-	screen = (KDxScreen*)::GetPropW(hwnd, KAMA_DXSCREEN_ATOM);
+	screen = (KDxScreen*)::GetPropW(hwnd, LIN_DXSCREEN_ATOM);
 	if (NULL != screen)
 		bDone = screen->WndProc(hwnd, msg, wparam, lparam, lRet);
 
@@ -3923,4 +3923,4 @@ inline BOOL KDxScreen::WMTimer(WPARAM wparam, LPARAM lparam)
 
 }
 
-#endif // __KAMA_KMDXVIEWS_H__
+#endif // __LIN_KMDXVIEWS_H__

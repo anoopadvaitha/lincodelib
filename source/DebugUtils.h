@@ -1,7 +1,7 @@
 /*******************************************************************************
   Filename:		KmDebug.h
   Author:		Tramper
-  Email:		linzhenqun@gmail.com
+  Email:		lingoooooooooo@gmail.com
   Date:			2009/12/15
 
   Brief:    	这是KamaLib代码库的一部分，由Tramper创建并维护，版权没有，
@@ -14,12 +14,12 @@
 	3. 动态对象内存测漏
 
 *******************************************************************************/
-#ifndef __KAMA_KMDEBUG_H__
-#define __KAMA_KMDEBUG_H__
+#ifndef __LIN_KMDEBUG_H__
+#define __LIN_KMDEBUG_H__
 #include <crtdbg.h>
 #include <stdio.h>
 
-namespace kama
+namespace lin
 {
 
 /*
@@ -253,4 +253,4 @@ private:																\
 
 
 }
-#endif // __KAMA_KMDEBUG_H__
+#endif // __LIN_KMDEBUG_H__

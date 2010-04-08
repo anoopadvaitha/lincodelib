@@ -1,7 +1,7 @@
 /*******************************************************************************
   Filename:		KmCommons.h
   Author:		Tramper
-  Email:		linzhenqun@gmail.com
+  Email:		lingoooooooooo@gmail.com
   Date:			2009/12/14
 
   Brief:    	这是KamaLib代码库的一部分，由Tramper创建并维护，版权没有，
@@ -10,12 +10,12 @@
   Description:	公共代码，每一种类型都用//-------分隔，可以通过它查找。
 	
 *******************************************************************************/
-#ifndef __KAMA_KMCOMMONS_H__
-#define __KAMA_KMCOMMONS_H__
+#ifndef __LIN_KMCOMMONS_H__
+#define __LIN_KMCOMMONS_H__
 #include "KmDebug.h"
 #include "KmString.h"
 
-namespace kama
+namespace lin
 {
 
 //------------------------------------------------------------------------------
@@ -1809,8 +1809,8 @@ enum KCloseMode
 /*
 	窗口类名
 */
-#define KAMA_WNDFRAME_CLSNAME	L"Kama.Window.Frame"
-#define KAMA_WNDFRAME_ATOM		L"Kama.Window.Frame.Atom"
+#define LIN_WNDFRAME_CLSNAME	L"Kama.Window.Frame"
+#define LIN_WNDFRAME_ATOM		L"Kama.Window.Frame.Atom"
 
 class KWndFrame;
 
@@ -2338,10 +2338,10 @@ protected:
 	virtual BOOL RegWndClass()
 	{
 		WNDCLASSW wc;
-		BOOL isReg = ::GetClassInfoW(ThisModuleHandle(), KAMA_WNDFRAME_CLSNAME, &wc);
+		BOOL isReg = ::GetClassInfoW(ThisModuleHandle(), LIN_WNDFRAME_CLSNAME, &wc);
 		if (isReg && (wc.lpfnWndProc != &InitWndProc))
 		{
-			UnregisterClassW(KAMA_WNDFRAME_CLSNAME, ThisModuleHandle());
+			UnregisterClassW(LIN_WNDFRAME_CLSNAME, ThisModuleHandle());
 			isReg = FALSE;
 		}
 
@@ -2355,7 +2355,7 @@ protected:
 			wc.hIcon = 0;
 			wc.hCursor = LoadCursor(0, IDC_ARROW);
 			wc.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
-			wc.lpszClassName = KAMA_WNDFRAME_CLSNAME;
+			wc.lpszClassName = LIN_WNDFRAME_CLSNAME;
 			wc.lpszMenuName = NULL;
 			return (RegisterClassW(&wc) != 0);
 		}
@@ -2375,7 +2375,7 @@ protected:
 		LPCWSTR caption)
 	{
 		return CreateWindowW(
-			KAMA_WNDFRAME_CLSNAME, 
+			LIN_WNDFRAME_CLSNAME, 
 			caption, 
 			BorderIconsToStyle(0, bis) | BorderStyleToStyle(0, bs),
 			left, 
@@ -2547,9 +2547,9 @@ protected:
 			KWndFrame* wndFrame = (KWndFrame*)pcs->lpCreateParams;
 			wndFrame->mHwnd = hwnd;
 
-			KASSERT(::GetPropW(hwnd, KAMA_WNDFRAME_ATOM) == NULL);
+			KASSERT(::GetPropW(hwnd, LIN_WNDFRAME_ATOM) == NULL);
 			SetWindowLongW(hwnd, GWL_WNDPROC, (LONG)StdWndProc);
-			SetPropW(hwnd, KAMA_WNDFRAME_ATOM, (HANDLE)pcs->lpCreateParams);
+			SetPropW(hwnd, LIN_WNDFRAME_ATOM, (HANDLE)pcs->lpCreateParams);
 
 			LRESULT ret = TRUE;
 			wndFrame->WndProc(hwnd, msg, wparam, lparam, ret);
@@ -2563,7 +2563,7 @@ protected:
 	*/
 	static LRESULT CALLBACK StdWndProc(HWND hwnd, UINT msg, WPARAM wparam,  LPARAM lparam)
 	{
-		KWndFrame* wndFrame = (KWndFrame*)GetPropW(hwnd, KAMA_WNDFRAME_ATOM);
+		KWndFrame* wndFrame = (KWndFrame*)GetPropW(hwnd, LIN_WNDFRAME_ATOM);
 		KASSERT(wndFrame);
 
 		LRESULT ret = 0;
@@ -3868,4 +3868,4 @@ private:
 };
 
 }
-#endif // __KAMA_KMCOMMONS_H__
+#endif // __LIN_KMCOMMONS_H__

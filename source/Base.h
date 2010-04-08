@@ -1,7 +1,7 @@
 /*******************************************************************************
   Filename:		KmBase.h
   Author:		Tramper
-  Email:		linzhenqun@gmail.com
+  Email:		lingoooooooooo@gmail.com
   Date:			2009/12/14
 
   Brief:		这是KamaLib代码库的一部分，由Tramper创建并维护，版权没有，
@@ -12,8 +12,8 @@
 	请在stdafx.h里面包含KmBase.h
 
 *******************************************************************************/
-#ifndef __KAMA_KMBASE_H__
-#define __KAMA_KMBASE_H__
+#ifndef __LIN_KMBASE_H__
+#define __LIN_KMBASE_H__
 
 //------------------------------------------------------------------------------
 // C Runtime
@@ -51,4 +51,4 @@
 #include <algorithm>
 #include <hash_map>
 
-#endif // __KAMA_KMBASE_H__
+#endif // __LIN_KMBASE_H__

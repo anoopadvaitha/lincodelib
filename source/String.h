@@ -1,7 +1,7 @@
 /*******************************************************************************
   Filename:		KmString.h
   Author:		Tramper
-  Email:		linzhenqun@gmail.com
+  Email:		lingoooooooooo@gmail.com
   Date:			2009/12/15
 
   Brief:    	这是KamaLib代码库的一部分，由Tramper创建并维护，版权没有，
@@ -17,11 +17,11 @@
 	Thanks to Microsoft Corporation.
 
 *******************************************************************************/
-#ifndef __KAMA_KMSTRING_H__
-#define __KAMA_KMSTRING_H__
+#ifndef __LIN_KMSTRING_H__
+#define __LIN_KMSTRING_H__
 #include "KmDebug.h"
 
-namespace kama
+namespace lin
 {
 
 /*
@@ -1449,4 +1449,4 @@ inline kstring __stdcall operator +(LPCWSTR str, const kstring& string)
 }
 
 }
-#endif // __KAMA_KMSTRING_H__
+#endif // __LIN_KMSTRING_H__
