@@ -3,12 +3,12 @@
 
 #include "stdafx.h"
 #include "ViewDemo.h"
-#include "KmCommons.h"
-#include "KmDxViews.h"
-using namespace kama;
+#include "LnCommons.h"
+#include "LnDxViews.h"
+using namespace lin;
 
 // ∆¡ƒª≤‚ ‘
-class KTestScreen: public KDxScreen
+class TestScreen: public DxScreen
 {
 public:
 	virtual void Paint()
@@ -40,14 +40,14 @@ public:
 	}
 
 protected:
-	void PaintChild(KDxView* parentView, HDC dc)
+	void PaintChild(DxView* parentView, HDC dc)
 	{
-		KDxWindow* wnd;
+		DxWindow* wnd;
 
 		for (int i = 0; i < parentView->ChildCount(); ++i)
 		{
-			KDxView* view = parentView->ChildView(i);
-			wnd = OBJECT_DERIVEDFROM(view, KDxWindow) ? (KDxWindow*)view : NULL;
+			DxView* view = parentView->ChildView(i);
+			wnd = OBJECT_DERIVEDFROM(view, DxWindow) ? (DxWindow*)view : NULL;
 			if (wnd && (wnd->IsTopMost()))
 				continue;
 
@@ -79,13 +79,13 @@ protected:
 			}
 		}
 
-		if (!OBJECT_DERIVEDFROM(parentView, KDxScreen))
+		if (!OBJECT_DERIVEDFROM(parentView, DxScreen))
 			return;
 
 		for (int i = 0; i < parentView->ChildCount(); ++i)
 		{
-			KDxView* view = parentView->ChildView(i);
-			wnd = OBJECT_DERIVEDFROM(view, KDxWindow) ? (KDxWindow*)view : NULL;
+			DxView* view = parentView->ChildView(i);
+			wnd = OBJECT_DERIVEDFROM(view, DxWindow) ? (DxWindow*)view : NULL;
 			if (wnd && (!wnd->IsTopMost()))
 				continue;
 
@@ -124,17 +124,17 @@ private:
 };
 
 // ∂•≤„¥∞ø⁄≤‚ ‘
-class KTestFrame: public KMainFrame
+class TestFrame: public MainFrame
 {
 public:
-	KTestFrame(): mTick(0)
+	TestFrame(): mTick(0)
 	{
 
 	}
 
 	void OnIdle()
 	{
-		DWORD curTick = KGetTickCount();
+		DWORD curTick = getTickCount();
 		mScreen->Update(curTick);
 		mTick = curTick;
 		mScreen->Paint();
@@ -142,11 +142,11 @@ public:
 protected:
 	virtual void DoCreate()
 	{
-		mScreen = NEW_SCREEN(KTestScreen);
+		mScreen = NEW_SCREEN(TestScreen);
 		mScreen->SetHostWnd(mHwnd);
 
 		// 1
-		KDxWindow* wnd = NEW_WINDOW(KDxWindow, mScreen);
+		DxWindow* wnd = NEW_WINDOW(DxWindow, mScreen);
 		wnd->SetPos(10, 10);
 		wnd->SetSize(200, 200);
 		wnd->SetSizable(false);
@@ -154,7 +154,7 @@ protected:
 		wnd->Show();
 		
 		// 2
-		wnd = NEW_WINDOW(KDxWindow, mScreen);
+		wnd = NEW_WINDOW(DxWindow, mScreen);
 		wnd->SetPos(30, 30);
 		wnd->SetSize(200, 200);
 		wnd->SetMinSize(100, 100);
@@ -162,43 +162,43 @@ protected:
 		wnd->Show();
 
 		// 3
-		wnd = NEW_WINDOW(KDxWindow, mScreen);
+		wnd = NEW_WINDOW(DxWindow, mScreen);
 		wnd->SetPos(30, 30);
 		wnd->SetSize(200, 200);
 		wnd->SetTopMost(true);
 		wnd->Show();
 
 		// 4
-		wnd = NEW_WINDOW(KDxWindow, mScreen);
+		wnd = NEW_WINDOW(DxWindow, mScreen);
 		wnd->SetPos(300, 200);
 		wnd->SetSize(200, 200);
 		wnd->SetMovable(false);
 		wnd->Show();
 	
 		// 5
-		wnd = NEW_WINDOW(KDxWindow, mScreen);
+		wnd = NEW_WINDOW(DxWindow, mScreen);
 		wnd->SetPos(50, 50);
 		wnd->SetSize(300, 200);
 
 		// 5-1
-		KDxView* view = NEW_VIEW(KDxView, wnd, mScreen);
+		DxView* view = NEW_VIEW(DxView, wnd, mScreen);
 
 		// 5-2
-		view = NEW_VIEW(KDxView, wnd, mScreen);
+		view = NEW_VIEW(DxView, wnd, mScreen);
 		view->SetPos(65, 0);
 
 		// 5-3
-		view = NEW_VIEW(KDxView, wnd, mScreen);
+		view = NEW_VIEW(DxView, wnd, mScreen);
 		view->SetPos(130, 0);
 		view->SetSize(150, 100);
 	
 		// 5-3-1
-		KDxView* childView = NEW_VIEW(KDxView, view, mScreen);
+		DxView* childView = NEW_VIEW(DxView, view, mScreen);
 		childView->SetPos(10, 10);
 		childView->SetSize(40, 40);
 
 		// 5-3-2
-		childView = NEW_VIEW(KDxView, view, mScreen);
+		childView = NEW_VIEW(DxView, view, mScreen);
 		childView->SetPos(60, 10);
 		childView->SetSize(40, 50);
 
@@ -212,11 +212,11 @@ protected:
 	}
 private:
 	DWORD mTick;
-	KTestScreen* mScreen;
+	TestScreen* mScreen;
 };
 
 // ≤‚ ‘”¶”√≥Ã–Ú
-class KTestApp: public KMsgLooper
+class TestApp: public MsgLooper
 {
 public:
 	void Initialize()
@@ -233,10 +233,10 @@ protected:
 	virtual void DoIdle(BOOL& isDone)
 	{
 		mMainFrame.OnIdle();
-		KMsgLooper::DoIdle(isDone);
+		MsgLooper::DoIdle(isDone);
 	}
 private:
-	KTestFrame mMainFrame;
+	TestFrame mMainFrame;
 };
 
 
@@ -245,7 +245,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
                      LPTSTR    lpCmdLine,
                      int       nCmdShow)
 {
-	KTestApp app;
+	TestApp app;
 	app.Initialize();
 	app.Run();
 	app.Finalize();

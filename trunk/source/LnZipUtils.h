@@ -1,30 +1,29 @@
 /*******************************************************************************
-  Filename:		KmDebug.h
-  Author:		Tramper
+  Filename:		Debug.h
+  Author:		lingo
   Email:		lingoooooooooo@gmail.com
   Date:			2009/12/15
 
-  Brief:    	这是KamaLib代码库的一部分，由Tramper创建并维护，版权没有，
-				请自由使用！
+  Brief:    	这是lincode代码库的一部分，由lingo创建并维护!
 -------------------------------------------------------------------------------
   说明:
 	ZIP压缩函数和类
 
   使用指南:
-	1. 把KamaLib\3rdparty\zip加入工程的搜索路径
-	2. 把KamaLib\3rdparty\zip里面的代码加入工程
+	1. 把3rdparty\zip加入工程的搜索路径
+	2. 把3rdparty\zip里面的代码加入工程
 	3. 为工程增加宏UINCODE, _UNICODE
 
   TODO:
 	*. 压缩解压内存流
 
 *******************************************************************************/
-#ifndef __LIN_KMZIPUTILS_H__
-#define __LIN_KMZIPUTILS_H__
+#ifndef __LIN_ZIPUTILS_H__
+#define __LIN_ZIPUTILS_H__
 
 #include "zip.h"
 #include "unzip.h"
-#include "KmCommons.h"
+#include "LnCommons.h"
 
 namespace lin
 {
@@ -32,14 +31,14 @@ namespace lin
 /*
 	压缩解压器 
 */
-class KZipCompress
+class ZipCompress
 {
 public:
 	KZipCompress(): mZipHandle(NULL)
 	{
 	}
 
-	~KZipCompress()
+	~ZipCompress()
 	{
 		if (mZipHandle)
 			CloseZip(mZipHandle);
@@ -57,13 +56,13 @@ public:
 		if (!BeginCompressFile(zipFile, password))
 			return FALSE;
 
-		kstring strFolder = folder;
+		String strFolder = folder;
 		if (strFolder.IsEmpty())
 			return FALSE;
 
 		strFolder = DelPathDelimiter(strFolder);
 
-		kstring strBaseDir;
+		String strBaseDir;
 		if (includeRoot)
 			strBaseDir = ExtractFileName(folder);
 		CompressFiles(folder, strBaseDir);
@@ -82,7 +81,7 @@ public:
 		if (!BeginCompressFile(zipFile, password))
 			return FALSE;
 
-		kstring strName = ExtractFileName(file);
+		String strName = ExtractFileName(file);
 		BOOL ret = AddFile(file, strName);
 		EndCompressFile();
 		return ret;
@@ -156,8 +155,8 @@ public:
 			return FALSE;
 		}
 
-		kstring strRoot = AddPathDelimiter(root);
-		kstring strPath;
+		String strRoot = AddPathDelimiter(root);
+		String strPath;
 		int itemNum = ze.index;
 		for (int i = 0; i < itemNum; ++i)
 		{ 
@@ -184,7 +183,7 @@ private:
 		if (!IsDirExists(folder))
 			return;
 
-		kstring strDir = folder;
+		String strDir = folder;
 		strDir += L"\\*";
 
 		WIN32_FIND_DATAW fd;
@@ -200,11 +199,11 @@ private:
 
 			if ((FILE_ATTRIBUTE_DIRECTORY & fd.dwFileAttributes) != 0) 
 			{
-				kstring strBaseDir = base;
+				String strBaseDir = base;
 				if (!strBaseDir.IsEmpty())
 					strBaseDir += L"\\";
 				strBaseDir += fd.cFileName;
-				kstring strFolder = folder;
+				String strFolder = folder;
 				strFolder += L"\\";
 				strFolder += fd.cFileName;
 				AddFolder(strBaseDir);
@@ -212,10 +211,10 @@ private:
 			}
 			else
 			{
-				kstring strFile = folder;
+				String strFile = folder;
 				strFile +=  L"\\";
 				strFile += fd.cFileName;
-				kstring strName = base;
+				String strName = base;
 				if (!strName.IsEmpty())
 					strName += L"\\";
 				strName += fd.cFileName;
@@ -231,4 +230,4 @@ private:
 };
 
 }
-#endif // __LIN_KMZIPUTILS_H__
+#endif // __LIN_ZIPUTILS_H__
