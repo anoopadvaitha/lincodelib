@@ -1,19 +1,18 @@
 /*******************************************************************************
-  Filename:		KmBase.h
-  Author:		Tramper
+  Filename:		LnBase.h
+  Author:		lingo
   Email:		lingoooooooooo@gmail.com
   Date:			2009/12/14
 
-  Brief:		这是KamaLib代码库的一部分，由Tramper创建并维护，版权没有，
-				请自由使用！
+  Brief:		这是lincode代码库的一部分，由lingo创建并维护!
  -------------------------------------------------------------------------------
   Description:
-	这是KamaLib的基础头文件，用于包含必须依赖的外部代码，要使用KamaLib的代码，
-	请在stdafx.h里面包含KmBase.h
+	这是lincode的基础头文件，用于包含必须依赖的外部代码，要使用lincode的代码，
+	请在stdafx.h里面包含LnBase.h
 
 *******************************************************************************/
-#ifndef __LIN_KMBASE_H__
-#define __LIN_KMBASE_H__
+#ifndef __LIN_LNBASE_H__
+#define __LIN_LNBASE_H__
 
 //------------------------------------------------------------------------------
 // C Runtime
@@ -51,4 +50,4 @@
 #include <algorithm>
 #include <hash_map>
 
-#endif // __LIN_KMBASE_H__
+#endif // __LIN_LNBASE_H__

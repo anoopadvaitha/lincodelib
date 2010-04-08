@@ -14,6 +14,6 @@
 #include <memory.h>
 #include <tchar.h>
 
-#include "KmBase.h"
+#include "LnBase.h"
 
 // TODO: 在此处引用程序要求的附加头文件

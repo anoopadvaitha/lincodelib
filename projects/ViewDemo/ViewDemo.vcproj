@@ -19,7 +19,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\Source"
+				AdditionalIncludeDirectories="..\..\source;..\..\3rdparty\dx9csdk\Include"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
@@ -34,6 +34,7 @@
 				Name="VCLinkerTool"
 				OutputFile="./Build/ViewDemo.exe"
 				LinkIncremental="2"
+				AdditionalLibraryDirectories="..\..\3rdparty\dx9csdk\Lib\x86\"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile="$(OutDir)/ViewDemo.pdb"
 				SubSystem="2"
@@ -143,28 +144,31 @@
 			</File>
 		</Filter>
 		<Filter
-			Name="KamaLib"
+			Name="include"
 			Filter="">
 			<File
-				RelativePath="..\..\Source\KmBase.h">
+				RelativePath="..\..\source\LnBase.h">
 			</File>
 			<File
-				RelativePath="..\..\Source\KmCommons.h">
+				RelativePath="..\..\source\LnCommons.h">
 			</File>
 			<File
-				RelativePath="..\..\Source\KmDebug.h">
+				RelativePath="..\..\source\LnDebugUtils.h">
 			</File>
 			<File
-				RelativePath="..\..\Source\KmDxCtrls.h">
+				RelativePath="..\..\source\LnDxCtrls.h">
 			</File>
 			<File
-				RelativePath="..\..\Source\KmDxRender.h">
+				RelativePath="..\..\source\LnDxRender.h">
 			</File>
 			<File
-				RelativePath="..\..\Source\KmDxViews.h">
+				RelativePath="..\..\source\LnDxViews.h">
 			</File>
 			<File
-				RelativePath="..\..\Source\KmString.h">
+				RelativePath="..\..\source\LnString.h">
+			</File>
+			<File
+				RelativePath="..\..\source\LnZipUtils.h">
 			</File>
 		</Filter>
 		<Filter

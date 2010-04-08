@@ -1,25 +1,24 @@
 /*******************************************************************************
-  Filename:		KmString.h
-  Author:		Tramper
+  Filename:		LnString.h
+  Author:		lingo
   Email:		lingoooooooooo@gmail.com
   Date:			2009/12/15
 
-  Brief:    	这是KamaLib代码库的一部分，由Tramper创建并维护，版权没有，
-				请自由使用！
+  Brief:    	这是lincode代码库的一部分，由lingo创建并维护!
  -------------------------------------------------------------------------------
   Description:
 	字符串类，基于WTL的实现，主要作了如下的修改:
 	1.  修改命名，符合Kama的规范
 	2.  TCHAR改成WCHAR，只保留Ansi的兼容性操作
-	3.  去除_ATL_MIN_CRT, _WIN32_WCE, _ATL_USE_kstring_FLOAT, _UNICODE等宏
+	3.  去除_ATL_MIN_CRT, _WIN32_WCE, _ATL_USE_STRING_FLOAT, _UNICODE等宏
 	4.  减少一些函数
 
 	Thanks to Microsoft Corporation.
 
 *******************************************************************************/
-#ifndef __LIN_KMSTRING_H__
-#define __LIN_KMSTRING_H__
-#include "KmDebug.h"
+#ifndef __LIN_STRING_H__
+#define __LIN_STRING_H__
+#include "LnDebugUtils.h"
 
 namespace lin
 {
@@ -27,7 +26,7 @@ namespace lin
 /*
 	字符串的内部数据
 */
-struct KStringData
+struct StringData
 {
 	long	mRefCount;		// 引用计数
 	int		mStrLen;		// 字符串长度
@@ -45,26 +44,26 @@ struct KStringData
 	尽量用IsEmpty判断字符串是否为空
 */
 _declspec(selectany) int _gInitData[] = { -1, 0, 0, 0 };
-_declspec(selectany) KStringData* _tmpDataNil = (KStringData*)&_gInitData;
-_declspec(selectany) LPCWSTR tmpStrNil = (LPCWSTR)(((BYTE*)&_gInitData) + sizeof(KStringData));
+_declspec(selectany) StringData* _tmpDataNil = (StringData*)&_gInitData;
+_declspec(selectany) LPCWSTR tmpStrNil = (LPCWSTR)(((BYTE*)&_gInitData) + sizeof(StringData));
 
 /*
-	字符串类，作为关键字看待，因此用小写
+	字符串类
 */
-class kstring
+class String
 {
 public:
-	kstring()
+	String()
 	{
 		Init();
 	}
 
-	kstring(const kstring& strSrc)
+	String(const String& strSrc)
 	{
-		KASSERT(strSrc.Data()->mRefCount != 0);
+		LN_ASSERT(strSrc.Data()->mRefCount != 0);
 		if (strSrc.Data()->mRefCount >= 0)
 		{
-			KASSERT(strSrc.Data() != _tmpDataNil);
+			LN_ASSERT(strSrc.Data() != _tmpDataNil);
 			mData = strSrc.mData;
 			InterlockedIncrement(&Data()->mRefCount);
 		}
@@ -75,7 +74,7 @@ public:
 		}
 	}
 
-	kstring(WCHAR ch, int repeat = 1)
+	String(WCHAR ch, int repeat = 1)
 	{
 		Init();
 		if (repeat >= 1)
@@ -88,7 +87,7 @@ public:
 		}
 	}
 
-	kstring(LPCWSTR str)
+	String(LPCWSTR str)
 	{
 		Init();
 		if (str != NULL)
@@ -102,7 +101,7 @@ public:
 		}
 	}
 
-	kstring(LPCSTR str, UINT cp = CP_THREAD_ACP)
+	String(LPCSTR str, UINT cp = CP_THREAD_ACP)
 	{
 		Init();
 		int srcLen = (str != NULL) ? (int)strlen(str) : 0;
@@ -116,7 +115,7 @@ public:
 		}
 	}
 
-	~kstring()
+	~String()
 	{
 		if (Data() != _tmpDataNil)
 		{
@@ -164,27 +163,27 @@ public:
 		else
 			*this = "";
 
-		KASSERT(Data()->mStrLen == 0);
-		KASSERT(Data()->mRefCount < 0 || Data()->mAllocLen == 0);
+		LN_ASSERT(Data()->mStrLen == 0);
+		LN_ASSERT(Data()->mRefCount < 0 || Data()->mAllocLen == 0);
 	}
 
 	WCHAR GetAt(int idx) const
 	{
-		KASSERT(idx >= 0);
-		KASSERT(idx < Data()->mStrLen);
+		LN_ASSERT(idx >= 0);
+		LN_ASSERT(idx < Data()->mStrLen);
 		return mData[idx];
 	}
 
 	void SetAt(int idx, WCHAR ch)
 	{
-		KASSERT(idx >= 0);
-		KASSERT(idx < Data()->mStrLen);
+		LN_ASSERT(idx >= 0);
+		LN_ASSERT(idx < Data()->mStrLen);
 
 		CopyBeforeWrite();
 		mData[idx] = ch;
 	}
 
-	kstring& Copy(LPCWSTR str, int start = 0, int count = -1)
+	String& Copy(LPCWSTR str, int start = 0, int count = -1)
 	{
 		int len = SafeStrlen(str);
 		if (len <= start) 
@@ -197,7 +196,7 @@ public:
 		return *this;
 	}
 
-	kstring& Copy(kstring& str, int start = 0, int count = -1)
+	String& Copy(String& str, int start = 0, int count = -1)
 	{
 		int len = str.Length();
 		if (len <= start) 
@@ -210,7 +209,7 @@ public:
 		return *this;
 	}
 
-	kstring& Copy(LPCSTR str, UINT cp = CP_THREAD_ACP, int start = 0, int count = -1)
+	String& Copy(LPCSTR str, UINT cp = CP_THREAD_ACP, int start = 0, int count = -1)
 	{
 		int len = (str == NULL) ? 0 : (int)lstrlenA(str);
 		if (len <= start) 
@@ -237,7 +236,7 @@ public:
 		return mData;
 	}
 
-	kstring& operator =(const kstring& strSrc)
+	String& operator =(const String& strSrc)
 	{
 		if (mData != strSrc.mData)
 		{
@@ -250,7 +249,7 @@ public:
 			{
 				// can just copy references around
 				Release();
-				KASSERT(strSrc.Data() != _tmpDataNil);
+				LN_ASSERT(strSrc.Data() != _tmpDataNil);
 				mData = strSrc.mData;
 				InterlockedIncrement(&Data()->mRefCount);
 			}
@@ -258,26 +257,26 @@ public:
 		return *this;
 	}
 
-	kstring& operator =(WCHAR ch)
+	String& operator =(WCHAR ch)
 	{
 		AssignCopy(1, &ch);
 		return *this;
 	}
 
-	kstring& operator =(char ch)
+	String& operator =(char ch)
 	{
 		*this = (WCHAR)ch;
 		return *this;
 	}
 
-	kstring& operator =(LPCWSTR str)
+	String& operator =(LPCWSTR str)
 	{
-		KASSERT(str != NULL);
+		LN_ASSERT(str != NULL);
 		AssignCopy(SafeStrlen(str), str);
 		return *this;
 	}
 
-	kstring& operator =(LPCSTR str)
+	String& operator =(LPCSTR str)
 	{
 		int srcLen = (str != NULL) ? lstrlenA(str) : 0;
 		if(AllocBeforeWrite(srcLen))
@@ -288,52 +287,52 @@ public:
 		return *this;
 	}
 
-	kstring& Append(const kstring& str)
+	String& Append(const String& str)
 	{
 		ConcatInPlace(str.Data()->mStrLen, str.mData);
 		return *this;
 	}
 
-	kstring& Append(WCHAR ch)
+	String& Append(WCHAR ch)
 	{
 		ConcatInPlace(1, &ch);
 		return *this;
 	}
 
-	kstring& Append(char ch)
+	String& Append(char ch)
 	{
 		return Append((WCHAR)ch);
 	}
 
-	kstring& Append(LPCWSTR str)
+	String& Append(LPCWSTR str)
 	{
-		KASSERT(str != NULL);
+		LN_ASSERT(str != NULL);
 		ConcatInPlace(SafeStrlen(str), str);
 		return *this;
 	}
 
-	kstring& Append(LPCSTR str, UINT cp = CP_THREAD_ACP)
+	String& Append(LPCSTR str, UINT cp = CP_THREAD_ACP)
 	{
-		kstring wstr(str, cp);
+		String wstr(str, cp);
 		return Append(wstr);
 	}
 
-	kstring& operator +=(const kstring& str)
+	String& operator +=(const String& str)
 	{
 		return Append(str);
 	}
 
-	kstring& operator +=(WCHAR ch)
+	String& operator +=(WCHAR ch)
 	{
 		return Append(ch);
 	}
 
-	kstring& operator +=(char ch)
+	String& operator +=(char ch)
 	{
 		return Append(ch);
 	}
 
-	kstring& operator +=(LPCWSTR str)
+	String& operator +=(LPCWSTR str)
 	{
 		return Append(str);
 	}
@@ -343,13 +342,13 @@ public:
 		return IsEmpty();
 	}
 
-	friend kstring __stdcall operator +(const kstring& string1, const kstring& string2);
-	friend kstring __stdcall operator +(const kstring& string, WCHAR ch);
-	friend kstring __stdcall operator +(WCHAR ch, const kstring& string);
-	friend kstring __stdcall operator +(const kstring& string, char ch);
-	friend kstring __stdcall operator +(char ch, const kstring& string);
-	friend kstring __stdcall operator +(const kstring& string, LPCWSTR str);
-	friend kstring __stdcall operator +(LPCWSTR str, const kstring& string);
+	friend String __stdcall operator +(const String& string1, const String& string2);
+	friend String __stdcall operator +(const String& string, WCHAR ch);
+	friend String __stdcall operator +(WCHAR ch, const String& string);
+	friend String __stdcall operator +(const String& string, char ch);
+	friend String __stdcall operator +(char ch, const String& string);
+	friend String __stdcall operator +(const String& string, LPCWSTR str);
+	friend String __stdcall operator +(LPCWSTR str, const String& string);
 
 	int Compare(LPCWSTR str) const   // straight character (MBCS/Unicode aware)
 	{
@@ -361,7 +360,7 @@ public:
 		return _wcsicmp(mData, str);
 	}
 
-	kstring Mid(int first, int count) const
+	String Mid(int first, int count) const
 	{
 		// out-of-bounds requests return sensible things
 		if (first < 0)
@@ -374,36 +373,36 @@ public:
 		if (first > Data()->mStrLen)
 			count = 0;
 
-		kstring dest;
+		String dest;
 		AllocCopy(dest, count, first, 0);
 		return dest;
 	}
 
-	kstring Mid(int first) const
+	String Mid(int first) const
 	{
 		return Mid(first, Data()->mStrLen - first);
 	}
 
-	kstring Left(int count) const
+	String Left(int count) const
 	{
 		if (count < 0)
 			count = 0;
 		else if (count > Data()->mStrLen)
 			count = Data()->mStrLen;
 
-		kstring dest;
+		String dest;
 		AllocCopy(dest, count, 0, 0);
 		return dest;
 	}
 
-	kstring Right(int count) const
+	String Right(int count) const
 	{
 		if (count < 0)
 			count = 0;
 		else if (count > Data()->mStrLen)
 			count = Data()->mStrLen;
 
-		kstring dest;
+		String dest;
 		AllocCopy(dest, count, Data()->mStrLen-count, 0);
 		return dest;
 	}
@@ -533,12 +532,12 @@ public:
 			int newLen =  nOldLength + (nReplacementLen - nSourceLen) * count;
 			if (Data()->mAllocLen < newLen || Data()->mRefCount > 1)
 			{
-				KStringData* pOldData = Data();
+				StringData* pOldData = Data();
 				LPWSTR str = mData;
 				if(!AllocBuffer(newLen))
 					return -1;
 				memcpy(mData, str, pOldData->mStrLen * sizeof(WCHAR));
-				kstring::Release(pOldData);
+				String::Release(pOldData);
 			}
 			// else, we just do it in-place
 			lpszStart = mData;
@@ -559,7 +558,7 @@ public:
 				}
 				lpszStart += SafeStrlen(lpszStart) + 1;
 			}
-			KASSERT(mData[newLen] == '\0');
+			LN_ASSERT(mData[newLen] == '\0');
 			Data()->mStrLen = newLen;
 		}
 
@@ -604,12 +603,12 @@ public:
 
 		if (Data()->mAllocLen < newLen)
 		{
-			KStringData* pOldData = Data();
+			StringData* pOldData = Data();
 			LPWSTR str = mData;
 			if(!AllocBuffer(newLen))
 				return -1;
 			memcpy(mData, str, (pOldData->mStrLen + 1) * sizeof(WCHAR));
-			kstring::Release(pOldData);
+			String::Release(pOldData);
 		}
 
 		// move existing bytes down
@@ -636,12 +635,12 @@ public:
 
 			if (Data()->mAllocLen < newLen)
 			{
-				KStringData* pOldData = Data();
+				StringData* pOldData = Data();
 				LPWSTR str = mData;
 				if(!AllocBuffer(newLen))
 					return -1;
 				memcpy(mData, str, (pOldData->mStrLen + 1) * sizeof(WCHAR));
-				kstring::Release(pOldData);
+				String::Release(pOldData);
 			}
 
 			// move existing bytes down
@@ -735,9 +734,9 @@ public:
 
 	BOOL __cdecl Format(HINSTANCE hinst, UINT fmtId, ...)
 	{
-		kstring strFmt;
+		String strFmt;
 		BOOL bRet = strFmt.LoadResStr(fmtId, hinst);
-		KASSERT(bRet != 0);
+		LN_ASSERT(bRet != 0);
 
 		va_list argList;
 		va_start(argList, fmtId);
@@ -792,7 +791,7 @@ public:
 				for (; *str != '\0' && iswdigit(*str); str = ::CharNextW(str))
 					;
 			}
-			KASSERT(nWidth >= 0);
+			LN_ASSERT(nWidth >= 0);
 
 			int nPrecision = 0;
 			if (*str == '.')
@@ -812,7 +811,7 @@ public:
 					for (; *str != '\0' && iswdigit(*str); str = ::CharNextW(str))
 						;
 				}
-				KASSERT(nPrecision >= 0);
+				LN_ASSERT(nPrecision >= 0);
 			}
 
 			// should be on type modifier or specifier
@@ -964,7 +963,7 @@ public:
 					break;
 				case 'f':
 					{
-						// TODO(Tramper 2009/12/16): 不够健壮，但大多数情况不会有问题
+						// TODO(lingo 2009/12/16): 不够健壮，但大多数情况不会有问题
 						double f = va_arg(argList, double);
 						WCHAR strTemp[512];
 						swprintf(strTemp, L"%*.*f", nWidth, nPrecision + 14, f);
@@ -983,7 +982,7 @@ public:
 					break;
 
 				default:
-					KASSERT(FALSE);  // unknown formatting option
+					LN_ASSERT(FALSE);  // unknown formatting option
 				}
 			}
 
@@ -995,7 +994,7 @@ public:
 			return FALSE;
 		int nRet = vswprintf(mData, strFmt, argListSave);
 		nRet;   // ref
-		KASSERT(nRet <= AllocLen());
+		LN_ASSERT(nRet <= AllocLen());
 		ReleaseBuffer();
 
 		va_end(argListSave);
@@ -1036,12 +1035,12 @@ public:
 
 	LPWSTR GetBuffer(int len)
 	{
-		KASSERT(len >= 0);
+		LN_ASSERT(len >= 0);
 
 		if (Data()->mRefCount > 1 || len > Data()->mAllocLen)
 		{
 			// we have to grow the buffer
-			KStringData* pOldData = Data();
+			StringData* pOldData = Data();
 			int nOldLen = Data()->mStrLen;   // AllocBuffer will tromp it
 			if (len < nOldLen)
 				len = nOldLen;
@@ -1051,12 +1050,12 @@ public:
 
 			memcpy(mData, pOldData->data(), (nOldLen + 1) * sizeof(WCHAR));
 			Data()->mStrLen = nOldLen;
-			kstring::Release(pOldData);
+			String::Release(pOldData);
 		}
-		KASSERT(Data()->mRefCount <= 1);
+		LN_ASSERT(Data()->mRefCount <= 1);
 
 		// return a pointer to the character storage for this string
-		KASSERT(mData != NULL);
+		LN_ASSERT(mData != NULL);
 		return mData;
 	}
 
@@ -1067,14 +1066,14 @@ public:
 		if (newLen == -1)
 			newLen = SafeStrlen(mData);   // zero terminated
 
-		KASSERT(newLen <= Data()->mAllocLen);
+		LN_ASSERT(newLen <= Data()->mAllocLen);
 		Data()->mStrLen = newLen;
 		mData[newLen] = '\0';
 	}
 
 	LPWSTR GetBufferSetLength(int newLen)
 	{
-		KASSERT(newLen >= 0);
+		LN_ASSERT(newLen >= 0);
 
 		if(GetBuffer(newLen) == NULL)
 			return NULL;
@@ -1086,18 +1085,18 @@ public:
 
 	void FreeExtra()
 	{
-		KASSERT(Data()->mStrLen <= Data()->mAllocLen);
+		LN_ASSERT(Data()->mStrLen <= Data()->mAllocLen);
 		if (Data()->mStrLen != Data()->mAllocLen)
 		{
-			KStringData* pOldData = Data();
+			StringData* pOldData = Data();
 			if(AllocBuffer(Data()->mStrLen))
 			{
 				memcpy(mData, pOldData->data(), pOldData->mStrLen * sizeof(WCHAR));
-				KASSERT(mData[Data()->mStrLen] == '\0');
-				kstring::Release(pOldData);
+				LN_ASSERT(mData[Data()->mStrLen] == '\0');
+				String::Release(pOldData);
 			}
 		}
-		KASSERT(Data() != NULL);
+		LN_ASSERT(Data() != NULL);
 	}
 
 	LPWSTR LockBuffer()
@@ -1110,16 +1109,16 @@ public:
 
 	void UnlockBuffer()
 	{
-		KASSERT(Data()->mRefCount == -1);
+		LN_ASSERT(Data()->mRefCount == -1);
 		if (Data() != _tmpDataNil)
 			Data()->mRefCount = 1;
 	}
 
 protected:
-	KStringData* Data() const
+	StringData* Data() const
 	{
-		KASSERT(mData != NULL);
-		return ((KStringData*)mData) - 1;
+		LN_ASSERT(mData != NULL);
+		return ((StringData*)mData) - 1;
 	}
 
 	void Init()
@@ -1127,7 +1126,7 @@ protected:
 		mData = GetEmptyStr().mData;
 	}
 
-	BOOL AllocCopy(kstring& dest, int copyLen, int copyIdx, int extraLen) const
+	BOOL AllocCopy(String& dest, int copyLen, int copyIdx, int extraLen) const
 	{
 		// will clone the data attached to this string
 		// allocating 'extraLen' characters
@@ -1157,8 +1156,8 @@ protected:
 	// assumes [optimistically] that data length will equal allocation length
 	BOOL AllocBuffer(int len)
 	{
-		KASSERT(len >= 0);
-		KASSERT(len <= INT_MAX - 1);   // max size (enough room for 1 extra)
+		LN_ASSERT(len >= 0);
+		LN_ASSERT(len <= INT_MAX - 1);   // max size (enough room for 1 extra)
 
 		if (len == 0)
 		{
@@ -1166,8 +1165,8 @@ protected:
 		}
 		else
 		{
-			KStringData* pData = NULL;
-			pData = (KStringData*)new BYTE[sizeof(KStringData) + (len + 1) * sizeof(WCHAR)];
+			StringData* pData = NULL;
+			pData = (StringData*)new BYTE[sizeof(StringData) + (len + 1) * sizeof(WCHAR)];
 			if(pData == NULL)
 				return FALSE;
 
@@ -1187,7 +1186,7 @@ protected:
 	//      (b) if enough room, copy on top of old buffer, set size and type
 	//      (c) otherwise free old string data, and create a new one
 	//
-	//  All routines return the new string (but as a 'const kstring&' so that
+	//  All routines return the new string (but as a 'const String&' so that
 	//      assigning it again will cause a copy, eg: s1 = s2 = "hi there".
 	//
 	void AssignCopy(int srcLen, LPCWSTR strSrc)
@@ -1203,15 +1202,15 @@ protected:
 	// Concatenation
 	// NOTE: "operator +" is done as friend functions for simplicity
 	//      There are three variants:
-	//          kstring + kstring
+	//          String + String
 	// and for ? = WCHAR, LPCWSTR
-	//          kstring + ?
-	//          ? + kstring
+	//          String + ?
+	//          ? + String
 	BOOL ConcatCopy(int srcLen, LPCWSTR strSrc, int src2Len, LPCWSTR str2Src)
 	{
 		// -- master concatenation routine
 		// Concatenate two sources
-		// -- assume that 'this' is a new kstring object
+		// -- assume that 'this' is a new String object
 
 		BOOL bRet = TRUE;
 		int nNewLen = srcLen + src2Len;
@@ -1244,11 +1243,11 @@ protected:
 		if (Data()->mRefCount > 1 || Data()->mStrLen + srcLen > Data()->mAllocLen)
 		{
 			// we have to grow the buffer, use the ConcatCopy routine
-			KStringData* pOldData = Data();
+			StringData* pOldData = Data();
 			if (ConcatCopy(Data()->mStrLen, mData, srcLen, strSrc))
 			{
-				KASSERT(pOldData != NULL);
-				kstring::Release(pOldData);
+				LN_ASSERT(pOldData != NULL);
+				String::Release(pOldData);
 			}
 		}
 		else
@@ -1256,7 +1255,7 @@ protected:
 			// fast concatenation when buffer big enough
 			memcpy(mData + Data()->mStrLen, strSrc, srcLen * sizeof(WCHAR));
 			Data()->mStrLen += srcLen;
-			KASSERT(Data()->mStrLen <= Data()->mAllocLen);
+			LN_ASSERT(Data()->mStrLen <= Data()->mAllocLen);
 			mData[Data()->mStrLen] = '\0';
 		}
 	}
@@ -1265,12 +1264,12 @@ protected:
 	{
 		if (Data()->mRefCount > 1)
 		{
-			KStringData* pData = Data();
+			StringData* pData = Data();
 			Release();
 			if(AllocBuffer(pData->mStrLen))
 				memcpy(mData, pData->data(), (pData->mStrLen + 1) * sizeof(WCHAR));
 		}
-		KASSERT(Data()->mRefCount <= 1);
+		LN_ASSERT(Data()->mRefCount <= 1);
 	}
 
 	BOOL AllocBeforeWrite(int len)
@@ -1281,7 +1280,7 @@ protected:
 			Release();
 			bRet = AllocBuffer(len);
 		}
-		KASSERT(Data()->mRefCount <= 1);
+		LN_ASSERT(Data()->mRefCount <= 1);
 		return bRet;
 	}
 
@@ -1289,18 +1288,18 @@ protected:
 	{
 		if (Data() != _tmpDataNil)
 		{
-			KASSERT(Data()->mRefCount != 0);
+			LN_ASSERT(Data()->mRefCount != 0);
 			if (InterlockedDecrement(&Data()->mRefCount) <= 0)
 				delete[] (BYTE*)Data();
 			Init();
 		}
 	}
 
-	static void PASCAL Release(KStringData* pData)
+	static void PASCAL Release(StringData* pData)
 	{
 		if (pData != _tmpDataNil)
 		{
-			KASSERT(pData->mRefCount != 0);
+			LN_ASSERT(pData->mRefCount != 0);
 			if (InterlockedDecrement(&pData->mRefCount) <= 0)
 				delete[] (BYTE*)pData;
 		}
@@ -1320,9 +1319,9 @@ protected:
 		return len;
 	}
 
-	static const kstring& __stdcall GetEmptyStr()
+	static const String& __stdcall GetEmptyStr()
 	{
-		return *(kstring*)&tmpStrNil;
+		return *(String*)&tmpStrNil;
 	}
 
 	static int __cdecl StrToWStr(wchar_t* wcstr, const char* mbstr, size_t count, UINT cp = CP_THREAD_ACP)
@@ -1331,7 +1330,7 @@ protected:
 			return 0;
 
 		int result = ::MultiByteToWideChar(cp, 0, mbstr, -1, wcstr, (int)count);
-		KASSERT(wcstr == NULL || result <= (int)count);
+		LN_ASSERT(wcstr == NULL || result <= (int)count);
 		if (result > 0)
 			wcstr[result - 1] = 0;
 		return result;
@@ -1344,109 +1343,109 @@ protected:
 
 // Compare helpers
 
-inline bool __stdcall operator ==(const kstring& s1, const kstring& s2)
+inline bool __stdcall operator ==(const String& s1, const String& s2)
 { return s1.Compare(s2) == 0; }
 
-inline bool __stdcall operator ==(const kstring& s1, LPCWSTR s2)
+inline bool __stdcall operator ==(const String& s1, LPCWSTR s2)
 { return s1.Compare(s2) == 0; }
 
-inline bool __stdcall operator ==(LPCWSTR s1, const kstring& s2)
+inline bool __stdcall operator ==(LPCWSTR s1, const String& s2)
 { return s2.Compare(s1) == 0; }
 
-inline bool __stdcall operator !=(const kstring& s1, const kstring& s2)
+inline bool __stdcall operator !=(const String& s1, const String& s2)
 { return s1.Compare(s2) != 0; }
 
-inline bool __stdcall operator !=(const kstring& s1, LPCWSTR s2)
+inline bool __stdcall operator !=(const String& s1, LPCWSTR s2)
 { return s1.Compare(s2) != 0; }
 
-inline bool __stdcall operator !=(LPCWSTR s1, const kstring& s2)
+inline bool __stdcall operator !=(LPCWSTR s1, const String& s2)
 { return s2.Compare(s1) != 0; }
 
-inline bool __stdcall operator <(const kstring& s1, const kstring& s2)
+inline bool __stdcall operator <(const String& s1, const String& s2)
 { return s1.Compare(s2) < 0; }
 
-inline bool __stdcall operator <(const kstring& s1, LPCWSTR s2)
+inline bool __stdcall operator <(const String& s1, LPCWSTR s2)
 { return s1.Compare(s2) < 0; }
 
-inline bool __stdcall operator <(LPCWSTR s1, const kstring& s2)
+inline bool __stdcall operator <(LPCWSTR s1, const String& s2)
 { return s2.Compare(s1) > 0; }
 
-inline bool __stdcall operator >(const kstring& s1, const kstring& s2)
+inline bool __stdcall operator >(const String& s1, const String& s2)
 { return s1.Compare(s2) > 0; }
 
-inline bool __stdcall operator >(const kstring& s1, LPCWSTR s2)
+inline bool __stdcall operator >(const String& s1, LPCWSTR s2)
 { return s1.Compare(s2) > 0; }
 
-inline bool __stdcall operator >(LPCWSTR s1, const kstring& s2)
+inline bool __stdcall operator >(LPCWSTR s1, const String& s2)
 { return s2.Compare(s1) < 0; }
 
-inline bool __stdcall operator <=(const kstring& s1, const kstring& s2)
+inline bool __stdcall operator <=(const String& s1, const String& s2)
 { return s1.Compare(s2) <= 0; }
 
-inline bool __stdcall operator <=(const kstring& s1, LPCWSTR s2)
+inline bool __stdcall operator <=(const String& s1, LPCWSTR s2)
 { return s1.Compare(s2) <= 0; }
 
-inline bool __stdcall operator <=(LPCWSTR s1, const kstring& s2)
+inline bool __stdcall operator <=(LPCWSTR s1, const String& s2)
 { return s2.Compare(s1) >= 0; }
 
-inline bool __stdcall operator >=(const kstring& s1, const kstring& s2)
+inline bool __stdcall operator >=(const String& s1, const String& s2)
 { return s1.Compare(s2) >= 0; }
 
-inline bool __stdcall operator >=(const kstring& s1, LPCWSTR s2)
+inline bool __stdcall operator >=(const String& s1, LPCWSTR s2)
 { return s1.Compare(s2) >= 0; }
 
-inline bool __stdcall operator >=(LPCWSTR s1, const kstring& s2)
+inline bool __stdcall operator >=(LPCWSTR s1, const String& s2)
 { return s2.Compare(s1) <= 0; }
 
 
-// kstring "operator +" functions
+// String "operator +" functions
 
-inline kstring __stdcall operator +(const kstring& string1, const kstring& string2)
+inline String __stdcall operator +(const String& string1, const String& string2)
 {
-	kstring s;
+	String s;
 	s.ConcatCopy(string1.Data()->mStrLen, string1.mData, string2.Data()->mStrLen, string2.mData);
 	return s;
 }
 
-inline kstring __stdcall operator +(const kstring& string, WCHAR ch)
+inline String __stdcall operator +(const String& string, WCHAR ch)
 {
-	kstring s;
+	String s;
 	s.ConcatCopy(string.Data()->mStrLen, string.mData, 1, &ch);
 	return s;
 }
 
-inline kstring __stdcall operator +(WCHAR ch, const kstring& string)
+inline String __stdcall operator +(WCHAR ch, const String& string)
 {
-	kstring s;
+	String s;
 	s.ConcatCopy(1, &ch, string.Data()->mStrLen, string.mData);
 	return s;
 }
 
-inline kstring __stdcall operator +(const kstring& string, char ch)
+inline String __stdcall operator +(const String& string, char ch)
 {
 	return string + (WCHAR)ch;
 }
 
-inline kstring __stdcall operator +(char ch, const kstring& string)
+inline String __stdcall operator +(char ch, const String& string)
 {
 	return (WCHAR)ch + string;
 }
 
-inline kstring __stdcall operator +(const kstring& string, LPCWSTR str)
+inline String __stdcall operator +(const String& string, LPCWSTR str)
 {
-	KASSERT(str != NULL);
-	kstring s;
-	s.ConcatCopy(string.Data()->mStrLen, string.mData, kstring::SafeStrlen(str), str);
+	LN_ASSERT(str != NULL);
+	String s;
+	s.ConcatCopy(string.Data()->mStrLen, string.mData, String::SafeStrlen(str), str);
 	return s;
 }
 
-inline kstring __stdcall operator +(LPCWSTR str, const kstring& string)
+inline String __stdcall operator +(LPCWSTR str, const String& string)
 {
-	KASSERT(str != NULL);
-	kstring s;
-	s.ConcatCopy(kstring::SafeStrlen(str), str, string.Data()->mStrLen, string.mData);
+	LN_ASSERT(str != NULL);
+	String s;
+	s.ConcatCopy(String::SafeStrlen(str), str, string.Data()->mStrLen, string.mData);
 	return s;
 }
 
 }
-#endif // __LIN_KMSTRING_H__
+#endif // __LIN_STRING_H__

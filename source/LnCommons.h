@@ -1,19 +1,18 @@
 /*******************************************************************************
-  Filename:		KmCommons.h
-  Author:		Tramper
+  Filename:		LnCommons.h
+  Author:		lingo
   Email:		lingoooooooooo@gmail.com
   Date:			2009/12/14
 
-  Brief:    	这是KamaLib代码库的一部分，由Tramper创建并维护，版权没有，
-				请自由使用！
+  Brief:    	这是lincode代码库的一部分，由lingo创建并维护!
  -------------------------------------------------------------------------------
   Description:	公共代码，每一种类型都用//-------分隔，可以通过它查找。
 	
 *******************************************************************************/
-#ifndef __LIN_KMCOMMONS_H__
-#define __LIN_KMCOMMONS_H__
-#include "KmDebug.h"
-#include "KmString.h"
+#ifndef __LIN_LNCOMMONS_H__
+#define __LIN_LNCOMMONS_H__
+#include "LnDebugUtils.h"
+#include "LnString.h"
 
 namespace lin
 {
@@ -27,7 +26,7 @@ namespace lin
 /*
 	字符串列表
 */
-typedef std::vector<kstring> KStrings;
+typedef std::vector<String> Strings;
 
 /*
 	接口关键字
@@ -93,9 +92,9 @@ inline int StrToInt(LPCWSTR str)
 /*
 	整形转字符串
 */
-inline kstring IntToStr(int n)
+inline String IntToStr(int n)
 {
-	kstring str;
+	String str;
 	str.Format(L"%d", n);
 	return str;
 }
@@ -272,24 +271,24 @@ STDMETHODIMP_(ULONG) Release()											\
    接口智能指针，用法与ATL的CComPtr基本一致	
 */
 template <class T>
-class KIntfPtr
+class IntfPtr
 {
 public:
-	KIntfPtr()
+	IntfPtr()
 	{
 		mIntf = NULL;
 	}
-	KIntfPtr(T* lp)
+	IntfPtr(T* lp)
 	{
 		if ((mIntf = lp) != NULL)
 			mIntf->AddRef();
 	}
-	KIntfPtr(const KIntfPtr<T>& lp)
+	IntfPtr(const IntfPtr<T>& lp)
 	{
 		if ((mIntf = lp.mIntf) != NULL)
 			mIntf->AddRef();
 	}
-	~KIntfPtr()
+	~IntfPtr()
 	{
 		if (mIntf)
 			mIntf->Release();
@@ -309,17 +308,17 @@ public:
 	}
 	T& operator*() const
 	{
-		KASSERT(mIntf!=NULL);
+		LN_ASSERT(mIntf!=NULL);
 		return *mIntf;
 	}
 	T** operator&()
 	{
-		KASSERT(mIntf==NULL);
+		LN_ASSERT(mIntf==NULL);
 		return &mIntf;
 	}
 	T* operator->() const
 	{
-		KASSERT(mIntf!=NULL);
+		LN_ASSERT(mIntf!=NULL);
 		return mIntf;
 	}
 	T* operator=(T* lp)
@@ -329,7 +328,7 @@ public:
 		mIntf = lp;
 		return mIntf;
 	}
-	T* operator=(const KIntfPtr<T>& lp)
+	T* operator=(const IntfPtr<T>& lp)
 	{
 		if (lp.mIntf != NULL) lp.mIntf->AddRef();
 		if (mIntf) (mIntf)->Release();
@@ -356,8 +355,8 @@ public:
 		if (mIntf == NULL || pOther == NULL)
 			return FALSE;
 
-		KIntfPtr<IUnknown> punk1;
-		KIntfPtr<IUnknown> punk2;
+		IntfPtr<IUnknown> punk1;
+		IntfPtr<IUnknown> punk2;
 		mIntf->QueryInterface(IID_IUnknown, (void**)&punk1);
 		pOther->QueryInterface(IID_IUnknown, (void**)&punk2);
 		return punk1 == punk2;
@@ -430,10 +429,10 @@ inline HRESULT DisconnectEvent(IUnknown* ptrSrc, REFIID eiid, DWORD& cookie)
 /*
 	GUID转字符串，如果转换失败，返回空字符串
 */
-inline kstring GuidToStr(REFGUID id)
+inline String GuidToStr(REFGUID id)
 {
 	LPOLESTR szGuid;
-	kstring strGuid;
+	String strGuid;
 	HRESULT hr = ::StringFromCLSID(id, &szGuid);
 	if (hr == S_OK)
 	{
@@ -442,7 +441,7 @@ inline kstring GuidToStr(REFGUID id)
 	}
 	else
 	{
-		KASSERT(!"GuidToStr failed!");
+		LN_ASSERT(!"GuidToStr failed!");
 	}
 	return strGuid;
 }
@@ -457,7 +456,7 @@ inline GUID StrToGuid(WCHAR* szGuid)
 		return guid;
 	else
 	{
-		KASSERT(!"StrToGuid failed!");
+		LN_ASSERT(!"StrToGuid failed!");
 		return GUID_NULL;
 	}
 }
@@ -468,14 +467,14 @@ inline GUID StrToGuid(WCHAR* szGuid)
 /*
 	简化的事件对象类，手动类型
 */
-class KEvent
+class Event
 {
 public:
-	KEvent()
+	Event()
 	{
 		mHEvent = ::CreateEvent(NULL, TRUE, FALSE, NULL);
 	}
-	~KEvent()
+	~Event()
 	{
 		::CloseHandle(mHEvent);
 	}
@@ -504,14 +503,14 @@ private:
 /*
 	临界区类
 */
-class KCriticalSection
+class CriticalSection
 {
 public:
-	KCriticalSection()
+	CriticalSection()
 	{
 		::InitializeCriticalSection(&mCS);
 	}
-	~KCriticalSection()
+	~CriticalSection()
 	{
 		::DeleteCriticalSection(&mCS);
 	}
@@ -530,42 +529,42 @@ private:
 /*
 	临界区锁类，声明为本地对象，由栈自动回收
 */
-class KLock
+class Lock
 {
 public:
-	KLock(KCriticalSection* pcs)
+	Lock(CriticalSection* pcs)
 	{
 		mPCS = pcs;
 		mPCS->Lock();
 	}
-	~KLock()
+	~Lock()
 	{
 		mPCS->UnLock();
 	}
 private:
-	KLock() {}
-	KLock(KLock& lock) {}
-	void operator = (KLock& lock) {}
+	Lock() {}
+	Lock(Lock& lock) {}
+	void operator = (Lock& lock) {}
 private:
-	KCriticalSection* mPCS;
+	CriticalSection* mPCS;
 };
 
 /*
 	线程对象基类
 */
-class KThread
+class Thread
 {
 public:
 	/*
 		在主线程调用
 	*/
-	KThread(): mThreadId(0), mThreadHandle(NULL), mIsStop(TRUE), mIsSuspend(FALSE)
+	Thread(): mThreadId(0), mThreadHandle(NULL), mIsStop(TRUE), mIsSuspend(FALSE)
 	{
 	}
 	/*
 		在主线程调用
 	*/
-	virtual ~KThread()
+	virtual ~Thread()
 	{
 		StopThread();
 	}
@@ -675,7 +674,7 @@ private:
 	*/
 	static DWORD WINAPI ThreadProc(LPVOID lpParam)
 	{
-		KThread* threadObject = (KThread*)lpParam;
+		Thread* threadObject = (Thread*)lpParam;
 		DWORD ret = threadObject->ThreadExecute();
 		threadObject->SetStop(TRUE);
 		return ret;
@@ -689,13 +688,13 @@ protected:
 
 //------------------------------------------------------------------------------
 // 流类，提供两种最基本的流
-// 文件流: KFileStream
-// 内存流: KMemoryStream
+// 文件流: FileStream
+// 内存流: MemoryStream
 
 /*
 	搜索起点
 */
-enum KSeekOrigin
+enum SeekOrigin
 {
 	soBegin,
 	soCurrent,
@@ -705,7 +704,7 @@ enum KSeekOrigin
 /*
 	流基类
 */
-class KStream
+class Stream
 {
 public:
 	/*
@@ -721,7 +720,7 @@ public:
 	/*
 		当前指针定位
 	*/
-	virtual DWORD Seek(const DWORD offset, KSeekOrigin origin) = 0;
+	virtual DWORD Seek(const DWORD offset, SeekOrigin origin) = 0;
 
 	/*
 		设流的尺寸
@@ -759,7 +758,7 @@ public:
 	/*
 		从其他流拷贝数据, count如果为0则拷贝整个流
 	*/
-	DWORD CopyFrom(KStream* ptrSrc, DWORD count)
+	DWORD CopyFrom(Stream* ptrSrc, DWORD count)
 	{
 		const DWORD maxBufSize = 0xF000;
 
@@ -785,13 +784,13 @@ public:
 		return ret;
 	}
 
-	virtual ~KStream() {}
+	virtual ~Stream() {}
 };
 
 /*
 	有句柄的流
 */
-class KHandleStream: public KStream
+class HandleStream: public Stream
 {
 public:
 	virtual DWORD Read(void* ptrBuf, DWORD count)
@@ -799,7 +798,7 @@ public:
 		DWORD ret;
 		if (!::ReadFile(mHandle, ptrBuf, count, &ret, NULL))
 		{
-			KASSERT(!"Read failed");
+			LN_ASSERT(!"Read failed");
 			return -1;
 		}
 		else
@@ -811,14 +810,14 @@ public:
 		DWORD ret;
 		if (!::WriteFile(mHandle, ptrBuf, count, &ret, NULL))
 		{
-			KASSERT(!"Write failed");
+			LN_ASSERT(!"Write failed");
 			return -1;
 		}
 		else
 			return ret;
 	}
 
-	virtual DWORD Seek(const DWORD offset, KSeekOrigin origin)
+	virtual DWORD Seek(const DWORD offset, SeekOrigin origin)
 	{
 		return ::SetFilePointer(mHandle, offset, NULL, origin);
 	}
@@ -834,15 +833,15 @@ public:
 		return mHandle;
 	}
 
-	KHandleStream(): mHandle(NULL) {}
-	virtual ~KHandleStream() {}
+	HandleStream(): mHandle(NULL) {}
+	virtual ~HandleStream() {}
 
 protected:
 	/*
 		禁止拷贝构造函数
 	*/
-	KHandleStream(const KHandleStream& stream) {}
-	void operator = (const KHandleStream& stream) {}
+	HandleStream(const HandleStream& stream) {}
+	void operator = (const HandleStream& stream) {}
 
 protected:
 	HANDLE mHandle;
@@ -851,7 +850,7 @@ protected:
 /*
 	文件流
 */
-class KFileStream: public KHandleStream
+class FileStream: public HandleStream
 {
 public:
 	/*
@@ -894,7 +893,7 @@ public:
 		return mHandle != INVALID_HANDLE_VALUE;
 	}
 
-	virtual ~KFileStream()
+	virtual ~FileStream()
 	{
 		if (mHandle && (mHandle != INVALID_HANDLE_VALUE)) 
 			CloseHandle(mHandle);
@@ -904,11 +903,11 @@ public:
 /*
 	内存流
 */
-class KMemoryStream: public KStream
+class MemoryStream: public Stream
 {
 public:
-	KMemoryStream(): mData(NULL), mSize(0), mPos(0), mCapacity(0) {}
-	virtual ~KMemoryStream() { Clear(); }
+	MemoryStream(): mData(NULL), mSize(0), mPos(0), mCapacity(0) {}
+	virtual ~MemoryStream() { Clear(); }
 
 	virtual DWORD Read(void* ptrBuf, DWORD count)
 	{
@@ -948,7 +947,7 @@ public:
 		return 0;
 	}
 
-	virtual DWORD Seek(const DWORD offset, KSeekOrigin origin)
+	virtual DWORD Seek(const DWORD offset, SeekOrigin origin)
 	{
 		switch(origin)
 		{
@@ -981,13 +980,13 @@ public:
 		mPos = 0;	
 	}
 
-	void SaveToStream(KStream* stream)
+	void SaveToStream(Stream* stream)
 	{
 		if (mSize > 0)
 			stream->Write(mData, mSize);
 	}
 
-	void LoadFromStream(KStream* stream)
+	void LoadFromStream(Stream* stream)
 	{
 		stream->SetPos(0);
 		DWORD count = stream->Size();
@@ -998,14 +997,14 @@ public:
 
 	void SaveToFile(LPCWSTR fileName)
 	{
-		KFileStream fileStm;
+		FileStream fileStm;
 		if (fileStm.Create(fileName))
 			SaveToStream(&fileStm);
 	}
 
 	void LoadFromFile(LPCWSTR fileName)
 	{
-		KFileStream fileStm;
+		FileStream fileStm;
 		if (fileStm.Open(fileName, GENERIC_READ, FILE_SHARE_READ))
 			LoadFromStream(&fileStm);
 	}
@@ -1069,8 +1068,8 @@ private:
 
 private:
 	// 禁止拷贝构造函数
-	KMemoryStream(const KMemoryStream& Stream) {}
-	void operator = (const KMemoryStream& Stream) {}
+	MemoryStream(const MemoryStream& Stream) {}
+	void operator = (const MemoryStream& Stream) {}
 
 private:
 	char* mData;
@@ -1091,7 +1090,7 @@ private:
 /*
 	字符集类型
 */
-enum KCharSet
+enum CharSet
 {
 	csAnsi, 
 	csUnicode,
@@ -1102,7 +1101,7 @@ enum KCharSet
 /*
 	符串列表类
 */
-class KStringList: public KStrings
+class StringList: public Strings
 {
 public:
 	/*
@@ -1110,7 +1109,7 @@ public:
 	*/
 	void LoadFromFile(LPCWSTR fileName)
 	{
-		KFileStream fileStm;
+		FileStream fileStm;
 		if (fileStm.Open(fileName, GENERIC_READ, FILE_SHARE_READ))
 			LoadFromStream(&fileStm);	
 	}
@@ -1118,7 +1117,7 @@ public:
 	/*
 		从流加载
 	*/
-	void LoadFromStream(KStream* stream)
+	void LoadFromStream(Stream* stream)
 	{
 		LoadFromStream_BOM(stream, TRUE);
 	}
@@ -1126,9 +1125,9 @@ public:
 	/*
 		从流加载，带BOM头的解析
 	*/
-	void LoadFromStream_BOM(KStream* stream, BOOL checkBOM)
+	void LoadFromStream_BOM(Stream* stream, BOOL checkBOM)
 	{
-		KCharSet charset = csUnicode;
+		CharSet charset = csUnicode;
 		if (checkBOM)
 			charset = DetectCharSet(stream);
 
@@ -1169,7 +1168,7 @@ public:
 	*/
 	void SaveToFile(LPCWSTR fileName)
 	{
-		KFileStream fileStm;
+		FileStream fileStm;
 		if (fileStm.Create(fileName))
 			SaveToStream(&fileStm);
 	}
@@ -1177,7 +1176,7 @@ public:
 	/*
 		保存到流
 	*/
-	void SaveToStream(KStream* stream)
+	void SaveToStream(Stream* stream)
 	{
 		SaveToStream_BOM(stream, TRUE);
 	}
@@ -1185,7 +1184,7 @@ public:
 	/*
 		保存到文件，加上BOM头
 	*/
-	void SaveToStream_BOM(KStream* stream, BOOL checkBOM)
+	void SaveToStream_BOM(Stream* stream, BOOL checkBOM)
 	{
 		if (checkBOM)
 		{
@@ -1193,8 +1192,8 @@ public:
 			stream->Write(&cBOM, sizeof(cBOM));
 		}
 		WCHAR cLB[3] = L"\r\n";
-		kstring text;
-		for (KStrings::iterator itr = begin(); itr != end(); ++itr)
+		String text;
+		for (Strings::iterator itr = begin(); itr != end(); ++itr)
 			text += (*itr) + cLB;
 		stream->Write(text, (DWORD)text.Length() * sizeof(WCHAR));
 	}
@@ -1208,7 +1207,7 @@ private:
 		if (!ptrBuf) return;
 
 		WCHAR* ptrStart;
-		kstring line;
+		String line;
 		while (*ptrBuf)
 		{
 			ptrStart = ptrBuf;
@@ -1239,7 +1238,7 @@ private:
 	/*
 		检查文本流的字符集
 	*/
-	KCharSet DetectCharSet(KStream* stream)
+	CharSet DetectCharSet(Stream* stream)
 	{
 		WCHAR mask = 0;
 		char utf8Bom[4] = "\xEF\xBB\xBF";
@@ -1294,9 +1293,9 @@ inline BOOL IsDirExists(LPCWSTR dir)
 /*
 	提取文件全路径中的路径部分，包括反斜杠"\"或斜杠"/"
 */
-inline kstring ExtractFilePath(LPCWSTR path)
+inline String ExtractFilePath(LPCWSTR path)
 {	
-	kstring newPath = path;
+	String newPath = path;
 	int pos = newPath.ReverseFind('\\');
 	if (pos < 0)
 		pos = newPath.ReverseFind('/');
@@ -1309,9 +1308,9 @@ inline kstring ExtractFilePath(LPCWSTR path)
 /*
 	提取文件全路径中的路径部分，不包括反斜杠"\"或斜杠"/"
 */
-inline kstring ExtractFileDir(LPCWSTR path)
+inline String ExtractFileDir(LPCWSTR path)
 {
-	kstring newPath = path;
+	String newPath = path;
 	int pos = newPath.ReverseFind('\\');
 	if (pos < 0)
 		pos = newPath.ReverseFind('/');
@@ -1324,9 +1323,9 @@ inline kstring ExtractFileDir(LPCWSTR path)
 /*
 	提取文件全路径名中的文件名
 */
-inline kstring ExtractFileName(LPCWSTR path)
+inline String ExtractFileName(LPCWSTR path)
 {
-	kstring fileName = path;
+	String fileName = path;
 	int pos = fileName.ReverseFind('\\');
 	if (pos < 0)
 		pos = fileName.ReverseFind('/');
@@ -1339,9 +1338,9 @@ inline kstring ExtractFileName(LPCWSTR path)
 /*
 	提取文件名中的扩展名，不包括"."
 */
-inline kstring ExtractFileExt(LPCWSTR path)
+inline String ExtractFileExt(LPCWSTR path)
 {
-	kstring fileExt = path;
+	String fileExt = path;
 	int pos = fileExt.ReverseFind('.');
 	if (pos >= 0)
 		return fileExt.Right(fileExt.Length() - pos - 1);
@@ -1352,9 +1351,9 @@ inline kstring ExtractFileExt(LPCWSTR path)
 /*
 	改变文件扩展名, fileExt不包括"."
 */
-inline kstring ChangeFileExt(LPCWSTR fileName, LPCWSTR fileExt)
+inline String ChangeFileExt(LPCWSTR fileName, LPCWSTR fileExt)
 {
-	kstring newFileName = fileName;
+	String newFileName = fileName;
 	int pos = newFileName.ReverseFind('.');
 	if(pos >= 0)
 	{
@@ -1367,9 +1366,9 @@ inline kstring ChangeFileExt(LPCWSTR fileName, LPCWSTR fileExt)
 /*
 	给文件路径的尾部加一个反斜杠
 */
-inline kstring AddPathDelimiter(LPCWSTR path)
+inline String AddPathDelimiter(LPCWSTR path)
 {
-	kstring newPath = path;
+	String newPath = path;
 	if (!newPath.IsEmpty() &&
 		(newPath[newPath.Length() - 1] != '\\') &&
 		(newPath[newPath.Length() - 1] != '/'))
@@ -1380,9 +1379,9 @@ inline kstring AddPathDelimiter(LPCWSTR path)
 /*
 	去掉文件路径尾部的反斜杠
 */
-inline kstring DelPathDelimiter(LPCWSTR path)
+inline String DelPathDelimiter(LPCWSTR path)
 {
-	kstring newPath = path;
+	String newPath = path;
 	if (!newPath.IsEmpty() &&
 		((newPath[newPath.Length() - 1] == '\\') ||
 		(newPath[newPath.Length() - 1] == '/')))
@@ -1393,9 +1392,9 @@ inline kstring DelPathDelimiter(LPCWSTR path)
 /*
 	将路径中的反斜杠转为斜杠："\"-->"/"
 */
-inline kstring BslToSl(LPCWSTR path)
+inline String BslToSl(LPCWSTR path)
 {
-	kstring newPath = path;
+	String newPath = path;
 	newPath.Replace('\\', '/');
 	return newPath;
 }
@@ -1403,9 +1402,9 @@ inline kstring BslToSl(LPCWSTR path)
 /*
 	将路径中的斜杠转为反斜杠："/"-->"\"
 */
-inline kstring SlToBsl(LPCWSTR path)
+inline String SlToBsl(LPCWSTR path)
 {
-	kstring newPath = path;
+	String newPath = path;
 	newPath.Replace('/', '\\');
 	return newPath;
 }
@@ -1425,11 +1424,11 @@ inline void MakeSureDirExsits(LPCWSTR dir)
 /*
 	取得程序当前的路径
 */
-inline kstring GetAppPath()
+inline String GetAppPath()
 {
 	WCHAR path[MAX_PATH] = {0};
 	if (0 == GetModuleFileNameW(NULL, path, MAX_PATH))
-		return kstring(L"");
+		return String(L"");
 
 	return ExtractFilePath(path);
 }
@@ -1437,9 +1436,9 @@ inline kstring GetAppPath()
 /*
 	应用程序当前路径，静态全局
 */
-inline kstring& SGetAppPath()
+inline String& SGetAppPath()
 {
-	static kstring sAppPath = GetAppPath();
+	static String sAppPath = GetAppPath();
 	return sAppPath;
 }
 #define gAppPath SGetAppPath()
@@ -1476,9 +1475,9 @@ inline HMODULE ThisModuleHandle()
 /*
 	取得窗口的文本
 */
-inline kstring GetWndText(HWND hwnd)
+inline String GetWndText(HWND hwnd)
 {
-	kstring str;
+	String str;
 	int len = (int)::SendMessageW(hwnd, WM_GETTEXTLENGTH, 0, 0);
 	if (len > 0)
 	{
@@ -1497,13 +1496,13 @@ inline kstring GetWndText(HWND hwnd)
 	isCreate如果文件夹不存在，是否强制创建
 	返回文件夹的路径，不包括反斜杠
 */
-inline kstring GetSpecialFolder(int folder, BOOL isCreate = FALSE)
+inline String GetSpecialFolder(int folder, BOOL isCreate = FALSE)
 {
 	WCHAR szPath[MAX_PATH] = {0};
 	if (SHGetSpecialFolderPathW(NULL, szPath, folder, isCreate))
-		return kstring(szPath);
+		return String(szPath);
 	else
-		return kstring(L"");
+		return String(L"");
 }
 
 /*
@@ -1530,9 +1529,9 @@ inline kstring GetSpecialFolder(int folder, BOOL isCreate = FALSE)
 
 /*
 	取命令行列表，建议取得的列表作为全局对象，可以多次使用
-	TODO(Tramper 2009/12/15): 建壮性不够，待重构
+	TODO(lingo 2009/12/15): 建壮性不够，待重构
 */
-inline BOOL GetCmdLines(KStrings& cmdLines)
+inline BOOL GetCmdLines(Strings& cmdLines)
 {
 	cmdLines.clear();
 	WCHAR* szCmd = GetCommandLineW();
@@ -1554,7 +1553,7 @@ inline BOOL GetCmdLines(KStrings& cmdLines)
 
 		// 解析参数
 		WCHAR* ptrStart = szCmd;
-		kstring sParam;
+		String sParam;
 		if (szCmd[0] == '"')
 		{
 			ptrStart = ++szCmd;
@@ -1579,7 +1578,7 @@ inline BOOL GetCmdLines(KStrings& cmdLines)
 /*
 	取计时数
 */
-inline DWORD KGetTickCount()
+inline DWORD getTickCount()
 {
 	return timeGetTime();
 }
@@ -1587,7 +1586,7 @@ inline DWORD KGetTickCount()
 /*
 	取键盘连击延迟
 */
-inline DWORD KeyBoardDelay()
+inline DWORD eyBoardDelay()
 {
 	static DWORD delay = 0;
 	if (!delay)
@@ -1602,7 +1601,7 @@ inline DWORD KeyBoardDelay()
 /*
 	取键盘连击速度
 */
-inline DWORD KeyBoardSpeek()
+inline DWORD eyBoardSpeek()
 {
 	static DWORD speed = 0;
 	if (!speed)
@@ -1615,7 +1614,7 @@ inline DWORD KeyBoardSpeek()
 //------------------------------------------------------------------------------
 // 顶层窗口与消息循环封装类
 
-class KMsgLooper;
+class MsgLooper;
 
 /*
 	消息循环事件接口
@@ -1625,20 +1624,20 @@ interface IMsgLoopEvent
 	/*
 		消息过滤
 	*/
-	virtual void OnMsgFilter(KMsgLooper* sender, MSG& msg, BOOL& isHandled) = 0;
+	virtual void OnMsgFilter(MsgLooper* sender, MSG& msg, BOOL& isHandled) = 0;
 	/*
 		空闲事件
 	*/
-	virtual void OnIdle(KMsgLooper* sender, BOOL& isDone) = 0;
+	virtual void OnIdle(MsgLooper* sender, BOOL& isDone) = 0;
 };
 
 /*
 	消息循环类
 */
-class KMsgLooper
+class MsgLooper
 {
 public:
-	KMsgLooper(): mMsgEvent(NULL), mIsTerm(FALSE)
+	MsgLooper(): mMsgEvent(NULL), mIsTerm(FALSE)
 	{
 	}
 
@@ -1774,7 +1773,7 @@ protected:
 /*
 	窗口标题栏按钮
 */
-typedef DWORD KBorderIcons;
+typedef DWORD FmBorderIcons;
 #define biSysMenu		0x01	// 系统菜单
 #define biMinimize		0x02	// 最大化按钮
 #define biMaximize		0x04	// 最小化按钮
@@ -1782,7 +1781,7 @@ typedef DWORD KBorderIcons;
 /*
 	窗口边框风格
 */
-enum KBorderStyle
+enum FmBorderStyle
 {
 	bsNone,						// 无边框
 	bsSingle,					// 细边框，不可拉动大小
@@ -1792,14 +1791,14 @@ enum KBorderStyle
 /*
 	窗口状态
 */
-enum KWindowState
+enum FmWindowState
 {
 	wsNormal,					// 还原
 	wsMinimized,				// 最小化
 	wsMaximized					// 最大化
 };
 
-enum KCloseMode
+enum CloseMode
 {
 	cmHideWindow,				// 隐藏窗口
 	cmFreeHandle,				// 消毁窗口句柄
@@ -1812,7 +1811,7 @@ enum KCloseMode
 #define LIN_WNDFRAME_CLSNAME	L"Kama.Window.Frame"
 #define LIN_WNDFRAME_ATOM		L"Kama.Window.Frame.Atom"
 
-class KWndFrame;
+class WndFrame;
 
 /*
 	窗口事件
@@ -1822,7 +1821,7 @@ interface IWndFrameEvent
 	/*
 		句柄创建
 	*/
-	virtual void OnCreate(KWndFrame* wndFrame)
+	virtual void OnCreate(WndFrame* wndFrame)
 	{
 
 	}
@@ -1830,7 +1829,7 @@ interface IWndFrameEvent
 	/*
 		句柄消毁
 	*/
-	virtual void OnDestroy(KWndFrame* wndFrame)
+	virtual void OnDestroy(WndFrame* wndFrame)
 	{
 
 	}
@@ -1838,7 +1837,7 @@ interface IWndFrameEvent
 	/*
 		显示
 	*/
-	virtual void OnShow(KWndFrame* wndFrame)
+	virtual void OnShow(WndFrame* wndFrame)
 	{
 
 	}
@@ -1846,7 +1845,7 @@ interface IWndFrameEvent
 	/*
 		隐藏
 	*/
-	virtual void OnHide(KWndFrame* wndFrame)
+	virtual void OnHide(WndFrame* wndFrame)
 	{
 
 	}
@@ -1854,7 +1853,7 @@ interface IWndFrameEvent
 	/*
 		关闭
 	*/
-	virtual void OnClose(KWndFrame* wndFrame, KCloseMode& mode)
+	virtual void OnClose(WndFrame* wndFrame, CloseMode& mode)
 	{
 
 	}
@@ -1870,7 +1869,7 @@ interface IWndFrameEvent
 	/*
 		关闭询问
 	*/
-	virtual BOOL OnCloseQuery(KWndFrame* wndFrame)
+	virtual BOOL OnCloseQuery(WndFrame* wndFrame)
 	{
 		return TRUE;
 	}
@@ -1878,7 +1877,7 @@ interface IWndFrameEvent
 	/*
 		大小改变 
 	*/
-	virtual void OnSizeChange(KWndFrame* wndFrame)
+	virtual void OnSizeChange(WndFrame* wndFrame)
 	{
 
 	}
@@ -1886,7 +1885,7 @@ interface IWndFrameEvent
 	/*
 		位置改变 
 	*/
-	virtual void OnPosChange(KWndFrame* wndFrame)
+	virtual void OnPosChange(WndFrame* wndFrame)
 	{
 
 	}
@@ -1895,7 +1894,7 @@ interface IWndFrameEvent
 		通用消息
 		return 如果返回TRUE，标准窗口过程将返回ret; 如果返回FALSE，交给默认处理过程去处理
 	*/
-	virtual BOOL OnWndProc(KWndFrame* wndFrame, UINT msg, WPARAM wparam, LPARAM lparam, HRESULT& ret)
+	virtual BOOL OnWndProc(WndFrame* wndFrame, UINT msg, WPARAM wparam, LPARAM lparam, HRESULT& ret)
 	{
 		return FALSE;
 	}
@@ -1905,14 +1904,14 @@ interface IWndFrameEvent
 /*
 	顶层窗口类，专门为游戏而封装，作其他应用还比较简陋
 */
-class KWndFrame
+class WndFrame
 {
 public:
-	KWndFrame(): mHwnd(NULL), mWndEvent(NULL), mLeft(0), mTop(0), mWidth(0), mHeight(0)
+	WndFrame(): mHwnd(NULL), mWndEvent(NULL), mLeft(0), mTop(0), mWidth(0), mHeight(0)
 	{
 	}
 
-	virtual ~KWndFrame()
+	virtual ~WndFrame()
 	{
 		if (mHwnd)
 			DestroyWindow(mHwnd);
@@ -1926,8 +1925,8 @@ public:
 		int top				= 0,							// 顶
 		int width			= 800,							// 宽
 		int height			= 600,							// 高
-		KBorderIcons bis	= biSysMenu | biMinimize,		// 标题栏按钮
-		KBorderStyle bs		= bsSingle,						// 边框风格		
+		FmBorderIcons bis	= biSysMenu | biMinimize,		// 标题栏按钮
+		FmBorderStyle bs		= bsSingle,						// 边框风格		
 		LPCWSTR caption		= L"",							// 标题
 		HICON icon			= NULL)							// 图标
 	{
@@ -1945,7 +1944,7 @@ public:
 				DoCreate();
 			}
 		}
-		KASSERT(ret);
+		LN_ASSERT(ret);
 		return ret;
 	}
 
@@ -1968,7 +1967,7 @@ public:
 	/*
 		显示窗口
 	*/
-	void Show(KWindowState state = wsNormal)
+	void Show(FmWindowState state = wsNormal)
 	{
 		SetWindowState(state);
 		BringToFront();
@@ -1980,11 +1979,11 @@ public:
 	*/
 	void Close()
 	{
-		KASSERT(mHwnd);
+		LN_ASSERT(mHwnd);
 
 		if (CloseQuery())
 		{
-			KCloseMode closeMode = cmHideWindow;
+			CloseMode closeMode = cmHideWindow;
 			DoClose(closeMode);
 			if (closeMode == cmHideWindow)
 				Hide();
@@ -2011,7 +2010,7 @@ public:
 	*/
 	void BringToFront()
 	{
-		KASSERT(mHwnd);
+		LN_ASSERT(mHwnd);
 
 		SetWindowPos(mHwnd, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 	}
@@ -2021,7 +2020,7 @@ public:
 	*/
 	void SendToBack()
 	{
-		KASSERT(mHwnd);
+		LN_ASSERT(mHwnd);
 
 		SetWindowPos(mHwnd, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 	}
@@ -2031,7 +2030,7 @@ public:
 	*/
 	void SetBound(int left, int top, int width, int height)
 	{
-		KASSERT(mHwnd);
+		LN_ASSERT(mHwnd);
 
 		if (left != mLeft || top != mTop || width != mWidth || height != mHeight)
 			if (!IsIconic(mHwnd))
@@ -2063,7 +2062,7 @@ public:
 	*/
 	void AlignWindow(int percentX = 50, int percentY = 50)
 	{
-		KASSERT(mHwnd);
+		LN_ASSERT(mHwnd);
 		if (percentX < 0) percentX = 0;
 		if (percentY < 0) percentY = 0;
 		if (percentX > 100) percentX = 100;
@@ -2133,7 +2132,7 @@ public:
 	*/
 	SIZE ClientSize()
 	{
-		KASSERT(mHwnd);
+		LN_ASSERT(mHwnd);
 		RECT rc;
 		GetClientRect(mHwnd, &rc);
 		SIZE sz;
@@ -2156,7 +2155,7 @@ public:
 	*/
 	BOOL IsEnable()
 	{
-		KASSERT(mHwnd);
+		LN_ASSERT(mHwnd);
 		return IsWindowEnabled(mHwnd);
 	}
 
@@ -2165,7 +2164,7 @@ public:
 	*/
 	void SetEnable(BOOL enable)
 	{
-		KASSERT(mHwnd);
+		LN_ASSERT(mHwnd);
 		EnableWindow(mHwnd, enable);
 	}
 
@@ -2174,7 +2173,7 @@ public:
 	*/
 	BOOL IsTopMost()
 	{
-		KASSERT(mHwnd);
+		LN_ASSERT(mHwnd);
 		LONG style = GetWindowLongW(mHwnd, GWL_EXSTYLE);
 		return HAS_FLAG(style, WS_EX_TOPMOST);
 	}
@@ -2184,7 +2183,7 @@ public:
 	*/
 	void SetTopMost(BOOL topMost)
 	{
-		KASSERT(mHwnd);
+		LN_ASSERT(mHwnd);
 		SetWindowPos(mHwnd, topMost ? HWND_TOPMOST : HWND_NOTOPMOST, 
 			0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
 	}
@@ -2194,7 +2193,7 @@ public:
 	*/
 	BOOL IsVisible()
 	{
-		KASSERT(mHwnd);
+		LN_ASSERT(mHwnd);
 		return IsWindowVisible(mHwnd);
 	}
 
@@ -2203,7 +2202,7 @@ public:
 	*/
 	void SetVisible(BOOL visible)
 	{
-		KASSERT(mHwnd);
+		LN_ASSERT(mHwnd);
 		if (!visible)
 		{
 			DoHide();
@@ -2224,18 +2223,18 @@ public:
 	/*
 		取按钮风格
 	*/
-	KBorderIcons BorderIcons()
+	FmBorderIcons BorderIcons()
 	{
-		KASSERT(mHwnd);
+		LN_ASSERT(mHwnd);
 		return StyleToBorderIcons(GetWindowLongW(mHwnd, GWL_STYLE))	;
 	}
 
 	/*
 		设按钮风格
 	*/
-	void SetBorderIcons(KBorderIcons bis)
+	void SetBorderIcons(FmBorderIcons bis)
 	{
-		KASSERT(mHwnd);
+		LN_ASSERT(mHwnd);
 		SetWindowLong(mHwnd, GWL_STYLE, 
 			BorderIconsToStyle(GetWindowLongW(mHwnd, GWL_STYLE), bis));
 		SetWindowPos(mHwnd, 0, 0, 0, 0, 0,
@@ -2245,18 +2244,18 @@ public:
 	/*
 		边框风格
 	*/
-	KBorderStyle BorderStyle()
+	FmBorderStyle BorderStyle()
 	{
-		KASSERT(mHwnd);
+		LN_ASSERT(mHwnd);
 		return StyleToBorderStyle(GetWindowLongW(mHwnd, GWL_STYLE));
 	}
 
 	/*
 		设边框风格
 	*/
-	void SetBorderStyle(KBorderStyle bs)
+	void SetBorderStyle(FmBorderStyle bs)
 	{
-		KASSERT(mHwnd);
+		LN_ASSERT(mHwnd);
 		SetWindowLongW(mHwnd, GWL_STYLE,
 			BorderStyleToStyle(GetWindowLongW(mHwnd, GWL_STYLE), bs));
 		SetWindowPos(mHwnd, 0, 0, 0, 0, 0,
@@ -2266,9 +2265,9 @@ public:
 	/*
 		窗口状态
 	*/
-	KWindowState WindowState()
+	FmWindowState WindowState()
 	{
-		KASSERT(mHwnd);
+		LN_ASSERT(mHwnd);
 		if (IsIconic(mHwnd))
 			return wsMinimized;
 		else if (IsZoomed(mHwnd))
@@ -2280,9 +2279,9 @@ public:
 	/*
 		设窗口状态
 	*/
-	void SetWindowState(KWindowState state)
+	void SetWindowState(FmWindowState state)
 	{
-		KASSERT(mHwnd);
+		LN_ASSERT(mHwnd);
 
 		int cmdShow = SW_SHOWNORMAL;
 		switch (state)
@@ -2300,18 +2299,18 @@ public:
 	/*
 		窗口标题
 	*/
-	kstring Caption()
+	String Caption()
 	{
-		KASSERT(mHwnd);
+		LN_ASSERT(mHwnd);
 		return GetWndText(mHwnd);
 	}
 
 	/*
 		设窗口标题
 	*/
-	void SetCaption(const kstring& cap)
+	void SetCaption(const String& cap)
 	{
-		KASSERT(mHwnd);
+		LN_ASSERT(mHwnd);
 		SetWindowTextW(mHwnd, cap);
 	}
 
@@ -2370,8 +2369,8 @@ protected:
 		int top,
 		int width,
 		int height,
-		KBorderIcons bis,
-		KBorderStyle bs,
+		FmBorderIcons bis,
+		FmBorderStyle bs,
 		LPCWSTR caption)
 	{
 		return CreateWindowW(
@@ -2388,7 +2387,7 @@ protected:
 			this) != 0;
 	}
 
-	DWORD BorderIconsToStyle(DWORD oldStyle, KBorderIcons bis)
+	DWORD BorderIconsToStyle(DWORD oldStyle, FmBorderIcons bis)
 	{
 		DWORD style = oldStyle;
 		DEL_FLAG(style, WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX);
@@ -2404,7 +2403,7 @@ protected:
 		return style;
 	}
 
-	DWORD BorderStyleToStyle(DWORD oldStyle, KBorderStyle bs)
+	DWORD BorderStyleToStyle(DWORD oldStyle, FmBorderStyle bs)
 	{
 		DWORD style = oldStyle;
 		DEL_FLAG(style, WS_THICKFRAME | WS_BORDER | WS_CAPTION | WS_POPUP);
@@ -2418,9 +2417,9 @@ protected:
 		return style;
 	}
 
-	KBorderIcons StyleToBorderIcons(DWORD style)
+	FmBorderIcons StyleToBorderIcons(DWORD style)
 	{
-		KBorderIcons bis = 0;
+		FmBorderIcons bis = 0;
 		if (HAS_FLAG(style, WS_SYSMENU))
 		{
 			ADD_FLAG(bis, biSysMenu);
@@ -2432,9 +2431,9 @@ protected:
 		return bis;
 	}
 
-	KBorderStyle StyleToBorderStyle(DWORD style)
+	FmBorderStyle StyleToBorderStyle(DWORD style)
 	{
-		KBorderStyle bi = bsNone;
+		FmBorderStyle bi = bsNone;
 		if (HAS_FLAG(style, WS_CAPTION))
 		{
 			if (HAS_FLAG(style, WS_THICKFRAME))
@@ -2447,7 +2446,7 @@ protected:
 
 	void UpdateBounds()
 	{
-		KASSERT(mHwnd);
+		LN_ASSERT(mHwnd);
 		RECT rc;
 		if (IsIconic(mHwnd))
 		{
@@ -2489,7 +2488,7 @@ protected:
 		return TRUE;
 	}
 
-	virtual void DoClose(KCloseMode& mode)
+	virtual void DoClose(CloseMode& mode)
 	{
 		if (mWndEvent)
 			mWndEvent->OnClose(this, mode);
@@ -2540,14 +2539,14 @@ protected:
 		// 在Create之前还有几个消息，忽略掉它，作默认处理
 		if (msg == WM_CREATE)
 		{
-			KASSERT(lparam);
+			LN_ASSERT(lparam);
 			LPCREATESTRUCTW pcs = (LPCREATESTRUCTW)lparam;
 
-			KASSERT(pcs->lpCreateParams);
-			KWndFrame* wndFrame = (KWndFrame*)pcs->lpCreateParams;
+			LN_ASSERT(pcs->lpCreateParams);
+			WndFrame* wndFrame = (WndFrame*)pcs->lpCreateParams;
 			wndFrame->mHwnd = hwnd;
 
-			KASSERT(::GetPropW(hwnd, LIN_WNDFRAME_ATOM) == NULL);
+			LN_ASSERT(::GetPropW(hwnd, LIN_WNDFRAME_ATOM) == NULL);
 			SetWindowLongW(hwnd, GWL_WNDPROC, (LONG)StdWndProc);
 			SetPropW(hwnd, LIN_WNDFRAME_ATOM, (HANDLE)pcs->lpCreateParams);
 
@@ -2563,8 +2562,8 @@ protected:
 	*/
 	static LRESULT CALLBACK StdWndProc(HWND hwnd, UINT msg, WPARAM wparam,  LPARAM lparam)
 	{
-		KWndFrame* wndFrame = (KWndFrame*)GetPropW(hwnd, LIN_WNDFRAME_ATOM);
-		KASSERT(wndFrame);
+		WndFrame* wndFrame = (WndFrame*)GetPropW(hwnd, LIN_WNDFRAME_ATOM);
+		LN_ASSERT(wndFrame);
 
 		LRESULT ret = 0;
 		BOOL isDone = wndFrame->WndProc(hwnd, msg, wparam, lparam, ret);
@@ -2635,13 +2634,13 @@ protected:
 /*
 	主窗口类
 */
-class KMainFrame: public KWndFrame
+class MainFrame: public WndFrame
 {
 protected:
-	virtual void DoClose(KCloseMode& mode)
+	virtual void DoClose(CloseMode& mode)
 	{
 		mode = cmTermApp;
-		KWndFrame::DoClose(mode);
+		WndFrame::DoClose(mode);
 	}
 };
 
@@ -3042,7 +3041,7 @@ inline void GenMD5(void* data, int len, byte md5[16])
 /*
 	生成MD5码
 */
-inline BOOL GenMD5(KStream* stm, byte md5[16])
+inline BOOL GenMD5(Stream* stm, byte md5[16])
 {
 	if (!stm)
 		return FALSE;
@@ -3081,7 +3080,7 @@ inline BOOL GenMD5(LPCWSTR fileName, byte md5[16])
 {
 	if (IsFileExists(fileName))
 	{
-		KFileStream fs;
+		FileStream fs;
 		if (fs.Open(fileName))
 			return GenMD5(&fs, md5);
 	}
@@ -3091,9 +3090,9 @@ inline BOOL GenMD5(LPCWSTR fileName, byte md5[16])
 /*
 	MD5码的字符串形式
 */
-inline kstring Md5Str(const BYTE md5[16])
+inline String Md5Str(const BYTE md5[16])
 {
-	kstring str;
+	String str;
 	str.Format(L"%.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x", 
 		md5[0], md5[1], md5[2], md5[3], md5[4], md5[5], md5[6], md5[7], md5[8], 
 		md5[9], md5[10], md5[11], md5[12], md5[13], md5[14], md5[15]);
@@ -3188,7 +3187,7 @@ inline DWORD GenCRC32(void* data, int len)
 /*
 	生成CRC32码
 */
-inline DWORD GenCRC32(KStream* stm)
+inline DWORD GenCRC32(Stream* stm)
 {
 	if (!stm)
 		return 0;
@@ -3224,7 +3223,7 @@ inline DWORD GenCRC32(LPCWSTR fileName)
 {
 	if (IsFileExists(fileName))
 	{
-		KFileStream fs;
+		FileStream fs;
 		if (fs.Open(fileName))
 			return GenCRC32(&fs);
 	}
@@ -3277,7 +3276,7 @@ inline UINT Base64Encode(void* dest, const void* src, UINT size)
 	while (dwSrcSize >= 1)
 	{
 		UINT dwBlockSize = min(dwSrcSize, BASE64_ENCODE_INPUT);
-		KASSERT( 1 <= dwBlockSize && dwBlockSize <= BASE64_ENCODE_INPUT );
+		LN_ASSERT( 1 <= dwBlockSize && dwBlockSize <= BASE64_ENCODE_INPUT );
 
 		// Encode inputs...
 		BYTE n1, n2 = 0, n3 = 0, n4 = 0;
@@ -3294,16 +3293,16 @@ inline UINT Base64Encode(void* dest, const void* src, UINT size)
 			n1  = ((pSrc[ 0 ] & 0xfc) >> 2);
 			break;
 		default:
-			KASSERT(FALSE);
+			LN_ASSERT(FALSE);
 		}
 		pSrc += dwBlockSize;
 		dwSrcSize -= dwBlockSize;
 
 		// Validate...
-		KASSERT( 0 <= n1 && n1 <= 63 );
-		KASSERT( 0 <= n2 && n2 <= 63 );
-		KASSERT( 0 <= n3 && n3 <= 63 );
-		KASSERT( 0 <= n4 && n4 <= 63 );
+		LN_ASSERT( 0 <= n1 && n1 <= 63 );
+		LN_ASSERT( 0 <= n2 && n2 <= 63 );
+		LN_ASSERT( 0 <= n3 && n3 <= 63 );
+		LN_ASSERT( 0 <= n4 && n4 <= 63 );
 
 		// Padding...
 		switch (dwBlockSize)
@@ -3313,7 +3312,7 @@ inline UINT Base64Encode(void* dest, const void* src, UINT size)
 		case 3:
 			break;
 		default:
-			KASSERT( false );
+			LN_ASSERT( false );
 		}
 
 		// 4 outputs...
@@ -3392,10 +3391,10 @@ inline UINT Base64Decode(void* dest, const void* src, UINT size)
 		dwSrcSize -= BASE64_DECODE_INPUT; //4
 
 		// Validate ascii...
-		KASSERT( 0 <= in1 && in1 <= 0x7f );
-		KASSERT( 0 <= in2 && in2 <= 0x7f );
-		KASSERT( 0 <= in1 && in3 <= 0x7f );
-		KASSERT( 0 <= in2 && in4 <= 0x7f );
+		LN_ASSERT( 0 <= in1 && in1 <= 0x7f );
+		LN_ASSERT( 0 <= in2 && in2 <= 0x7f );
+		LN_ASSERT( 0 <= in1 && in3 <= 0x7f );
+		LN_ASSERT( 0 <= in2 && in4 <= 0x7f );
 
 		// Convert ascii to base16...
 		in1 = BASE64_TABLE[ in1 ];
@@ -3404,14 +3403,14 @@ inline UINT Base64Decode(void* dest, const void* src, UINT size)
 		in4 = BASE64_TABLE[ in4 ];
 
 		// Validate base16...
-		KASSERT( in1 != 0xff );
-		KASSERT( in2 != 0xff );
-		KASSERT( in3 != 0xff );
-		KASSERT( in4 != 0xff );
-		KASSERT( 0 <= in1 && in1 <= 63 );
-		KASSERT( 0 <= in2 && in2 <= 63 );
-		KASSERT( 0 <= in3 && in3 <= 64 ); //possible padding
-		KASSERT( 0 <= in4 && in4 <= 64 ); //possible padding
+		LN_ASSERT( in1 != 0xff );
+		LN_ASSERT( in2 != 0xff );
+		LN_ASSERT( in3 != 0xff );
+		LN_ASSERT( in4 != 0xff );
+		LN_ASSERT( 0 <= in1 && in1 <= 63 );
+		LN_ASSERT( 0 <= in2 && in2 <= 63 );
+		LN_ASSERT( 0 <= in3 && in3 <= 64 ); //possible padding
+		LN_ASSERT( 0 <= in4 && in4 <= 64 ); //possible padding
 
 		// 3 outputs...
 		*pDest++ = ((in1 & 0x3f) << 2) | ((in2 & 0x30) >> 4);
@@ -3440,11 +3439,11 @@ inline UINT Base64Decode(void* dest, const void* src, UINT size)
 /*
 	读字符串值
 */
-inline kstring IniReadString(LPCWSTR fileName, LPCWSTR section, LPCWSTR name, LPCWSTR defValue)
+inline String IniReadString(LPCWSTR fileName, LPCWSTR section, LPCWSTR name, LPCWSTR defValue)
 {
 	WCHAR value[512];
 	GetPrivateProfileStringW(section, name, defValue, value, 512, fileName);
-	return kstring(value);
+	return String(value);
 }
 
 /*
@@ -3453,7 +3452,7 @@ inline kstring IniReadString(LPCWSTR fileName, LPCWSTR section, LPCWSTR name, LP
 inline int IniReadInteger(LPCWSTR fileName, LPCWSTR section, LPCWSTR name, int defValue)
 {
 	WCHAR value[512];
-	kstring strDef;
+	String strDef;
 	strDef.Format(L"%d", defValue);
 	GetPrivateProfileStringW(section, name, strDef, value, 512, fileName);
 	int ret = _wtoi(value);
@@ -3479,7 +3478,7 @@ inline BOOL IniReadBool(LPCWSTR fileName, LPCWSTR section, LPCWSTR name, BOOL de
 inline double IniReadFloat(LPCWSTR fileName, LPCWSTR section, LPCWSTR name, double defValue)
 {
 	WCHAR value[512];
-	kstring strDef;
+	String strDef;
 	strDef.Format(L"%f", defValue);
 	GetPrivateProfileStringW(section, name, strDef, value, 512, fileName);
 	if (wcscmp(value, L"") == 0)
@@ -3519,7 +3518,7 @@ inline BOOL IniWriteBool(LPCWSTR fileName, LPCWSTR section, LPCWSTR name, BOOL v
 */
 inline BOOL IniWriteFloat(LPCWSTR fileName, LPCWSTR section, LPCWSTR name, double value)
 {
-	kstring str;
+	String str;
 	str.Format(L"%f", value);
 	return WritePrivateProfileStringW(section, name, str, fileName);
 }
@@ -3547,7 +3546,7 @@ inline BOOL IniDeleteKey(LPCWSTR fileName, LPCWSTR section, LPCWSTR name)
 	取得一个类的类型信息
 */
 #define RUNTIMEINFO(thisclass)\
-	(KRuntimeInfo*)(&thisclass::thisclass##RuntimeInfo)
+	(RuntimeInfo*)(&thisclass::thisclass##RuntimeInfo)
 
 /*
 	判断thisclass是否从baseclass派生
@@ -3572,23 +3571,23 @@ inline BOOL IniDeleteKey(LPCWSTR fileName, LPCWSTR section, LPCWSTR name)
 */
 #define DECLARE_RUNTIMEINFO(className)\
 public:\
-	static const KRuntimeInfo className##RuntimeInfo;\
-	virtual KRuntimeInfo* GetRuntimeInfo() const\
+	static const RuntimeInfo className##RuntimeInfo;\
+	virtual RuntimeInfo* GetRuntimeInfo() const\
 	{ return RUNTIMEINFO(className); }
 
 /*
 	实现类型信息
 */
 #define IMPLEMENT_RUNTIMEINFO(thisclass, baseclass)\
-	_declspec(selectany) const KRuntimeInfo thisclass::thisclass##RuntimeInfo =\
+	_declspec(selectany) const RuntimeInfo thisclass::thisclass##RuntimeInfo =\
 	{RUNTIMEINFO(baseclass), #baseclass, sizeof(thisclass)};
 
 /*
 	RTTI信息结构
 */
-struct KRuntimeInfo
+struct RuntimeInfo
 {
-	KRuntimeInfo*	mBaseInfo;			// 指向基类的RTTI
+	RuntimeInfo*	mBaseInfo;			// 指向基类的RTTI
 	LPCSTR			mClassName;			// 类名
 	int				mClassSize;			// 类的大小
 
@@ -3597,12 +3596,12 @@ struct KRuntimeInfo
 		如果该类派生自info代表的类，函数返回TRUE
 		如果info代表的是类自己，函数也返回TRUE
 	*/
-	BOOL IsDerivedFrom(const KRuntimeInfo* info)
+	BOOL IsDerivedFrom(const RuntimeInfo* info)
 	{
 		if (NULL == info)
 			return FALSE;
 
-		const KRuntimeInfo* mBaseInfo = this;
+		const RuntimeInfo* mBaseInfo = this;
 		while (NULL != mBaseInfo)
 		{
 			if (mBaseInfo == info)
@@ -3618,40 +3617,40 @@ struct KRuntimeInfo
 /*
 	基础类，提供RTTI能力，要从该类派生，具体做法如下:
 	1.  h文件:
-		class KMyClass: public KObject
+		class MyClass: public Object
 		{
-			DECLARE_RUNTIMEINFO(KMyClass)
+			DECLARE_RUNTIMEINFO(MyClass)
 		};
 	2.  cpp文件:
-		IMPLEMENT_RUNTIMEINFO(KMyClass, KObject)
+		IMPLEMENT_RUNTIMEINFO(MyClass, Object)
 	或
 	1.  h文件
-		class KMyClass: public KObject
+		class MyClass: public Object
 		{
-			DECLARE_RUNTIMEINFO(KMyClass)
+			DECLARE_RUNTIMEINFO(MyClass)
 		};
-		IMPLEMENT_RUNTIMEINFO(KMyClass, KObject)
+		IMPLEMENT_RUNTIMEINFO(MyClass, Object)
 
 */
-class KObject
+class Object
 {
-	DECLARE_RUNTIMEINFO(KObject)
+	DECLARE_RUNTIMEINFO(Object)
 public:
 	/*
 		判断是否派生自某个类
 		如果是派生自info代表的类，函数返回TRUE
 		info代表的类是自己，函数也返回TRUE
 	*/
-	BOOL IsDerivedFrom(const KRuntimeInfo* info)
+	BOOL IsDerivedFrom(const RuntimeInfo* info)
 	{
-		KRuntimeInfo* thisInfo = GetRuntimeInfo();
+		RuntimeInfo* thisInfo = GetRuntimeInfo();
 		return thisInfo->IsDerivedFrom(info);
 	}
 
 	/*
 		是否等于某个类
 	*/
-	BOOL IsEqualTo(const KRuntimeInfo* info)
+	BOOL IsEqualTo(const RuntimeInfo* info)
 	{
 		if (NULL == info)
 			return FALSE;
@@ -3663,40 +3662,40 @@ public:
 	/*
 		虚析构函数
 	*/
-	virtual~KObject(){}
+	virtual~Object(){}
 
 protected:
 	/*
 		不允许直接实例化KObject
 	*/
-	KObject() {}
+	Object() {}
 private:
 	/*
 		不允许拷贝构造
 	*/
-	KObject(const KObject& vObj){}
-	void operator=(const KObject& vObj){}
+	Object(const Object& vObj){}
+	void operator=(const Object& vObj){}
 };
 
 /*
 	静态类型信息成员
 */
-_declspec(selectany) const KRuntimeInfo KObject::KObjectRuntimeInfo = 
-	{NULL, "KObject", sizeof(KObject)};
+_declspec(selectany) const RuntimeInfo Object::ObjectRuntimeInfo = 
+	{NULL, "Object", sizeof(Object)};
 
 //------------------------------------------------------------------------------
 // 实现资源缓存及回收的机制
 
-class KResCache;
+class ResCache;
 
 /*
 	资源节点，具体资源从此类继承
 */
-class KResNode
+class ResNode
 {
-	friend KResCache;
+	friend ResCache;
 public:
-	KResNode(): mLastUseTime(0), mPrevNode(NULL), mNextNode(NULL)
+	ResNode(): mLastUseTime(0), mPrevNode(NULL), mNextNode(NULL)
 	{
 
 	}
@@ -3717,8 +3716,8 @@ protected:
 
 private:
 	DWORD		mLastUseTime;		  // 资源最后被使用的时间
-	KResNode*	mPrevNode;			  // 前一个资源节点
-	KResNode*	mNextNode;			  // 后一个资源节点
+	ResNode*	mPrevNode;			  // 前一个资源节点
+	ResNode*	mNextNode;			  // 后一个资源节点
 };
 
 /*
@@ -3729,16 +3728,16 @@ interface IResChecker
 	/*
 		是否可以清理该资源
 	*/
-	virtual BOOL CanClearRes(KResNode* node) = 0;
+	virtual BOOL CanClearRes(ResNode* node) = 0;
 };
 
 /*
 	资源缓存器
 */
-class KResCache
+class ResCache
 {
 public:
-	KResCache(): mHeadNode(NULL), mTrailNode(NULL), mResChecker(NULL)
+	ResCache(): mHeadNode(NULL), mTrailNode(NULL), mResChecker(NULL)
 	{
 
 	}
@@ -3746,12 +3745,12 @@ public:
 	/*
 		增加资源
 	*/
-	void AddRes(KResNode* node)
+	void AddRes(ResNode* node)
 	{
-		KASSERT(NULL != node);
+		LN_ASSERT(NULL != node);
 
 		// 更新使用时间
-		node->mLastUseTime = KGetTickCount();
+		node->mLastUseTime = getTickCount();
 		if (!mHeadNode)
 		{
 			mHeadNode = node;
@@ -3770,9 +3769,9 @@ public:
 	/*
 		每次要使用资源之前，都应该调用一次
 	*/
-	void UseRes(KResNode* node)
+	void UseRes(ResNode* node)
 	{
-		KASSERT(NULL != node);
+		LN_ASSERT(NULL != node);
 
 		// 移除节点
 		RemoveRes(node);
@@ -3791,8 +3790,8 @@ public:
 			return;
 
 		// 从尾节点开始，因为尾节点的使用时间肯定是最早的
-		KResNode* node = mTrailNode;
-		KResNode* node2;
+		ResNode* node = mTrailNode;
+		ResNode* node2;
 		int idx = 0;
 		while (node)
 		{
@@ -3815,7 +3814,7 @@ public:
 	*/
 	void ClearAllRes()
 	{
-		KResNode* node = mHeadNode;
+		ResNode* node = mHeadNode;
 		while (node)
 		{
 			node->ClearRes();
@@ -3845,9 +3844,9 @@ protected:
 	/*
 		移除资源节点
 	*/
-	void RemoveRes(KResNode* node)
+	void RemoveRes(ResNode* node)
 	{
-		KASSERT(NULL != node);
+		LN_ASSERT(NULL != node);
 
 		if (node == mHeadNode)
 			mHeadNode = node->mNextNode;
@@ -3862,10 +3861,10 @@ protected:
 	}
 
 private:
-	KResNode*		mHeadNode;				// 首结点
-	KResNode*		mTrailNode;				// 尾结点
+	ResNode*		mHeadNode;				// 首结点
+	ResNode*		mTrailNode;				// 尾结点
 	IResChecker*	mResChecker;			// 资源检查器
 };
 
 }
-#endif // __LIN_KMCOMMONS_H__
+#endif // __LIN_LNCOMMONS_H__

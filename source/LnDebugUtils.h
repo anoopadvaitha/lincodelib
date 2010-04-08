@@ -1,11 +1,10 @@
 /*******************************************************************************
-  Filename:		KmDebug.h
-  Author:		Tramper
+  Filename:		LnDebugUtils.h
+  Author:		lingo
   Email:		lingoooooooooo@gmail.com
   Date:			2009/12/15
 
-  Brief:    	这是KamaLib代码库的一部分，由Tramper创建并维护，版权没有，
-				请自由使用！
+  Brief:    	这是lincode代码库的一部分，由lingo创建并维护!
  -------------------------------------------------------------------------------
   Description: 
 	调试辅助函数
@@ -14,8 +13,8 @@
 	3. 动态对象内存测漏
 
 *******************************************************************************/
-#ifndef __LIN_KMDEBUG_H__
-#define __LIN_KMDEBUG_H__
+#ifndef __LIN_DEBUGUTILS_H__
+#define __LIN_DEBUGUTILS_H__
 #include <crtdbg.h>
 #include <stdio.h>
 
@@ -23,23 +22,23 @@ namespace lin
 {
 
 /*
-	断言: KASSERT
+	断言: LN_ASSERT
 */
 #ifdef _DEBUG
-	#define KASSERT(exp)\
+	#define LN_ASSERT(exp)\
 		do {\
 			if (!(exp) && (1 == _CrtDbgReport(_CRT_ASSERT, __FILE__, __LINE__, NULL, #exp))) \
 				_CrtDbgBreak(); \
 		} while(0)
 #else
-	#define KASSERT(exp) ((void)0)
+	#define LN_ASSERT(exp) ((void)0)
 #endif
 
 /*
-	跟踪: KTRACE 每次调用都将自动换行，最多只支持512个字符
+	跟踪: LN_TRACE 每次调用都将自动换行，最多只支持512个字符
 */
 #ifdef _DEBUG
-	inline void __cdecl _KTrace(LPCWSTR szFormat, ...)
+	inline void __cdecl _Trace(LPCWSTR szFormat, ...)
 	{
 		va_list args;
 		va_start(args, szFormat);
@@ -49,15 +48,15 @@ namespace lin
 		OutputDebugStringW(szBuf);
 		va_end(args);
 	}
-	#define KTRACE _KTrace
+	#define LN_TRACE _Trace
 #else
-	#define KTRACE __noop
+	#define LN_TRACE __noop
 #endif
 
 /*
 	日志记录: 
-	KLOG: 自动换行
-	KLOG2: 不自动换行
+	LN_LOG: 自动换行
+	LN_LOG2: 不自动换行
 	最大字符数为512
 	可调用SETLOGPATH设置日志文件的路径
 */
@@ -109,7 +108,7 @@ namespace lin
 		}
 	}
 
-	inline void __cdecl _KLogEx(BOOL oneLine, LPCWSTR szFormat, va_list args)
+	inline void __cdecl _LogEx(BOOL oneLine, LPCWSTR szFormat, va_list args)
 	{
 		
 		WCHAR szBuf[512] = {0};
@@ -123,27 +122,27 @@ namespace lin
 		if (INVALID_HANDLE_VALUE != _gLogFile)
 			WriteFile(_gLogFile, szBuf, (DWORD)wcslen(szBuf) * sizeof(WCHAR), &writeSize, NULL);
 	}
-	inline void _cdecl _KLog(LPCWSTR szFormat, ...)
+	inline void _cdecl _Log(LPCWSTR szFormat, ...)
 	{
 		va_list args;
 		va_start(args, szFormat);
-		_KLogEx(TRUE, szFormat, args);
+		_LogEx(TRUE, szFormat, args);
 		va_end(args);	
 	}
-	inline void _cdecl _KLog2(LPCWSTR szFormat, ...)
+	inline void _cdecl _Log2(LPCWSTR szFormat, ...)
 	{
 		va_list args;
 		va_start(args, szFormat);
-		_KLogEx(FALSE, szFormat, args);
+		_LogEx(FALSE, szFormat, args);
 		va_end(args);	
 	}
 
-	#define KLOG		_KLog
-	#define KLOG2		_KLog2
+	#define LN_LOG		_Log
+	#define LN_LOG2		_Log2
 	#define SETLOGPATH	_SetLogPath
 #else
-	#define KLOG		__noop
-	#define KLOG2		__noop
+	#define LN_LOG		__noop
+	#define LN_LOG2		__noop
 	#define SETLOGPATH	__noop
 #endif
 
@@ -203,18 +202,18 @@ inline double EndTimeCounter()
 /*
 	类实例计数器，内部使用
 */
-class _KObjectCounter
+class _ObjectCounter
 {
 public:
-	_KObjectCounter(const char* szClass, const char* szFile, int nLine)
+	_ObjectCounter(const char* szClass, const char* szFile, int nLine)
 		: mRef(0), mClass(szClass), mFile(szFile), mLine(nLine) 
 	{
 	}
 
-	~_KObjectCounter()
+	~_ObjectCounter()
 	{ 
 		if (mRef > 0)
-			KTRACE(L"object leak:\n\tclass: %s\n\tinstance count: %d\n\tfile: %s\n\tline: %d\n", 
+			LN_TRACE(L"object leak:\n\tclass: %s\n\tinstance count: %d\n\tfile: %s\n\tline: %d\n", 
 			mClass, mRef, mFile, mLine);
 	}
 
@@ -238,14 +237,14 @@ public:
 #	define DECLARE_CLASSCHECKER(Class)
 #else
 #	define DECLARE_CLASSCHECKER(Class)									\
-class KObjectChecker													\
+class ObjectChecker														\
 {																		\
 public:																	\
-	KObjectChecker() { ++Counter(); }									\
-	~KObjectChecker() { --Counter(); }									\
+	ObjectChecker() { ++Counter(); }									\
+	~ObjectChecker() { --Counter(); }									\
 private:																\
 	CCounteChecker& Counter()											\
-	{ static _KObjectCounter c(#Class, __FILE__, __LINE__);				\
+	{ static _ObjectCounter c(#Class, __FILE__, __LINE__);				\
 		return c; }														\
 } mChecker;												
 #endif
@@ -253,4 +252,4 @@ private:																\
 
 
 }
-#endif // __LIN_KMDEBUG_H__
+#endif // __LIN_DEBUGUTILS_H__

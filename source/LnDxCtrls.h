@@ -1,20 +1,19 @@
 /*******************************************************************************
-  Filename:		KmDxCtrls.h
-  Author:		Tramper
+  Filename:		LnDxCtrls.h
+  Author:		lingo
   Email:		lingoooooooooo@gmail.com
   Date:			2009/12/22
 
-  Brief:    	这是KamaLib代码库的一部分，由Tramper创建并维护，版权没有，
-				请自由使用！
+  Brief:    	这是lincode代码库的一部分，由lingo创建并维护!
  -------------------------------------------------------------------------------
   Description:
 				Dx控件类库，控件的外观不具有可定制性，你可以基于这套控件，去实现
 				可定制的控件，比如像一般游戏UI一样，通过图片确定UI风格。
 	
 *******************************************************************************/
-#ifndef __LIN_KMDXCTRLS_H__
-#define __LIN_KMDXCTRLS_H__
-#include "KmDxViews.h"
+#ifndef __LIN_DXCTRLS_H__
+#define __LIN_DXCTRLS_H__
+#include "LnDxViews.h"
 
 namespace lin
 {
@@ -48,7 +47,7 @@ namespace lin
 /*
 	三角形箭头方向
 */
-enum KDxArrowDirection
+enum DxArrowDirection
 {
 	adLeft,
 	adRight,
@@ -59,15 +58,15 @@ enum KDxArrowDirection
 /*
 	画控件的三角形箭头：TODO
 */
-inline void DrawArrow(KDxRender* render, KDxArrowDirection dir, const RECT& rc)
+inline void DrawArrow(DxRender* render, DxArrowDirection dir, const RECT& rc)
 {
 		
 }
 
 //------------------------------------------------------------------------------
-// KDxFont: 视图字体类
+// DxFont: 视图字体类
 
-class KDxViewFont: public KDxFont
+class DxViewFont: public DxFont
 {
 public:
 	KDxViewFont(): mView(NULL), mColor(CTRLCOLOR_FONT)
@@ -75,7 +74,7 @@ public:
 
 	}
 
-	void Initialize(KDxView* view)
+	void Initialize(DxView* view)
 	{
 		Assign(gDefFont);
 		mView = view;
@@ -108,7 +107,7 @@ private:
 };
 
 //------------------------------------------------------------------------------
-// KDxButton: 按钮类
+// DxButton: 按钮类
 
 /*
 	按钮颜色配置
@@ -129,7 +128,7 @@ private:
 /*
 	按钮状态
 */
-enum KDxButtonState
+enum DxButtonState
 {
 	bsNormal,		  // 普通状态
 	bsHover,		  // 鼠标经过
@@ -139,9 +138,9 @@ enum KDxButtonState
 /*
 	按钮类
 */
-class KDxButton: public KDxView
+class DxButton: public DxView
 {
-	DECLARE_RUNTIMEINFO(KDxButton)
+	DECLARE_RUNTIMEINFO(DxButton)
 public:
 	KDxButton() 
 	{
@@ -165,14 +164,14 @@ public:
 		KDxView::DoFinalize();
 	}
 
-	void SetCaption(const kstring& cap)
+	void SetCaption(const String& cap)
 	{
 		mCaption = cap;
-		KASSERT(mOwnerScreen->Render() != NULL);
+		LN_ASSERT(mOwnerScreen->Render() != NULL);
 		mCapSize = mOwnerScreen->Render()->TextSize(mCaption, mCaption.Length(), FALSE, &mFont);
 	}
 
-	kstring Caption()
+	String Caption()
 	{
 		return mCaption;
 	}
@@ -182,7 +181,7 @@ public:
 		return &mFont;
 	}
 
-	virtual void DoNotify(KDxNotifyId id, DWORD param)
+	virtual void DoNotify(DxNotifyId id, DWORD param)
 	{
 		if (NID_MOUSEENTER == id)
 		{
@@ -194,14 +193,14 @@ public:
 		}
 		else if (NID_FONTCHANGED == id)
 		{
-			KASSERT(mOwnerScreen->Render() != NULL);
+			LN_ASSERT(mOwnerScreen->Render() != NULL);
 			mCapSize = mOwnerScreen->Render()->TextSize(mCaption, mCaption.Length(), FALSE, &mFont);
 		}
 		
 		KDxView::DoNotify(id, param);
 	}
 
-	virtual LRESULT DoMouse(KDxMouseAction action, KDxShiftState shift, const POINT& pt)
+	virtual LRESULT DoMouse(DxMouseAction action, DxShiftState shift, const POINT& pt)
 	{
 		if (maLButtonDown == action)
 		{
@@ -212,10 +211,10 @@ public:
 			mBtnState = bsNormal;
 		}
 
-		return KDxView::DoMouse(action, shift, pt);
+		return DxView::DoMouse(action, shift, pt);
 	}
 
-	virtual LRESULT DoKeyboard(KDxKeyAction action, WORD& key, KDxShiftState shift)
+	virtual LRESULT DoKeyboard(DxKeyAction action, WORD& key, DxShiftState shift)
 	{
 		if ((action == kaKeyDown) && (key == VK_RETURN))
 		{
@@ -226,10 +225,10 @@ public:
 			DoMouse(maMouseClick, shift, pt);
 		}
 
-		return KDxView::DoKeyboard(action, key, shift);
+		return DxView::DoKeyboard(action, key, shift);
 	}
 
-	virtual void DoPaint(KDxRender* render)
+	virtual void DoPaint(DxRender* render)
 	{
 		RECT rc;
 		GetClientRect(rc);
@@ -283,14 +282,14 @@ public:
 
 protected:
 	SIZE			mCapSize;
-	kstring			mCaption;				// 按钮标题
+	String			mCaption;				// 按钮标题
 	KDxButtonState	mBtnState;				// 控件状态
 	KDxViewFont		mFont;					// 字体
 };
-IMPLEMENT_RUNTIMEINFO(KDxButton, KDxView)
+IMPLEMENT_RUNTIMEINFO(DxButton, DxView)
 
 //------------------------------------------------------------------------------
-// KDxSimpleForm:  简单窗口类
+// DxSimpleForm:  简单窗口类
 
 /*
 	窗口颜色配置
@@ -302,11 +301,11 @@ IMPLEMENT_RUNTIMEINFO(KDxButton, KDxView)
 // 窗口内边颜色
 #define FORMCOLOR_INBORDER		D3DCOLOR_RGB(158, 249, 255)
 
-class KDxSimpleForm: public KDxWindow
+class DxSimpleForm: public DxWindow
 {
-	DECLARE_RUNTIMEINFO(KDxSimpleForm)
+	DECLARE_RUNTIMEINFO(DxSimpleForm)
 public:
-	virtual void DoPaint(KDxRender* render)
+	virtual void DoPaint(DxRender* render)
 	{
 		// 画个背景即可
 		RECT rc;
@@ -319,10 +318,10 @@ public:
 		KDxWindow::DoPaint(render);
 	}
 };
-IMPLEMENT_RUNTIMEINFO(KDxSimpleForm, KDxWindow)
+IMPLEMENT_RUNTIMEINFO(DxSimpleForm, DxWindow)
 
 //------------------------------------------------------------------------------
-// KDxPanel: 面板类
+// DxPanel: 面板类
 
 /*
 	面板颜色配置
@@ -330,9 +329,9 @@ IMPLEMENT_RUNTIMEINFO(KDxSimpleForm, KDxWindow)
 // 背景
 #define PANELCOLOR_BG			D3DCOLOR_RGB(235, 246, 253)
 
-class KDxPanel: public KDxView
+class DxPanel: public DxView
 {
-	DECLARE_RUNTIMEINFO(KDxPanel)
+	DECLARE_RUNTIMEINFO(DxPanel)
 public:
 	KDxPanel(): mIsDrawFrame(FALSE), mIsTransparent(TRUE)
 	{ 
@@ -360,7 +359,7 @@ public:
 		mIsTransparent = isTransparent;
 	}
 
-	virtual void DoPaint(KDxRender* render)
+	virtual void DoPaint(DxRender* render)
 	{
 		RECT rc;
 		GetClientRect(rc);
@@ -384,24 +383,24 @@ protected:
 	BOOL	mIsDrawFrame;		// 是否绘制边框
 	BOOL	mIsTransparent;		// 背景是否透明
 };
-IMPLEMENT_RUNTIMEINFO(KDxPanel, KDxView)
+IMPLEMENT_RUNTIMEINFO(DxPanel, DxView)
 
 //------------------------------------------------------------------------------
-// KDxLabel: 标签类, 只支持单行
+// DxLabel: 标签类, 只支持单行
 
 /*
 	文本对齐方式
 */
-enum KDxTextAlign
+enum DxTextAlign
 {
 	taLeft,			 // 左对齐
 	taCenter,		 // 居中
 	taRight			 // 右对齐
 };
 
-class KDxLabel: public KDxView
+class DxLabel: public DxView
 {
-	DECLARE_RUNTIMEINFO(KDxLabel)
+	DECLARE_RUNTIMEINFO(DxLabel)
 public:
 	KDxLabel(): mIsAutoSize(TRUE), mAlign(taLeft)
 	{
@@ -426,7 +425,7 @@ public:
 		KDxView::DoFinalize();
 	}
 
-	virtual void DoPaint(KDxRender* render)
+	virtual void DoPaint(DxRender* render)
 	{
 		// 起始位置
 		int x, y;
@@ -458,7 +457,7 @@ public:
 		KDxView::DoPaint(render);
 	}
 
-	virtual void DoNotify(KDxNotifyId id, DWORD param)
+	virtual void DoNotify(DxNotifyId id, DWORD param)
 	{
 		if (id == NID_FONTCHANGED)
 		{
@@ -476,12 +475,12 @@ public:
 		KDxView::DoNotify(id, param);
 	}
 
-	kstring Caption()
+	String Caption()
 	{
 		return mCaption;
 	}
 
-	void SetCaption(const kstring& cap)
+	void SetCaption(const String& cap)
 	{
 		mCaption = cap;
 		CalcSize();
@@ -506,7 +505,7 @@ public:
 		return mAlign;
 	}
 
-	void SetTextAlign(KDxTextAlign align)
+	void SetTextAlign(DxTextAlign align)
 	{
 		mAlign = align;
 	}
@@ -520,7 +519,7 @@ protected:
 	void CalcSize()
 	{
 		// 计算大小
-		KASSERT(mOwnerScreen->Render() != NULL);
+		LN_ASSERT(mOwnerScreen->Render() != NULL);
 		mCapSize = mOwnerScreen->Render()->TextSize(mCaption, mCaption.Length(), FALSE, &mFont);
 
 		// 自动调整尺寸
@@ -530,15 +529,15 @@ protected:
 
 protected:
 	SIZE			mCapSize;		// 标题尺寸
-	kstring			mCaption;		// 标题
+	String			mCaption;		// 标题
 	BOOL			mIsAutoSize;	// 自动调整尺寸
 	KDxTextAlign	mAlign;			// 对齐方式
 	KDxViewFont		mFont;			// 字体
 };
-IMPLEMENT_RUNTIMEINFO(KDxLabel, KDxView)
+IMPLEMENT_RUNTIMEINFO(DxLabel, DxView)
 
 //------------------------------------------------------------------------------
-// KDxCheckBox: 复选框, 只支持二态, 不打算支持三态
+// DxCheckBox: 复选框, 只支持二态, 不打算支持三态
 // TODO: 用图片来绘那个选择框
 
 #define CB_BOX_CX	20
@@ -557,9 +556,9 @@ IMPLEMENT_RUNTIMEINFO(KDxLabel, KDxView)
 // 选择改变, param: BOOL=选择状态
 #define NID_CB_CHECKCHANGED	NID_USER + 1
 
-class KDxCheckBox: public KDxView
+class DxCheckBox: public DxView
 {
-	DECLARE_RUNTIMEINFO(KDxCheckBox)
+	DECLARE_RUNTIMEINFO(DxCheckBox)
 public:
 	KDxCheckBox(): mIsChecked(FALSE), mIsAutoSize(TRUE)
 	{
@@ -584,16 +583,16 @@ public:
 		KDxView::DoFinalize();
 	}
 
-	virtual LRESULT DoMouse(KDxMouseAction action, KDxShiftState shift, const POINT& pt)
+	virtual LRESULT DoMouse(DxMouseAction action, DxShiftState shift, const POINT& pt)
 	{
 		if (action == maMouseClick)
 		{
 			SetChecked(!mIsChecked);
 		}
-		return KDxView::DoMouse(action, shift, pt);
+		return DxView::DoMouse(action, shift, pt);
 	}
 
-	virtual void DoNotify(KDxNotifyId id, DWORD param)
+	virtual void DoNotify(DxNotifyId id, DWORD param)
 	{
 		if (id == NID_FONTCHANGED)
 		{
@@ -610,16 +609,16 @@ public:
 		KDxView::DoNotify(id, param);
 	}
 
-	virtual LRESULT DoKeyboard(KDxKeyAction action, WORD& key, KDxShiftState shift)
+	virtual LRESULT DoKeyboard(DxKeyAction action, WORD& key, DxShiftState shift)
 	{
 		if ((action == kaKeyDown) && (key == VK_SPACE))
 		{
 			SetChecked(!mIsChecked);
 		}
-		return KDxView::DoKeyboard(action, key, shift);
+		return DxView::DoKeyboard(action, key, shift);
 	}
 
-	virtual void DoPaint(KDxRender* render)
+	virtual void DoPaint(DxRender* render)
 	{
 		RECT rc, rcBox, rc2;
 		GetClientRect(rc);
@@ -686,12 +685,12 @@ public:
 		return &mFont;
 	}
 
-	kstring Caption()
+	String Caption()
 	{
 		return mCaption;
 	}
 
-	void SetCaption(const kstring& cap)
+	void SetCaption(const String& cap)
 	{
 		mCaption = cap;
 		CalcSize();
@@ -728,7 +727,7 @@ public:
 protected:
 	void CalcSize()
 	{
-		KASSERT(mOwnerScreen->Render() != NULL);
+		LN_ASSERT(mOwnerScreen->Render() != NULL);
 		mCapSize = mOwnerScreen->Render()->TextSize(mCaption, mCaption.Length(), FALSE, &mFont);
 		if (mIsAutoSize)
 		{
@@ -741,16 +740,16 @@ protected:
 protected:
 	SIZE				mSize;				// 尺寸
 	SIZE				mCapSize;			// 标题尺寸
-	kstring				mCaption;			// 标题
+	String				mCaption;			// 标题
 	BOOL				mIsAutoSize;		// 自动调整尺寸
 	BOOL				mIsChecked;			// 是否选择
 	KDxViewFont			mFont;				// 字体
 };
-IMPLEMENT_RUNTIMEINFO(KDxCheckBox, KDxView)
+IMPLEMENT_RUNTIMEINFO(DxCheckBox, DxView)
 
 
 //------------------------------------------------------------------------------
-// KDxRaidoBox: 单选框
+// DxRaidoBox: 单选框
 // TODO: 用图片来绘那个选择框
 
 #define RB_BOX_CX	20
@@ -772,9 +771,9 @@ IMPLEMENT_RUNTIMEINFO(KDxCheckBox, KDxView)
 */
 #define NID_RB_CHECKCHANGED		NID_USER + 1
 
-class KDxRadioBox: public KDxView
+class DxRadioBox: public DxView
 {
-	DECLARE_RUNTIMEINFO(KDxRadioBox)
+	DECLARE_RUNTIMEINFO(DxRadioBox)
 public:
 	KDxRadioBox(): mIsChecked(FALSE), mIsAutoSize(TRUE)
 	{
@@ -799,16 +798,16 @@ public:
 		KDxView::DoFinalize();
 	}
 
-	virtual LRESULT DoMouse(KDxMouseAction action, KDxShiftState shift, const POINT& pt)
+	virtual LRESULT DoMouse(DxMouseAction action, DxShiftState shift, const POINT& pt)
 	{
 		if (action == maMouseClick)
 		{
 			SetChecked(TRUE);
 		}
-		return KDxView::DoMouse(action, shift, pt);
+		return DxView::DoMouse(action, shift, pt);
 	}
 
-	virtual void DoNotify(KDxNotifyId id, DWORD param)
+	virtual void DoNotify(DxNotifyId id, DWORD param)
 	{
 		if (id == NID_FONTCHANGED)
 		{
@@ -825,16 +824,16 @@ public:
 		KDxView::DoNotify(id, param);
 	}
 
-	virtual LRESULT DoKeyboard(KDxKeyAction action, WORD& key, KDxShiftState shift)
+	virtual LRESULT DoKeyboard(DxKeyAction action, WORD& key, DxShiftState shift)
 	{
 		if ((action == kaKeyDown) && (key == VK_SPACE))
 		{
 			SetChecked(TRUE);
 		}
-		return KDxView::DoKeyboard(action, key, shift);
+		return DxView::DoKeyboard(action, key, shift);
 	}
 
-	virtual void DoPaint(KDxRender* render)
+	virtual void DoPaint(DxRender* render)
 	{
 		RECT rc, rcBox;
 		GetClientRect(rc);
@@ -913,12 +912,12 @@ public:
 		return &mFont;
 	}
 
-	kstring Caption()
+	String Caption()
 	{
 		return mCaption;
 	}
 
-	void SetCaption(const kstring& cap)
+	void SetCaption(const String& cap)
 	{
 		mCaption = cap;
 		CalcSize();
@@ -943,9 +942,9 @@ public:
 				for (int i = 0; i < mParentView->ChildCount(); ++i)
 				{
 					view = mParentView->ChildView(i);
-					if (OBJECT_DERIVEDFROM(view, KDxRadioBox))
+					if (OBJECT_DERIVEDFROM(view, DxRadioBox))
 					{
-						rbox = (KDxRadioBox*)view;
+						rbox = (DxRadioBox*)view;
 						if ((rbox != this) && (rbox->Group() == this->Group()))
 						{
 							rbox->SetChecked(FALSE);
@@ -976,7 +975,7 @@ public:
 protected:
 	void CalcSize()
 	{
-		KASSERT(mOwnerScreen->Render() != NULL);
+		LN_ASSERT(mOwnerScreen->Render() != NULL);
 		mCapSize = mOwnerScreen->Render()->TextSize(mCaption, mCaption.Length(), FALSE, &mFont);
 		if (mIsAutoSize)
 		{
@@ -989,15 +988,15 @@ protected:
 protected:
 	SIZE				mSize;				// 尺寸
 	SIZE				mCapSize;			// 标题尺寸
-	kstring				mCaption;			// 标题
+	String				mCaption;			// 标题
 	BOOL				mIsAutoSize;		// 自动调整尺寸
 	BOOL				mIsChecked;			// 是否选择
 	KDxViewFont			mFont;				// 字体
 };
-IMPLEMENT_RUNTIMEINFO(KDxRadioBox, KDxView)
+IMPLEMENT_RUNTIMEINFO(DxRadioBox, DxView)
 
 //------------------------------------------------------------------------------
-// KDxScrooBar: 滚动条
+// DxScrooBar: 滚动条
 
 // 滚动条按钮尺寸
 #define SB_BTNSIZE			17
@@ -1038,7 +1037,7 @@ IMPLEMENT_RUNTIMEINFO(KDxRadioBox, KDxView)
 /*
 	滚动条区域
 */
-enum KDxSBArea
+enum DxSBArea
 {
 	sbaNone,		// 无
 	sbaButton1,		// 滚动条第1个按钮
@@ -1065,9 +1064,9 @@ __declspec(selectany) POINT			gThumbPos;			// 开始鼠标拖动滚动块的位置
 	可手动调整mThumbSize的值.
 */
 
-class KDxScrollBar: public KDxView
+class DxScrollBar: public DxView
 {
-	DECLARE_RUNTIMEINFO(KDxScrollBar)
+	DECLARE_RUNTIMEINFO(DxScrollBar)
 public:
 	KDxScrollBar(): 
 		mRange(100), 
@@ -1219,7 +1218,7 @@ public:
 		KDxView::DoInitialize();
 	}
 
-	virtual void DoNotify(KDxNotifyId id, DWORD param)
+	virtual void DoNotify(DxNotifyId id, DWORD param)
 	{
 		if (NID_SIZECHANGED == id)
 		{
@@ -1232,7 +1231,7 @@ public:
 		KDxView::DoNotify(id, param);
 	}
 
-	virtual LRESULT DoMouse(KDxMouseAction action, KDxShiftState shift, const POINT& pt)
+	virtual LRESULT DoMouse(DxMouseAction action, DxShiftState shift, const POINT& pt)
 	{
 		if (maMouseMove == action)
 		{
@@ -1272,7 +1271,7 @@ public:
 			mClickArea = sbaNone;
 			StopScrollTime();
 		}
-		return KDxView::DoMouse(action, shift, pt);
+		return DxView::DoMouse(action, shift, pt);
 	}
 
 	virtual void DoUpdate(DWORD tick)
@@ -1303,7 +1302,7 @@ public:
 		KDxView::DoUpdate(tick);
 	}
 
-	virtual void DoPaint(KDxRender* render)
+	virtual void DoPaint(DxRender* render)
 	{
 		// 背景
 		render->FillGradienRect(0, 0, mWidth, mHeight, SBCOLOR_BG1, SBCOLOR_BG2, mIsVertScroll);
@@ -1514,7 +1513,7 @@ protected:
 	void StartScrollTime()
 	{
 		mStartScroll = TRUE;
-		gScrollTick = KGetTickCount();
+		gScrollTick = GetTickCount();
 		gScrollTime = SB_SCROLLDELAY;
 	}
 
@@ -1523,7 +1522,7 @@ protected:
 		mStartScroll = FALSE;
 	}
 
-	void DoScroll(KDxSBArea area)
+	void DoScroll(DxSBArea area)
 	{
 		switch (area)
 		{
@@ -1569,11 +1568,11 @@ protected:
 
 	BOOL			mStartScroll;		// 开始连续滚动
 };
-IMPLEMENT_RUNTIMEINFO(KDxScrollBar, KDxView)
+IMPLEMENT_RUNTIMEINFO(DxScrollBar, DxView)
 
 
 //------------------------------------------------------------------------------
-// KDxListBox: 列表控件
+// DxListBox: 列表控件
 
 // 鼠标滚轮滚动的行
 #define LB_WHEELLINE		3
@@ -1599,10 +1598,10 @@ IMPLEMENT_RUNTIMEINFO(KDxScrollBar, KDxView)
 // 选中项字体颜色
 #define LBCOLOR_FONT_SELECT	D3DCOLOR_RGB(255, 255, 255)
 
-class KDxListBox: public KDxView, public IDxViewEvent
+class DxListBox: public DxView, public IDxViewEvent
 {
-	typedef std::vector<void*> KDxDataList;
-	DECLARE_RUNTIMEINFO(KDxListBox)
+	typedef std::vector<void*> DxDataList;
+	DECLARE_RUNTIMEINFO(DxListBox)
 public:
 	KDxListBox(): 
 		mVertScrollBar(NULL),
@@ -1631,7 +1630,7 @@ public:
 		KDxView::DoFinalize();
 	}
 
-	virtual void DoNotify(KDxNotifyId id, DWORD param)
+	virtual void DoNotify(DxNotifyId id, DWORD param)
 	{
 		if (NID_FONTCHANGED == id)
 		{
@@ -1655,7 +1654,7 @@ public:
 		KDxView::DoNotify(id, param);
 	}
 
-	virtual LRESULT DoMouse(KDxMouseAction action, KDxShiftState shift, const POINT& pt)
+	virtual LRESULT DoMouse(DxMouseAction action, DxShiftState shift, const POINT& pt)
 	{
 		if (action == maLButtonDown)
 		{
@@ -1705,16 +1704,16 @@ public:
 			mVertScrollBar->SetScrollPos(mTopIndex - LB_WHEELLINE);
 			return TRUE;
 		}
-		return KDxView::DoMouse(action, shift, pt);
+		return DxView::DoMouse(action, shift, pt);
 	}
 
-	virtual LRESULT DoKeyboard(KDxKeyAction action, WORD& key, KDxShiftState shift)
+	virtual LRESULT DoKeyboard(DxKeyAction action, WORD& key, DxShiftState shift)
 	{
 		if (action == kaChar)
 		{
-			if (KGetTickCount() - mFilterTick > 500)
+			if (GetTickCount() - mFilterTick > 500)
 				mFilter.Clear();
-			mFilterTick = KGetTickCount();
+			mFilterTick = GetTickCount();
 
 			if (key != VK_BACK)
 				mFilter	+= WCHAR(key);
@@ -1757,15 +1756,15 @@ public:
 					SetSelectIndex(idx);
 			}
 		}
-		return KDxView::DoKeyboard(action, key, shift);
+		return DxView::DoKeyboard(action, key, shift);
 	}
 
-	virtual LRESULT DoQuery(KDxQueryId id, DWORD param)
+	virtual LRESULT DoQuery(DxQueryId id, DWORD param)
 	{
 		// 使用方向键来选择上下行
 		if (id == QID_WANTARROWS)
 			return TRUE;
-		return KDxView::DoQuery(id, param);
+		return DxView::DoQuery(id, param);
 	}
 
 	virtual void DoUpdate(DWORD tick)
@@ -1784,7 +1783,7 @@ public:
 		KDxView::DoUpdate(tick);
 	}
 
-	virtual void DoPaint(KDxRender* render)
+	virtual void DoPaint(DxRender* render)
 	{
 		RECT rc;
 		GetClientRect(rc);
@@ -1793,7 +1792,7 @@ public:
 		render->FillRect(rc, LBCOLOR_BG);
 
 		int num = min(mVisibleItems, ItemCount());
-		kstring str;
+		String str;
 		D3DCOLOR fontColor;
 		for (int i = mTopIndex; i < mTopIndex + num; ++i)
 		{
@@ -1815,7 +1814,7 @@ public:
 	}
 
 	// 滚动条事件
-	virtual void OnNotify(KDxView* view, KDxNotifyId id, DWORD param)
+	virtual void OnNotify(DxView* view, DxNotifyId id, DWORD param)
 	{				
 		if (NID_SB_SCROLLCHANGED == id)
 		{
@@ -1833,10 +1832,10 @@ public:
 		return (int)mStrList.size();
 	}
 
-	kstring ItemString(int idx)
+	String ItemString(int idx)
 	{
 		if ((idx < 0) || (idx >= (int)mStrList.size()))
-			return kstring(L"");
+			return String(L"");
 		else
 			return mStrList[idx];
 	}
@@ -1849,7 +1848,7 @@ public:
 			return mDataList[idx];
 	}
 
-	void AddString(const kstring& str, void* data = NULL)
+	void AddString(const String& str, void* data = NULL)
 	{
 		mStrList.push_back(str);
 		mDataList.push_back(data);
@@ -1866,7 +1865,7 @@ public:
 		}	
 	}
 
-	void SetString(const kstring& str, int idx)
+	void SetString(const String& str, int idx)
 	{
 		if ((idx >= 0) && (idx < (int)mStrList.size()))
 			mStrList[idx] = str;
@@ -1878,7 +1877,7 @@ public:
 			mDataList[idx] = data;
 	}
 
-	int FindString(const kstring& str, BOOL IsIgnoreCase = FALSE)
+	int FindString(const String& str, BOOL IsIgnoreCase = FALSE)
 	{
 		KStringList::iterator itr;
 		for (itr = mStrList.begin(); itr != mStrList.end(); ++itr)
@@ -1896,10 +1895,10 @@ public:
 		}
 	}
 
-	int MatchString(const kstring& str, BOOL IsIgnoreCase = FALSE)
+	int MatchString(const String& str, BOOL IsIgnoreCase = FALSE)
 	{
-		kstring itemStr;
-		kstring matchstr = str;
+		String itemStr;
+		String matchstr = str;
 		if (IsIgnoreCase)
 			matchstr.Upper();
 		KStringList::iterator itr;
@@ -1952,7 +1951,7 @@ public:
 protected:
 	void InitScrollBar()
 	{
-		mVertScrollBar = NEW_CONTROL(KDxScrollBar, this, mOwnerScreen);
+		mVertScrollBar = NEW_CONTROL(DxScrollBar, this, mOwnerScreen);
 		mVertScrollBar->SetVertScroll(TRUE);
 		mVertScrollBar->SetEnable(FALSE);
 		mVertScrollBar->SetPos(mWidth - mVertScrollBar->Width() - LB_MARGIN, LB_MARGIN);
@@ -1999,15 +1998,15 @@ protected:
 	int					mVisibleItems;			// 可见的项数
 	int					mTopIndex;				// 第一个可见的索引
 	BOOL				mIsMouseDown;			// 鼠标是否下
-	kstring				mFilter;				// 过滤搜索
+	String				mFilter;				// 过滤搜索
 	DWORD				mFilterTick;
 	BOOL				mStartScroll;
 	BOOL				mIsScrollUp;
 };
-IMPLEMENT_RUNTIMEINFO(KDxListBox, KDxView)
+IMPLEMENT_RUNTIMEINFO(DxListBox, DxView)
 
 //------------------------------------------------------------------------------
-// KDxEdit: 单行编辑框
+// DxEdit: 单行编辑框
 
 /*
 	通知事件
@@ -2019,9 +2018,9 @@ IMPLEMENT_RUNTIMEINFO(KDxListBox, KDxView)
 	Edit的行为更像Delphi的编辑器，因为相较于VC编辑器，人个觉得Delphi的操作方式
 	效率更高
 */
-class KDxEdit: public KDxView
+class DxEdit: public DxView
 {
-	DECLARE_RUNTIMEINFO(KDxEdit)
+	DECLARE_RUNTIMEINFO(DxEdit)
 public:
 	KDxEdit(): 
 	  mSelStart(0),
@@ -2045,7 +2044,7 @@ public:
 		mFont.Finalize();
 	}
 
-	virtual void DoNotify(KDxNotifyId id, DWORD param)
+	virtual void DoNotify(DxNotifyId id, DWORD param)
 	{
 		if (NID_FONTCHANGED == id)
 		{
@@ -2063,13 +2062,13 @@ public:
 		KDxView::DoNotify(id, param);
 	}
 
-	virtual LRESULT DoMouse(KDxMouseAction action, KDxShiftState shift, const POINT& pt)
+	virtual LRESULT DoMouse(DxMouseAction action, DxShiftState shift, const POINT& pt)
 	{
 		// TODO
-		return KDxView::DoMouse(action, shift, pt);
+		return DxView::DoMouse(action, shift, pt);
 	}
 
-	virtual LRESULT DoKeyboard(KDxKeyAction action, WORD& key, KDxShiftState shift)
+	virtual LRESULT DoKeyboard(DxKeyAction action, WORD& key, DxShiftState shift)
 	{
 		if (action == kaChar)
 		{
@@ -2231,10 +2230,10 @@ public:
 					}
 			}
 		}
-		return KDxView::DoKeyboard(action, key, shift);
+		return DxView::DoKeyboard(action, key, shift);
 	}
 
-	virtual LRESULT DoQuery(KDxQueryId id, DWORD param)
+	virtual LRESULT DoQuery(DxQueryId id, DWORD param)
 	{
 		if (QID_WANTARROWS == id)
 			return TRUE;
@@ -2251,10 +2250,10 @@ public:
 			}
 		}
 			
-		return KDxView::DoQuery(id, param);
+		return DxView::DoQuery(id, param);
 	}
 
-	virtual void DoPaint(KDxRender* render)
+	virtual void DoPaint(DxRender* render)
 	{
 		RECT rc;
 		GetClientRect(rc);
@@ -2269,12 +2268,12 @@ public:
 		return &mFont;
 	}
 
-	kstring Text()
+	String Text()
 	{
 		return mText;
 	}
 
-	void SetText(const kstring& text)
+	void SetText(const String& text)
 	{
 		// 如果是只读或相等
 		if (mReadOnly || (text == mText))
@@ -2570,7 +2569,7 @@ protected:
 	}
 
 protected:
-	kstring				mText;			// 文本
+	String				mText;			// 文本
 	int					mSelStart;		// 选择开始位置
 	int					mSelLen;		// 选择长度，如果为负值，表示从右向左选择文本，光标在被选文本段的左边
 	int					mCaretPos;		// 光标位置
@@ -2580,7 +2579,7 @@ protected:
 	BOOL				mAutoHeight;	// 自动调整高度
 	KDxViewFont			mFont;			// 字体
 };
-IMPLEMENT_RUNTIMEINFO(KDxEdit, KDxView)
+IMPLEMENT_RUNTIMEINFO(DxEdit, DxView)
 
 }
-#endif // __LIN_KMDXCTRLS_H__
+#endif // __LIN_DXCTRLS_H__
