@@ -69,7 +69,7 @@ inline void DrawArrow(DxRender* render, DxArrowDirection dir, const RECT& rc)
 class DxViewFont: public DxFont
 {
 public:
-	KDxViewFont(): mView(NULL), mColor(CTRLCOLOR_FONT)
+	DxViewFont(): mView(NULL), mColor(CTRLCOLOR_FONT)
 	{
 
 	}
@@ -85,7 +85,7 @@ public:
 		mView = NULL;
 	}
 
-	D3DCOLOR Color()
+	D3DCOLOR GetColor()
 	{
 		return mColor;
 	}
@@ -103,7 +103,7 @@ public:
 
 private:
 	D3DCOLOR	mColor;
-	KDxView*	mView;
+	DxView*	mView;
 };
 
 //------------------------------------------------------------------------------
@@ -142,7 +142,7 @@ class DxButton: public DxView
 {
 	DECLARE_RUNTIMEINFO(DxButton)
 public:
-	KDxButton() 
+	DxButton() 
 	{
 		mWidth = 75;
 		mHeight = 23; 
@@ -155,28 +155,28 @@ public:
 	{
 		mFont.Initialize(this);
 
-		KDxView::DoInitialize();
+		DxView::DoInitialize();
 	}
 
 	virtual void DoFinalize()
 	{
 		mFont.Finalize();
-		KDxView::DoFinalize();
+		DxView::DoFinalize();
 	}
 
 	void SetCaption(const String& cap)
 	{
 		mCaption = cap;
-		LN_ASSERT(mOwnerScreen->Render() != NULL);
-		mCapSize = mOwnerScreen->Render()->TextSize(mCaption, mCaption.Length(), FALSE, &mFont);
+		LN_ASSERT(mOwnerScreen->GetRender() != NULL);
+		mCapSize = mOwnerScreen->GetRender()->TextSize(mCaption, mCaption.GetLength(), FALSE, &mFont);
 	}
 
-	String Caption()
+	String GetCaption()
 	{
 		return mCaption;
 	}
 
-	KDxViewFont* Font()
+	DxViewFont* GetFont()
 	{
 		return &mFont;
 	}
@@ -193,11 +193,11 @@ public:
 		}
 		else if (NID_FONTCHANGED == id)
 		{
-			LN_ASSERT(mOwnerScreen->Render() != NULL);
-			mCapSize = mOwnerScreen->Render()->TextSize(mCaption, mCaption.Length(), FALSE, &mFont);
+			LN_ASSERT(mOwnerScreen->GetRender() != NULL);
+			mCapSize = mOwnerScreen->GetRender()->TextSize(mCaption, mCaption.GetLength(), FALSE, &mFont);
 		}
 		
-		KDxView::DoNotify(id, param);
+		DxView::DoNotify(id, param);
 	}
 
 	virtual LRESULT DoMouse(DxMouseAction action, DxShiftState shift, const POINT& pt)
@@ -241,7 +241,7 @@ public:
 			render->DrawRect(rc, CTRLCOLOR_BORDER_DISABLED);
 			InflateRect(&rc, -1, -1);
 			render->FillGradienRect(rc, BTNCOLOR_BGTOP_DISABLED, BTNCOLOR_BGBOTTOM_DISABLED, FALSE);
-			render->TextOut(x, y, mCaption, mCaption.Length(), CTRLCOLOR_FONT_DISABLED, FALSE, &mFont);
+			render->TextOut(x, y, mCaption, mCaption.GetLength(), CTRLCOLOR_FONT_DISABLED, FALSE, &mFont);
 		}
 		else
 		{
@@ -257,7 +257,7 @@ public:
 					InflateRect(&rc, -1, -1);
 					render->DrawRect(rc, CTRLCOLOR_FOCUSFRAME);
 				}
-				render->TextOut(x, y, mCaption, mCaption.Length(), mFont.Color(), FALSE, &mFont);
+				render->TextOut(x, y, mCaption, mCaption.GetLength(), mFont.GetColor(), FALSE, &mFont);
 			}
 			else if (mBtnState == bsHover)
 			{
@@ -265,7 +265,7 @@ public:
 				render->DrawRect(rc, CTRLCOLOR_HOVERFRAME);
 				InflateRect(&rc, -1, -1);
 				render->FillGradienRect(rc, BTNCOLOR_BGTOP, BTNCOLOR_BGBOTTOM, FALSE);
-				render->TextOut(x, y, mCaption, mCaption.Length(), mFont.Color(), FALSE, &mFont);
+				render->TextOut(x, y, mCaption, mCaption.GetLength(), mFont.GetColor(), FALSE, &mFont);
 			}
 			else if (mBtnState == bsDown)
 			{
@@ -273,18 +273,18 @@ public:
 				render->DrawRect(rc, CTRLCOLOR_HOVERFRAME);
 				InflateRect(&rc, -1, -1);
 				render->FillGradienRect(rc, BTNCOLOR_BGTOP_DOWN, BTNCOLOR_BGBOTTOM_DOWN, FALSE);
-				render->TextOut(x+1, y+1, mCaption, mCaption.Length(), mFont.Color(), FALSE, &mFont);
+				render->TextOut(x+1, y+1, mCaption, mCaption.GetLength(), mFont.GetColor(), FALSE, &mFont);
 			}
 		}
 
-		KDxView::DoPaint(render);
+		DxView::DoPaint(render);
 	}
 
 protected:
 	SIZE			mCapSize;
 	String			mCaption;				// 按钮标题
-	KDxButtonState	mBtnState;				// 控件状态
-	KDxViewFont		mFont;					// 字体
+	DxButtonState	mBtnState;				// 控件状态
+	DxViewFont		mFont;					// 字体
 };
 IMPLEMENT_RUNTIMEINFO(DxButton, DxView)
 
@@ -315,7 +315,7 @@ public:
 		InflateRect(&rc, -1, -1);
 		render->DrawRect(rc, FORMCOLOR_INBORDER);
 
-		KDxWindow::DoPaint(render);
+		DxWindow::DoPaint(render);
 	}
 };
 IMPLEMENT_RUNTIMEINFO(DxSimpleForm, DxWindow)
@@ -333,7 +333,7 @@ class DxPanel: public DxView
 {
 	DECLARE_RUNTIMEINFO(DxPanel)
 public:
-	KDxPanel(): mIsDrawFrame(FALSE), mIsTransparent(TRUE)
+	DxPanel(): mIsDrawFrame(FALSE), mIsTransparent(TRUE)
 	{ 
 		SetTabStop(FALSE);
 		SetFocusable(FALSE);
@@ -376,7 +376,7 @@ public:
 			render->DrawRect(rc, CTRLCOLOR_FOCUSFRAME);
 		}
 
-		KDxView::DoPaint(render);
+		DxView::DoPaint(render);
 	}
 
 protected:
@@ -402,7 +402,7 @@ class DxLabel: public DxView
 {
 	DECLARE_RUNTIMEINFO(DxLabel)
 public:
-	KDxLabel(): mIsAutoSize(TRUE), mAlign(taLeft)
+	DxLabel(): mIsAutoSize(TRUE), mAlign(taLeft)
 	{
 		mCapSize.cx = 0;
 		mCapSize.cy = 0;
@@ -415,14 +415,14 @@ public:
 		mFont.Initialize(this);
 		CalcSize();
 
-		KDxView::DoInitialize();
+		DxView::DoInitialize();
 	}
 
 	virtual void DoFinalize()
 	{
 		mFont.Finalize();
 
-		KDxView::DoFinalize();
+		DxView::DoFinalize();
 	}
 
 	virtual void DoPaint(DxRender* render)
@@ -447,14 +447,14 @@ public:
 
 		if (!IsEnable())
 		{
-			render->TextOut(x, y, mCaption, mCaption.Length(), CTRLCOLOR_FONT_DISABLED, FALSE, &mFont);
+			render->TextOut(x, y, mCaption, mCaption.GetLength(), CTRLCOLOR_FONT_DISABLED, FALSE, &mFont);
 		}
 		else
 		{
-			render->TextOut(x, y, mCaption, mCaption.Length(), mFont.Color(), FALSE, &mFont);
+			render->TextOut(x, y, mCaption, mCaption.GetLength(), mFont.GetColor(), FALSE, &mFont);
 		}
 
-		KDxView::DoPaint(render);
+		DxView::DoPaint(render);
 	}
 
 	virtual void DoNotify(DxNotifyId id, DWORD param)
@@ -472,10 +472,10 @@ public:
 			}
 		}
 
-		KDxView::DoNotify(id, param);
+		DxView::DoNotify(id, param);
 	}
 
-	String Caption()
+	String GetCaption()
 	{
 		return mCaption;
 	}
@@ -500,7 +500,7 @@ public:
 		}
 	}
 
-	KDxTextAlign TextAlign()
+	DxTextAlign GetTextAlign()
 	{
 		return mAlign;
 	}
@@ -510,7 +510,7 @@ public:
 		mAlign = align;
 	}
 
-	KDxFont* Font()
+	DxFont* GetFont()
 	{
 		return &mFont;
 	}
@@ -519,8 +519,8 @@ protected:
 	void CalcSize()
 	{
 		// 计算大小
-		LN_ASSERT(mOwnerScreen->Render() != NULL);
-		mCapSize = mOwnerScreen->Render()->TextSize(mCaption, mCaption.Length(), FALSE, &mFont);
+		LN_ASSERT(mOwnerScreen->GetRender() != NULL);
+		mCapSize = mOwnerScreen->GetRender()->TextSize(mCaption, mCaption.GetLength(), FALSE, &mFont);
 
 		// 自动调整尺寸
 		if (mIsAutoSize)
@@ -531,8 +531,8 @@ protected:
 	SIZE			mCapSize;		// 标题尺寸
 	String			mCaption;		// 标题
 	BOOL			mIsAutoSize;	// 自动调整尺寸
-	KDxTextAlign	mAlign;			// 对齐方式
-	KDxViewFont		mFont;			// 字体
+	DxTextAlign	mAlign;			// 对齐方式
+	DxViewFont		mFont;			// 字体
 };
 IMPLEMENT_RUNTIMEINFO(DxLabel, DxView)
 
@@ -560,7 +560,7 @@ class DxCheckBox: public DxView
 {
 	DECLARE_RUNTIMEINFO(DxCheckBox)
 public:
-	KDxCheckBox(): mIsChecked(FALSE), mIsAutoSize(TRUE)
+	DxCheckBox(): mIsChecked(FALSE), mIsAutoSize(TRUE)
 	{
  		mSize.cx = 0;
 		mSize.cy = 0;
@@ -573,14 +573,14 @@ public:
 		mFont.Initialize(this);
 		CalcSize();
 
-		KDxView::DoInitialize();
+		DxView::DoInitialize();
 	}
 
 	virtual void DoFinalize()
 	{
 		mFont.Finalize();
 
-		KDxView::DoFinalize();
+		DxView::DoFinalize();
 	}
 
 	virtual LRESULT DoMouse(DxMouseAction action, DxShiftState shift, const POINT& pt)
@@ -606,7 +606,7 @@ public:
 				*sz = mSize;
 			}
 		}
-		KDxView::DoNotify(id, param);
+		DxView::DoNotify(id, param);
 	}
 
 	virtual LRESULT DoKeyboard(DxKeyAction action, WORD& key, DxShiftState shift)
@@ -652,7 +652,7 @@ public:
 			int x, y;
 			x = CB_BOX_CX;
 			y = (rc.bottom - mCapSize.cy) / 2;
-			render->TextOut(x, y, mCaption, mCaption.Length(), mFont.Color(), 0, &mFont);
+			render->TextOut(x, y, mCaption, mCaption.GetLength(), mFont.GetColor(), 0, &mFont);
 
 			// 焦点框
 			if (IsFocused())
@@ -675,12 +675,12 @@ public:
 			int x, y;
 			x = CB_BOX_CX;
 			y = (rc.bottom - mCapSize.cy) / 2;
-			render->TextOut(x, y, mCaption, mCaption.Length(), CTRLCOLOR_FONT_DISABLED, 0, &mFont);
+			render->TextOut(x, y, mCaption, mCaption.GetLength(), CTRLCOLOR_FONT_DISABLED, 0, &mFont);
 		}
-		KDxView::DoPaint(render);
+		DxView::DoPaint(render);
 	}
 
-	KDxViewFont* Font()
+	DxViewFont* Font()
 	{
 		return &mFont;
 	}
@@ -727,8 +727,8 @@ public:
 protected:
 	void CalcSize()
 	{
-		LN_ASSERT(mOwnerScreen->Render() != NULL);
-		mCapSize = mOwnerScreen->Render()->TextSize(mCaption, mCaption.Length(), FALSE, &mFont);
+		LN_ASSERT(mOwnerScreen->GetRender() != NULL);
+		mCapSize = mOwnerScreen->GetRender()->TextSize(mCaption, mCaption.GetLength(), FALSE, &mFont);
 		if (mIsAutoSize)
 		{
 			mSize.cx = mCapSize.cx + CB_BOX_CX + 2;
@@ -743,7 +743,7 @@ protected:
 	String				mCaption;			// 标题
 	BOOL				mIsAutoSize;		// 自动调整尺寸
 	BOOL				mIsChecked;			// 是否选择
-	KDxViewFont			mFont;				// 字体
+	DxViewFont			mFont;				// 字体
 };
 IMPLEMENT_RUNTIMEINFO(DxCheckBox, DxView)
 
@@ -775,7 +775,7 @@ class DxRadioBox: public DxView
 {
 	DECLARE_RUNTIMEINFO(DxRadioBox)
 public:
-	KDxRadioBox(): mIsChecked(FALSE), mIsAutoSize(TRUE)
+	DxRadioBox(): mIsChecked(FALSE), mIsAutoSize(TRUE)
 	{
 		mSize.cx = 0;
 		mSize.cy = 0;
@@ -788,14 +788,14 @@ public:
 		mFont.Initialize(this);
 		CalcSize();
 
-		KDxView::DoInitialize();
+		DxView::DoInitialize();
 	}
 
 	virtual void DoFinalize()
 	{
 		mFont.Finalize();
 
-		KDxView::DoFinalize();
+		DxView::DoFinalize();
 	}
 
 	virtual LRESULT DoMouse(DxMouseAction action, DxShiftState shift, const POINT& pt)
@@ -821,7 +821,7 @@ public:
 				*sz = mSize;
 			}
 		}
-		KDxView::DoNotify(id, param);
+		DxView::DoNotify(id, param);
 	}
 
 	virtual LRESULT DoKeyboard(DxKeyAction action, WORD& key, DxShiftState shift)
@@ -880,7 +880,7 @@ public:
 			int x, y;
 			x = CB_BOX_CX;
 			y = (rc.bottom - mCapSize.cy) / 2;
-			render->TextOut(x, y, mCaption, mCaption.Length(), mFont.Color(), 0, &mFont);
+			render->TextOut(x, y, mCaption, mCaption.GetLength(), mFont.GetColor(), 0, &mFont);
 
 			// 焦点框
 			if (IsFocused())
@@ -902,17 +902,17 @@ public:
 			int x, y;
 			x = CB_BOX_CX;
 			y = (rc.bottom - mCapSize.cy) / 2;
-			render->TextOut(x, y, mCaption, mCaption.Length(), CTRLCOLOR_FONT_DISABLED, 0, &mFont);
+			render->TextOut(x, y, mCaption, mCaption.GetLength(), CTRLCOLOR_FONT_DISABLED, 0, &mFont);
 		}
-		KDxView::DoPaint(render);
+		DxView::DoPaint(render);
 	}
 
-	KDxViewFont* Font()
+	DxViewFont* GetFont()
 	{
 		return &mFont;
 	}
 
-	String Caption()
+	String GetCaption()
 	{
 		return mCaption;
 	}
@@ -937,15 +937,15 @@ public:
 			// 如果选中, 取消同组的其他单选框
 			if (mIsChecked && mParentView)
 			{
-				KDxRadioBox* rbox;
-				KDxView* view;
-				for (int i = 0; i < mParentView->ChildCount(); ++i)
+				DxRadioBox* rbox;
+				DxView* view;
+				for (int i = 0; i < mParentView->GetChildCount(); ++i)
 				{
-					view = mParentView->ChildView(i);
+					view = mParentView->GetChildView(i);
 					if (OBJECT_DERIVEDFROM(view, DxRadioBox))
 					{
 						rbox = (DxRadioBox*)view;
-						if ((rbox != this) && (rbox->Group() == this->Group()))
+						if ((rbox != this) && (rbox->GetGroup() == this->GetGroup()))
 						{
 							rbox->SetChecked(FALSE);
 							break;
@@ -975,8 +975,8 @@ public:
 protected:
 	void CalcSize()
 	{
-		LN_ASSERT(mOwnerScreen->Render() != NULL);
-		mCapSize = mOwnerScreen->Render()->TextSize(mCaption, mCaption.Length(), FALSE, &mFont);
+		LN_ASSERT(mOwnerScreen->GetRender() != NULL);
+		mCapSize = mOwnerScreen->GetRender()->TextSize(mCaption, mCaption.GetLength(), FALSE, &mFont);
 		if (mIsAutoSize)
 		{
 			mSize.cx = mCapSize.cx + RB_BOX_CX + 2;
@@ -991,7 +991,7 @@ protected:
 	String				mCaption;			// 标题
 	BOOL				mIsAutoSize;		// 自动调整尺寸
 	BOOL				mIsChecked;			// 是否选择
-	KDxViewFont			mFont;				// 字体
+	DxViewFont			mFont;				// 字体
 };
 IMPLEMENT_RUNTIMEINFO(DxRadioBox, DxView)
 
@@ -1068,7 +1068,7 @@ class DxScrollBar: public DxView
 {
 	DECLARE_RUNTIMEINFO(DxScrollBar)
 public:
-	KDxScrollBar(): 
+	DxScrollBar(): 
 		mRange(100), 
 		mPos(0), 
 		mPage(20),
@@ -1088,7 +1088,7 @@ public:
 		SetTabStop(FALSE);
 	}
 
-	int Range()
+	int GetRange()
 	{
 		return mRange;
 	}
@@ -1110,7 +1110,7 @@ public:
 		}
 	}
 
-	int ScrollPos()
+	int GetScrollPos()
 	{
 		return mPos;
 	}
@@ -1129,7 +1129,7 @@ public:
 		}
 	}
 
-	int Line()
+	int GetLine()
 	{
 		return mLine;
 	}
@@ -1146,7 +1146,7 @@ public:
 		}
 	}
 
-	int Page()
+	int GetPage()
 	{
 		return mPage;
 	}
@@ -1179,7 +1179,7 @@ public:
 		}
 	}
 
-	int ThumbSize()
+	int GetThumbSize()
 	{
 		return mThumbSize;
 	}
@@ -1215,7 +1215,7 @@ public:
 	virtual void DoInitialize()
 	{
 		AdjustThumbSize();
-		KDxView::DoInitialize();
+		DxView::DoInitialize();
 	}
 
 	virtual void DoNotify(DxNotifyId id, DWORD param)
@@ -1228,7 +1228,7 @@ public:
 		{
 			mMouseArea = sbaNone;
 		}
-		KDxView::DoNotify(id, param);
+		DxView::DoNotify(id, param);
 	}
 
 	virtual LRESULT DoMouse(DxMouseAction action, DxShiftState shift, const POINT& pt)
@@ -1287,7 +1287,7 @@ public:
 
 				if ((mMouseArea == sbaPage1) || (mMouseArea == sbaPage2))
 				{
-					POINT pt = ScreenToClient(MakePoint(mOwnerScreen->MouseX(), mOwnerScreen->MouseY()));
+					POINT pt = ScreenToClient(MakePoint(mOwnerScreen->GetMouseX(), mOwnerScreen->GetMouseY()));
 					int pos;
 					if (mIsVertScroll)
 						pos = pt.y;
@@ -1299,7 +1299,7 @@ public:
 				}
 			}
 		}
-		KDxView::DoUpdate(tick);
+		DxView::DoUpdate(tick);
 	}
 
 	virtual void DoPaint(DxRender* render)
@@ -1311,7 +1311,7 @@ public:
 		int size = mIsVertScroll ? mHeight :mWidth;
 		if (size < 2 * SB_BTNSIZE)
 		{
-			KDxView::DoPaint(render);
+			DxView::DoPaint(render);
 			return;
 		}
 
@@ -1426,7 +1426,7 @@ public:
 				render->FillTriangle(ptx+offset2, pty-4+offset2, ptx+4+offset2, pty+offset2, ptx+offset2, pty+4+offset2, CTRLCOLOR_FONT);
 			}
 		}
-		KDxView::DoPaint(render);
+		DxView::DoPaint(render);
 	}
 
 protected:
@@ -1454,7 +1454,7 @@ protected:
 		}
 	}
 
-	KDxSBArea GetAreaAtPos(const POINT& pt)
+	DxSBArea GetAreaAtPos(const POINT& pt)
 	{
 		RECT rc;
 		int size = mIsVertScroll ? mHeight : mWidth;
@@ -1563,8 +1563,8 @@ protected:
 	BOOL			mIsVertScroll;		// 是否是垂直滚动条，否则为水平滚动条
 
 	BOOL			mIsMouseDown;	    // 鼠标是否点击
-	KDxSBArea		mMouseArea;			// 当前鼠标所在的区域
-	KDxSBArea		mClickArea;			// 鼠标点击时区域 
+	DxSBArea		mMouseArea;			// 当前鼠标所在的区域
+	DxSBArea		mClickArea;			// 鼠标点击时区域 
 
 	BOOL			mStartScroll;		// 开始连续滚动
 };
@@ -1598,12 +1598,12 @@ IMPLEMENT_RUNTIMEINFO(DxScrollBar, DxView)
 // 选中项字体颜色
 #define LBCOLOR_FONT_SELECT	D3DCOLOR_RGB(255, 255, 255)
 
-class DxListBox: public DxView, public IDxViewEvent
+class DxListBox: public DxView, public DxViewListener
 {
 	typedef std::vector<void*> DxDataList;
 	DECLARE_RUNTIMEINFO(DxListBox)
 public:
-	KDxListBox(): 
+	DxListBox(): 
 		mVertScrollBar(NULL),
 		mSelectIndex(-1),
 		mItemHeight(0),
@@ -1621,13 +1621,13 @@ public:
 		mFont.Initialize(this);
 		InitScrollBar();
 		ResetMetric();
-		KDxView::DoInitialize();
+		DxView::DoInitialize();
 	}
 
 	virtual void DoFinalize()
 	{
 		mFont.Finalize();
-		KDxView::DoFinalize();
+		DxView::DoFinalize();
 	}
 
 	virtual void DoNotify(DxNotifyId id, DWORD param)
@@ -1651,7 +1651,7 @@ public:
 		{
 			ResetScrollBar();
 		}
-		KDxView::DoNotify(id, param);
+		DxView::DoNotify(id, param);
 	}
 
 	virtual LRESULT DoMouse(DxMouseAction action, DxShiftState shift, const POINT& pt)
@@ -1718,9 +1718,9 @@ public:
 			if (key != VK_BACK)
 				mFilter	+= WCHAR(key);
 			else
-				mFilter.Delete(mFilter.Length() - 1);
+				mFilter.Delete(mFilter.GetLength() - 1);
 
-			if (mFilter.Length() > 0)
+			if (mFilter.GetLength() > 0)
 			{
 				int idx = MatchString(mFilter);
 				if (idx >= 0)
@@ -1738,7 +1738,7 @@ public:
 			else if (key == VK_HOME)
 				SetSelectIndex(0);
 			else if (key == VK_END)
-				SetSelectIndex(ItemCount() - 1);
+				SetSelectIndex(GetCount() - 1);
 			else if (key == VK_PRIOR)
 			{
 				int idx = mSelectIndex - mVisibleItems;
@@ -1750,8 +1750,8 @@ public:
 			else if (key == VK_NEXT)
 			{
 				int idx = mSelectIndex + mVisibleItems;
-				if (idx >= ItemCount())
-					SetSelectIndex(ItemCount() - 1);
+				if (idx >= GetCount())
+					SetSelectIndex(GetCount() - 1);
 				else
 					SetSelectIndex(idx);
 			}
@@ -1780,7 +1780,7 @@ public:
 					SetSelectIndex(mSelectIndex + 1);
 			}
 		}
-		KDxView::DoUpdate(tick);
+		DxView::DoUpdate(tick);
 	}
 
 	virtual void DoPaint(DxRender* render)
@@ -1791,7 +1791,7 @@ public:
 		InflateRect(&rc, -1, -1);
 		render->FillRect(rc, LBCOLOR_BG);
 
-		int num = min(mVisibleItems, ItemCount());
+		int num = min(mVisibleItems, GetCount());
 		String str;
 		D3DCOLOR fontColor;
 		for (int i = mTopIndex; i < mTopIndex + num; ++i)
@@ -1801,16 +1801,16 @@ public:
 			if (i == mSelectIndex)
 			{
 				fontColor = LBCOLOR_FONT_SELECT;
-				render->FillRect(LB_MARGIN, top, mWidth - mVertScrollBar->Width() - LB_MARGIN, top + mItemHeight, LBCOLOR_SELITEM);
+				render->FillRect(LB_MARGIN, top, mWidth - mVertScrollBar->GetWidth() - LB_MARGIN, top + mItemHeight, LBCOLOR_SELITEM);
 			}
 			else
 			{
-				fontColor = IsEnable() ? mFont.Color() : CTRLCOLOR_FONT_DISABLED;
+				fontColor = IsEnable() ? mFont.GetColor() : CTRLCOLOR_FONT_DISABLED;
 			}
-			render->TextOut(LB_MARGIN + 1, top + LB_MARGIN, str, str.Length(), fontColor, FALSE, &mFont);
+			render->TextOut(LB_MARGIN + 1, top + LB_MARGIN, str, str.GetLength(), fontColor, FALSE, &mFont);
 		}
 
-		KDxView::DoPaint(render);
+		DxView::DoPaint(render);
 	}
 
 	// 滚动条事件
@@ -1818,21 +1818,21 @@ public:
 	{				
 		if (NID_SB_SCROLLCHANGED == id)
 		{
-			mTopIndex = mVertScrollBar->ScrollPos();
+			mTopIndex = mVertScrollBar->GetScrollPos();
 		}
 	}
 
-	KDxViewFont* Font()
+	DxViewFont* GetFont()
 	{
 		return &mFont;
 	}
 
-	int ItemCount()
+	int GetCount()
 	{
 		return (int)mStrList.size();
 	}
 
-	String ItemString(int idx)
+	String GetString(int idx)
 	{
 		if ((idx < 0) || (idx >= (int)mStrList.size()))
 			return String(L"");
@@ -1840,7 +1840,7 @@ public:
 			return mStrList[idx];
 	}
 
-	void* ItemData(int idx)
+	void* GetData(int idx)
 	{
 		if ((idx < 0) || (idx >= (int)mDataList.size()))
 			return NULL;
@@ -1879,7 +1879,7 @@ public:
 
 	int FindString(const String& str, BOOL IsIgnoreCase = FALSE)
 	{
-		KStringList::iterator itr;
+		StringList::iterator itr;
 		for (itr = mStrList.begin(); itr != mStrList.end(); ++itr)
 		{
 			if (IsIgnoreCase)
@@ -1901,7 +1901,7 @@ public:
 		String matchstr = str;
 		if (IsIgnoreCase)
 			matchstr.Upper();
-		KStringList::iterator itr;
+		StringList::iterator itr;
 		for (itr = mStrList.begin(); itr != mStrList.end(); ++itr)
 		{
 			itemStr = *itr;
@@ -1913,7 +1913,7 @@ public:
 		return -1;
 	}
 
-	int SelectIndex()
+	int GetSelectIndex()
 	{
 		return mSelectIndex;
 	}
@@ -1939,11 +1939,11 @@ public:
 
 	int GetItemAtPos(const POINT& pt)
 	{
-		if ((pt.x >= LB_MARGIN) && (pt.x <= mWidth - mVertScrollBar->Width() - LB_MARGIN) &&
+		if ((pt.x >= LB_MARGIN) && (pt.x <= mWidth - mVertScrollBar->GetWidth() - LB_MARGIN) &&
 			(pt.y >= LB_MARGIN) && (pt.y <= mHeight - LB_MARGIN))
 		{
 			int idx = mTopIndex + (pt.y - LB_MARGIN) / mItemHeight;
-			return min(idx, ItemCount() - 1);
+			return min(idx, GetCount() - 1);
 		}
 		return -1;
 	}
@@ -1954,16 +1954,16 @@ protected:
 		mVertScrollBar = NEW_CONTROL(DxScrollBar, this, mOwnerScreen);
 		mVertScrollBar->SetVertScroll(TRUE);
 		mVertScrollBar->SetEnable(FALSE);
-		mVertScrollBar->SetPos(mWidth - mVertScrollBar->Width() - LB_MARGIN, LB_MARGIN);
+		mVertScrollBar->SetPos(mWidth - mVertScrollBar->GetWidth() - LB_MARGIN, LB_MARGIN);
 		mVertScrollBar->SetSize(17, mHeight - 2 * LB_MARGIN);
-		mVertScrollBar->SetViewEvent(this);
+		mVertScrollBar->SetViewListener(this);
 	}
 
 	void ResetMetric()
 	{
-		if (mOwnerScreen->Render() != NULL)
+		if (mOwnerScreen->GetRender() != NULL)
 		{
-			KDxRender* render = mOwnerScreen->Render();
+			DxRender* render = mOwnerScreen->GetRender();
 			mItemHeight = render->TextSize(L"H", 1, FALSE, &mFont).cy +  2 * LB_MARGIN;
 			mVisibleItems = (mHeight - 2 * LB_MARGIN) / mItemHeight;
 			SetHeight(mItemHeight * mVisibleItems + 2 * LB_MARGIN);
@@ -1972,9 +1972,9 @@ protected:
 
 	void ResetScrollBar()
 	{
-		mVertScrollBar->SetPos(mWidth - mVertScrollBar->Width() - LB_MARGIN, LB_MARGIN);
+		mVertScrollBar->SetPos(mWidth - mVertScrollBar->GetWidth() - LB_MARGIN, LB_MARGIN);
 		mVertScrollBar->SetSize(17, mHeight - 2 * LB_MARGIN);
-		if (!IsEnable() || (mVisibleItems >= ItemCount() - 1))
+		if (!IsEnable() || (mVisibleItems >= GetCount() - 1))
 		{
 			mVertScrollBar->SetEnable(FALSE);
 			mVertScrollBar->SetRange(0);
@@ -1989,10 +1989,10 @@ protected:
 	}
 
 protected:
-	KDxViewFont			mFont;					// 字体
-	KStringList			mStrList;				// 字符串列表
-	KDxDataList			mDataList;				// 附加数据列表
-	KDxScrollBar*		mVertScrollBar;			// 垂直滚动条
+	DxViewFont			mFont;					// 字体
+	StringList			mStrList;				// 字符串列表
+	DxDataList			mDataList;				// 附加数据列表
+	DxScrollBar*		mVertScrollBar;			// 垂直滚动条
 	int					mSelectIndex;			// 选中项
 	int					mItemHeight;			// 项高度
 	int					mVisibleItems;			// 可见的项数
@@ -2022,7 +2022,7 @@ class DxEdit: public DxView
 {
 	DECLARE_RUNTIMEINFO(DxEdit)
 public:
-	KDxEdit(): 
+	DxEdit(): 
 	  mSelStart(0),
 	  mSelLen(0),
 	  mCaretPos(0),
@@ -2059,7 +2059,7 @@ public:
 				sz->cy = CalcHeight();
 			}
 		}
-		KDxView::DoNotify(id, param);
+		DxView::DoNotify(id, param);
 	}
 
 	virtual LRESULT DoMouse(DxMouseAction action, DxShiftState shift, const POINT& pt)
@@ -2103,7 +2103,7 @@ public:
 				case VK_END:
 					{
 						// 移到行尾
-						mSelStart = mText.Length();
+						mSelStart = mText.GetLength();
 						mCaretPos = mSelStart;
 						mSelLen = 0;
 						break;
@@ -2120,14 +2120,14 @@ public:
 							if (key == VK_LEFT)
 								mCaretPos = max(0, mCaretPos-1);
 							else
-								mCaretPos = min(mText.Length(), mCaretPos+1);
+								mCaretPos = min(mText.GetLength(), mCaretPos+1);
 							mSelStart = mCaretPos;
 							mSelLen = 0;
 						}
 						if (HAS_FLAG(shift, ssCtrl) && !HAS_FLAG(shift, ssShift))
 						{
 							// 只按下Ctrl，找到下一个词的起始位置
-							int start = (mText.Length() == mCaretPos) ? mCaretPos - 1 : mCaretPos;
+							int start = (mText.GetLength() == mCaretPos) ? mCaretPos - 1 : mCaretPos;
 							mCaretPos = NextWordPos(start, (VK_LEFT == key));
 							mSelStart = mCaretPos;
 							mSelLen = 0;
@@ -2156,7 +2156,7 @@ public:
 							{
 								if (mCaretPos == mSelStart + mSelLen)
 								{
-									if (mSelStart + mSelLen < mText.Length())
+									if (mSelStart + mSelLen < mText.GetLength())
 									{
 										++mSelLen;
 										mCaretPos = mSelStart + mSelLen;
@@ -2173,7 +2173,7 @@ public:
 						else if (HAS_FLAG(shift, ssShift | ssCtrl))
 						{
 							// 同时按下Shift，Ctrl键，选择下一个词
-							int start = (mText.Length() == mCaretPos) ? mCaretPos - 1 : mCaretPos;
+							int start = (mText.GetLength() == mCaretPos) ? mCaretPos - 1 : mCaretPos;
 							int newPos = NextWordPos(start, (VK_LEFT == key));
 							if (VK_LEFT == key)
 							{
@@ -2259,16 +2259,16 @@ public:
 		GetClientRect(rc);
 		render->DrawRect(rc, CTRLCOLOR_BORDER);
 
-		render->TextOut(1, 1, mText, mText.Length(), CTRLCOLOR_FONT, 0, &mFont);
-		KDxView::DoPaint(render);
+		render->TextOut(1, 1, mText, mText.GetLength(), CTRLCOLOR_FONT, 0, &mFont);
+		DxView::DoPaint(render);
 	}
 
-	KDxViewFont* Font()
+	DxViewFont* GetFont()
 	{
 		return &mFont;
 	}
 
-	String Text()
+	String GetText()
 	{
 		return mText;
 	}
@@ -2283,11 +2283,11 @@ public:
 			mText = text;
 		else
 		{
-			int len = (mMaxLen < text.Length()) ? mMaxLen : text.Length();
+			int len = (mMaxLen < text.GetLength()) ? mMaxLen : text.GetLength();
 			mText.Copy(text, 0, len);
 		}
 
-		mSelStart = mText.Length();
+		mSelStart = mText.GetLength();
 		mCaretPos = mSelStart;
 		mSelLen = 0;
 
@@ -2295,7 +2295,7 @@ public:
 		DoNotify(NID_ED_TEXTCHANGED, NULL);
 	}
 
-	int SelStart()
+	int GetSelStart()
 	{
 		return mSelStart;
 	}
@@ -2303,14 +2303,14 @@ public:
 	void SetSelStart(int selStart)
 	{
 		if ((selStart == mSelStart) || 
-			(selStart < 0) || (selStart > mText.Length()))
+			(selStart < 0) || (selStart > mText.GetLength()))
 			return;
 		mSelStart = selStart;
 		mCaretPos = mSelStart;
 		mSelLen = 0;
 	}
 
-	int SelLen()
+	int GetSelLen()
 	{
 		return mSelLen;
 	}
@@ -2318,13 +2318,13 @@ public:
 	void SetSelLen(int selLen)
 	{
 		if ((selLen == mSelLen) || 
-			(selLen < 0)|| (mSelStart + mSelLen > mText.Length()))
+			(selLen < 0)|| (mSelStart + mSelLen > mText.GetLength()))
 			return;
 		mSelLen = selLen;
 		mCaretPos = mSelStart + mSelLen;
 	}
 
-	int MaxLen()
+	int GetMaxLen()
 	{
 		return mMaxLen;
 	}
@@ -2334,12 +2334,12 @@ public:
 		if (len == mMaxLen)
 			return;
 		mMaxLen = len;
-		if (mMaxLen && (mMaxLen < mText.Length()))
+		if (mMaxLen && (mMaxLen < mText.GetLength()))
 		{
 			mSelStart = 0;
 			mCaretPos = mSelStart;
 			mSelLen = 0;
-			mText.Delete(mMaxLen-1, mText.Length() - mMaxLen);
+			mText.Delete(mMaxLen-1, mText.GetLength() - mMaxLen);
 			DoNotify(NID_ED_TEXTCHANGED, NULL);
 		}
 	}
@@ -2354,7 +2354,7 @@ public:
 		mReadOnly = readOnly;
 	}
 
-	WCHAR PassChar()
+	WCHAR GetPassChar()
 	{
 		return mPassChar;
 	}
@@ -2406,7 +2406,7 @@ protected:
 		DeleteSel();
 
 		// 最大长度
-		if (mMaxLen &&(mMaxLen >= mText.Length()))
+		if (mMaxLen &&(mMaxLen >= mText.GetLength()))
 			return;
 
 		// 插入字符
@@ -2427,7 +2427,7 @@ protected:
 
 	int NextWordPos(int start, BOOL isBack)
 	{
-		if ((start < 0) || (start > mText.Length()))
+		if ((start < 0) || (start > mText.GetLength()))
 			return 0;
 
 		if (isBack)
@@ -2459,7 +2459,7 @@ protected:
 		}
 		else
 		{
-			if (mText.Length() == start)
+			if (mText.GetLength() == start)
 				return start;
 
 			WCHAR* ptrStart = &mText[start];
@@ -2471,7 +2471,7 @@ protected:
 
 			// 到达结尾
 			if (!ptrCur)
-				return mText.Length();
+				return mText.GetLength();
 
 			// 再遍历符号
 			while (ptrCur && IsSymbol(*ptrCur))
@@ -2479,7 +2479,7 @@ protected:
 
 			// 到达结尾
 			if (!ptrCur)
-				return mText.Length();
+				return mText.GetLength();
 			else
 				return start + (ptrCur - ptrStart);
 		}
@@ -2502,7 +2502,7 @@ protected:
 		}
 		else
 		{
-			if (mCaretPos >= mText.Length())
+			if (mCaretPos >= mText.GetLength())
 				return;
 
 			mText.Delete(mCaretPos);
@@ -2541,7 +2541,7 @@ protected:
 		}
 		else
 		{
-			if (mCaretPos >= mText.Length())
+			if (mCaretPos >= mText.GetLength())
 				return;
 
 			int newPos = NextWordPos(mCaretPos, isBack);
@@ -2564,8 +2564,8 @@ protected:
 	{
 		if (mText.IsEmpty())
 			return;
-		mSelLen = mText.Length() - mSelStart;
-		mCaretPos = mText.Length();
+		mSelLen = mText.GetLength() - mSelStart;
+		mCaretPos = mText.GetLength();
 	}
 
 protected:
@@ -2577,7 +2577,7 @@ protected:
 	BOOL				mReadOnly;		// 是否只读
 	WCHAR				mPassChar;		// 密码字符
 	BOOL				mAutoHeight;	// 自动调整高度
-	KDxViewFont			mFont;			// 字体
+	DxViewFont			mFont;			// 字体
 };
 IMPLEMENT_RUNTIMEINFO(DxEdit, DxView)
 

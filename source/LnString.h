@@ -129,7 +129,7 @@ public:
 		return Data()->mAllocLen;
 	}
 
-	int Length() const
+	int GetLength() const
 	{
 		return Data()->mStrLen;
 	}
@@ -198,7 +198,7 @@ public:
 
 	String& Copy(String& str, int start = 0, int count = -1)
 	{
-		int len = str.Length();
+		int len = str.GetLength();
 		if (len <= start) 
 			return *this;
 		else if (-1 == count)

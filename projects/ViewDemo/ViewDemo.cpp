@@ -44,9 +44,9 @@ protected:
 	{
 		DxWindow* wnd;
 
-		for (int i = 0; i < parentView->ChildCount(); ++i)
+		for (int i = 0; i < parentView->GetChildCount(); ++i)
 		{
-			DxView* view = parentView->ChildView(i);
+			DxView* view = parentView->GetChildView(i);
 			wnd = OBJECT_DERIVEDFROM(view, DxWindow) ? (DxWindow*)view : NULL;
 			if (wnd && (wnd->IsTopMost()))
 				continue;
@@ -82,9 +82,9 @@ protected:
 		if (!OBJECT_DERIVEDFROM(parentView, DxScreen))
 			return;
 
-		for (int i = 0; i < parentView->ChildCount(); ++i)
+		for (int i = 0; i < parentView->GetChildCount(); ++i)
 		{
-			DxView* view = parentView->ChildView(i);
+			DxView* view = parentView->GetChildView(i);
 			wnd = OBJECT_DERIVEDFROM(view, DxWindow) ? (DxWindow*)view : NULL;
 			if (wnd && (!wnd->IsTopMost()))
 				continue;
@@ -134,7 +134,7 @@ public:
 
 	void OnIdle()
 	{
-		DWORD curTick = getTickCount();
+		DWORD curTick = GetTick();
 		mScreen->Update(curTick);
 		mTick = curTick;
 		mScreen->Paint();

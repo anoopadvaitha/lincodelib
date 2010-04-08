@@ -3,11 +3,11 @@
 
 #include "stdafx.h"
 #include "RenderDemo.h"
-#include "KmCommons.h"
-#include "KmDxRender.h"
-using namespace kama;
+#include "LnCommons.h"
+#include "LnDxRender.h"
+using namespace lin;
 
-class KTestApp: public KDxApp, public IWndFrameEvent
+class TestApp: public DxApplication, public WndFrameListener
 {
 public:
 	virtual void Initialize()
@@ -15,13 +15,13 @@ public:
 		mFrameTime = 0;
 		mRunAlways = TRUE;
 		
-		mMainFrame.SetEvent(this);
+		mMainFrame.SetListener(this);
 		mMainFrame.Create();
-		mMainFrame.AlignWindow();
+		mMainFrame.AlignWindow();						  
 		Render.SetBkColor(0xFF000080);
 		//Render.SetBkColor(0xFFFFFFFF);
-		Render.SetSize(mMainFrame.Width(), mMainFrame.Height());
-		Render.SetWindow(mMainFrame.Handle());
+		Render.SetSize(mMainFrame.GetWidth(), mMainFrame.GetHeight());
+		Render.SetWindow(mMainFrame.GetHandle());
 		Render.SetFullScreen(FALSE);
 		Render.SetSmooth(FALSE);
 		Render.SetVerticalSync(FALSE);
@@ -32,27 +32,27 @@ public:
 
 		//Render.SetFontOptions(-16, fsItalic, L"Fixedsys");
 
-		kstring path = gAppPath + L"test.png";
+		String path = gAppPath + L"test.png";
 		mTexture.LoadFromFile(&Render, path, D3DFMT_UNKNOWN);
 
 		mFont.SetFontOptions(12, fsItalic, L"隶书");
 		mFont2.SetFontOptions(12, 0, L"黑体");
 
-		KDxApp::Initialize();
+		DxApplication::Initialize();
 	}
 
 	virtual void Finalize()
 	{
-		mMainFrame.SetEvent(NULL);
+		mMainFrame.SetListener(NULL);
 		mTexture.FreeTexture();
 		Render.Finalize();
 
 
-		KDxApp::Finalize();
+		DxApplication::Finalize();
 	}
 protected:
 
-	BOOL OnWndProc(KWndFrame* wndFrame, UINT msg, WPARAM wparam, LPARAM lparam, HRESULT& ret)
+	BOOL OnWndProc(WindowFrame* wndFrame, UINT msg, WPARAM wparam, LPARAM lparam, HRESULT& ret)
 	{
 		if (msg == WM_RBUTTONDOWN)
 		{
@@ -112,7 +112,7 @@ protected:
 			Render.TextOut(10, 40, L"Hello, 你好，世界123456", -1, 0xFFFFFFFF, 0xFF000000);
 			Render.TextOut(10, 60, L"这个世界到底是怎么了，不是我不明白，是这世界变化太快", -1, 0xFFFFFFFF, 0xFF000000);
 			
-			kstring str;
+			String str;
 			str.Format(L"%d", mFPS);
 			Render.TextOut(10, 10, str, -1, 0xFFFFFFFF, 0xFF000000);
 
@@ -126,17 +126,17 @@ protected:
 		}
 		Render.EndPaint();
 	}
-	virtual KDxMainFrame* MainFrame()
+	virtual DxMainFrame* GetMainFrame()
 	{
 		return &mMainFrame;
 	}
 private:
-	KDxMainFrame mMainFrame;	
-	KDxTexture mTexture;
-	KDxRender Render;
-	KD3DTexture9Ptr	mFontTex;
-	KDxFont mFont;
-	KDxFont mFont2;
+	DxMainFrame mMainFrame;	
+	DxTexture mTexture;
+	DxRender Render;
+	D3DTexture9Ptr	mFontTex;
+	DxFont mFont;
+	DxFont mFont2;
 };
 
 int APIENTRY _tWinMain(HINSTANCE hInstance,
@@ -144,7 +144,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
                      LPTSTR    lpCmdLine,
                      int       nCmdShow)
 {
-	KTestApp app;
+	TestApp app;
 	app.Initialize();
 	app.Run();
 	app.Finalize();

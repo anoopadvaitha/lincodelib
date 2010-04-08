@@ -68,7 +68,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalIncludeDirectories="..\..\3rdparty\zip;..\..\Source"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;_UNICODE;UNICODE"
 				RuntimeLibrary="4"
 				UsePrecompiledHeader="3"
 				WarningLevel="3"
@@ -137,22 +137,31 @@
 			</File>
 		</Filter>
 		<Filter
-			Name="KamaLib"
+			Name="include"
 			Filter="">
 			<File
-				RelativePath="..\..\Source\KmBase.h">
+				RelativePath="..\..\source\LnBase.h">
 			</File>
 			<File
-				RelativePath="..\..\Source\KmCommons.h">
+				RelativePath="..\..\source\LnCommons.h">
 			</File>
 			<File
-				RelativePath="..\..\Source\KmDebug.h">
+				RelativePath="..\..\source\LnDebugUtils.h">
 			</File>
 			<File
-				RelativePath="..\..\Source\KmString.h">
+				RelativePath="..\..\source\LnDxCtrls.h">
 			</File>
 			<File
-				RelativePath="..\..\Source\KmZipUtils.h">
+				RelativePath="..\..\source\LnDxRender.h">
+			</File>
+			<File
+				RelativePath="..\..\source\LnDxViews.h">
+			</File>
+			<File
+				RelativePath="..\..\source\LnString.h">
+			</File>
+			<File
+				RelativePath="..\..\source\LnZipUtils.h">
 			</File>
 		</Filter>
 		<Filter

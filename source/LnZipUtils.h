@@ -34,7 +34,7 @@ namespace lin
 class ZipCompress
 {
 public:
-	KZipCompress(): mZipHandle(NULL)
+	ZipCompress(): mZipHandle(NULL)
 	{
 	}
 

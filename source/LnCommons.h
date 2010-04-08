@@ -29,13 +29,6 @@ namespace lin
 typedef std::vector<String> Strings;
 
 /*
-	接口关键字
-*/
-#ifndef interface
-#define interface struct
-#endif
-
-/*
 	增加标志
 */
 #define ADD_FLAG(set, flag) set|=(flag)
@@ -1195,7 +1188,7 @@ public:
 		String text;
 		for (Strings::iterator itr = begin(); itr != end(); ++itr)
 			text += (*itr) + cLB;
-		stream->Write(text, (DWORD)text.Length() * sizeof(WCHAR));
+		stream->Write(text, (DWORD)text.GetLength() * sizeof(WCHAR));
 	}
 
 private:
@@ -1330,7 +1323,7 @@ inline String ExtractFileName(LPCWSTR path)
 	if (pos < 0)
 		pos = fileName.ReverseFind('/');
 	if (pos >= 0)
-		return fileName.Right(fileName.Length() - pos - 1);
+		return fileName.Right(fileName.GetLength() - pos - 1);
 	else
 		return fileName;
 }
@@ -1343,7 +1336,7 @@ inline String ExtractFileExt(LPCWSTR path)
 	String fileExt = path;
 	int pos = fileExt.ReverseFind('.');
 	if (pos >= 0)
-		return fileExt.Right(fileExt.Length() - pos - 1);
+		return fileExt.Right(fileExt.GetLength() - pos - 1);
 	else
 		return fileExt;
 }
@@ -1357,7 +1350,7 @@ inline String ChangeFileExt(LPCWSTR fileName, LPCWSTR fileExt)
 	int pos = newFileName.ReverseFind('.');
 	if(pos >= 0)
 	{
-		newFileName.Delete(pos+1, newFileName.Length());
+		newFileName.Delete(pos+1, newFileName.GetLength());
 		newFileName += fileExt;
 	}
 	return newFileName;
@@ -1370,8 +1363,8 @@ inline String AddPathDelimiter(LPCWSTR path)
 {
 	String newPath = path;
 	if (!newPath.IsEmpty() &&
-		(newPath[newPath.Length() - 1] != '\\') &&
-		(newPath[newPath.Length() - 1] != '/'))
+		(newPath[newPath.GetLength() - 1] != '\\') &&
+		(newPath[newPath.GetLength() - 1] != '/'))
 		newPath += '\\';
 	return newPath;
 }
@@ -1383,9 +1376,9 @@ inline String DelPathDelimiter(LPCWSTR path)
 {
 	String newPath = path;
 	if (!newPath.IsEmpty() &&
-		((newPath[newPath.Length() - 1] == '\\') ||
-		(newPath[newPath.Length() - 1] == '/')))
-		newPath.Delete(newPath.Length() - 1);
+		((newPath[newPath.GetLength() - 1] == '\\') ||
+		(newPath[newPath.GetLength() - 1] == '/')))
+		newPath.Delete(newPath.GetLength() - 1);
 	return newPath;
 }
 
@@ -1578,7 +1571,7 @@ inline BOOL GetCmdLines(Strings& cmdLines)
 /*
 	取计时数
 */
-inline DWORD getTickCount()
+inline DWORD GetTick()
 {
 	return timeGetTime();
 }
@@ -1586,7 +1579,7 @@ inline DWORD getTickCount()
 /*
 	取键盘连击延迟
 */
-inline DWORD eyBoardDelay()
+inline DWORD GetKeyBoardDelay()
 {
 	static DWORD delay = 0;
 	if (!delay)
@@ -1601,7 +1594,7 @@ inline DWORD eyBoardDelay()
 /*
 	取键盘连击速度
 */
-inline DWORD eyBoardSpeek()
+inline DWORD GetKeyBoardSpeek()
 {
 	static DWORD speed = 0;
 	if (!speed)
@@ -1619,7 +1612,7 @@ class MsgLooper;
 /*
 	消息循环事件接口
 */
-interface IMsgLoopEvent
+struct MsgLoopListener
 {
 	/*
 		消息过滤
@@ -1637,7 +1630,7 @@ interface IMsgLoopEvent
 class MsgLooper
 {
 public:
-	MsgLooper(): mMsgEvent(NULL), mIsTerm(FALSE)
+	MsgLooper(): mMsgListener(NULL), mIsTerm(FALSE)
 	{
 	}
 
@@ -1722,17 +1715,17 @@ public:
 	/*
 		取事件
 	*/
-	IMsgLoopEvent* GetEvent()
+	MsgLoopListener* GetListener()
 	{
-		return mMsgEvent;
+		return mMsgListener;
 	}
 
 	/*
 		设事件
 	*/
-	void SetEvent(IMsgLoopEvent* event)
+	void SetListener(MsgLoopListener* listener)
 	{
-		mMsgEvent = event;
+		mMsgListener = listener;
 	}
 
 protected:
@@ -1741,8 +1734,8 @@ protected:
 	*/
 	virtual void DoMsgFilter(MSG& msg, BOOL& isHandled)
 	{
-		if (mMsgEvent)
-			mMsgEvent->OnMsgFilter(this, msg, isHandled);
+		if (mMsgListener)
+			mMsgListener->OnMsgFilter(this, msg, isHandled);
 	}
 
 	/*
@@ -1761,19 +1754,19 @@ protected:
 	*/
 	virtual void DoIdle(BOOL& isDone)
 	{
-		if (mMsgEvent)
-			mMsgEvent->OnIdle(this, isDone);
+		if (mMsgListener)
+			mMsgListener->OnIdle(this, isDone);
 	}
 
 protected:
 	BOOL			mIsTerm;
-	IMsgLoopEvent*	mMsgEvent;
+	MsgLoopListener*	mMsgListener;
 };
 
 /*
 	窗口标题栏按钮
 */
-typedef DWORD FmBorderIcons;
+typedef DWORD BorderIcons;
 #define biSysMenu		0x01	// 系统菜单
 #define biMinimize		0x02	// 最大化按钮
 #define biMaximize		0x04	// 最小化按钮
@@ -1781,7 +1774,7 @@ typedef DWORD FmBorderIcons;
 /*
 	窗口边框风格
 */
-enum FmBorderStyle
+enum BorderStyle
 {
 	bsNone,						// 无边框
 	bsSingle,					// 细边框，不可拉动大小
@@ -1791,7 +1784,7 @@ enum FmBorderStyle
 /*
 	窗口状态
 */
-enum FmWindowState
+enum WindowState
 {
 	wsNormal,					// 还原
 	wsMinimized,				// 最小化
@@ -1811,17 +1804,17 @@ enum CloseMode
 #define LIN_WNDFRAME_CLSNAME	L"Kama.Window.Frame"
 #define LIN_WNDFRAME_ATOM		L"Kama.Window.Frame.Atom"
 
-class WndFrame;
+class WindowFrame;
 
 /*
 	窗口事件
 */
-interface IWndFrameEvent
+struct WndFrameListener
 {
 	/*
 		句柄创建
 	*/
-	virtual void OnCreate(WndFrame* wndFrame)
+	virtual void OnCreate(WindowFrame* wndFrame)
 	{
 
 	}
@@ -1829,7 +1822,7 @@ interface IWndFrameEvent
 	/*
 		句柄消毁
 	*/
-	virtual void OnDestroy(WndFrame* wndFrame)
+	virtual void OnDestroy(WindowFrame* wndFrame)
 	{
 
 	}
@@ -1837,7 +1830,7 @@ interface IWndFrameEvent
 	/*
 		显示
 	*/
-	virtual void OnShow(WndFrame* wndFrame)
+	virtual void OnShow(WindowFrame* wndFrame)
 	{
 
 	}
@@ -1845,7 +1838,7 @@ interface IWndFrameEvent
 	/*
 		隐藏
 	*/
-	virtual void OnHide(WndFrame* wndFrame)
+	virtual void OnHide(WindowFrame* wndFrame)
 	{
 
 	}
@@ -1853,7 +1846,7 @@ interface IWndFrameEvent
 	/*
 		关闭
 	*/
-	virtual void OnClose(WndFrame* wndFrame, CloseMode& mode)
+	virtual void OnClose(WindowFrame* wndFrame, CloseMode& mode)
 	{
 
 	}
@@ -1869,7 +1862,7 @@ interface IWndFrameEvent
 	/*
 		关闭询问
 	*/
-	virtual BOOL OnCloseQuery(WndFrame* wndFrame)
+	virtual BOOL OnCloseQuery(WindowFrame* wndFrame)
 	{
 		return TRUE;
 	}
@@ -1877,7 +1870,7 @@ interface IWndFrameEvent
 	/*
 		大小改变 
 	*/
-	virtual void OnSizeChange(WndFrame* wndFrame)
+	virtual void OnSizeChange(WindowFrame* wndFrame)
 	{
 
 	}
@@ -1885,7 +1878,7 @@ interface IWndFrameEvent
 	/*
 		位置改变 
 	*/
-	virtual void OnPosChange(WndFrame* wndFrame)
+	virtual void OnPosChange(WindowFrame* wndFrame)
 	{
 
 	}
@@ -1894,7 +1887,7 @@ interface IWndFrameEvent
 		通用消息
 		return 如果返回TRUE，标准窗口过程将返回ret; 如果返回FALSE，交给默认处理过程去处理
 	*/
-	virtual BOOL OnWndProc(WndFrame* wndFrame, UINT msg, WPARAM wparam, LPARAM lparam, HRESULT& ret)
+	virtual BOOL OnWndProc(WindowFrame* wndFrame, UINT msg, WPARAM wparam, LPARAM lparam, HRESULT& ret)
 	{
 		return FALSE;
 	}
@@ -1904,14 +1897,14 @@ interface IWndFrameEvent
 /*
 	顶层窗口类，专门为游戏而封装，作其他应用还比较简陋
 */
-class WndFrame
+class WindowFrame
 {
 public:
-	WndFrame(): mHwnd(NULL), mWndEvent(NULL), mLeft(0), mTop(0), mWidth(0), mHeight(0)
+	WindowFrame(): mHwnd(NULL), mWndListener(NULL), mLeft(0), mTop(0), mWidth(0), mHeight(0)
 	{
 	}
 
-	virtual ~WndFrame()
+	virtual ~WindowFrame()
 	{
 		if (mHwnd)
 			DestroyWindow(mHwnd);
@@ -1925,8 +1918,8 @@ public:
 		int top				= 0,							// 顶
 		int width			= 800,							// 宽
 		int height			= 600,							// 高
-		FmBorderIcons bis	= biSysMenu | biMinimize,		// 标题栏按钮
-		FmBorderStyle bs		= bsSingle,						// 边框风格		
+		BorderIcons bis	= biSysMenu | biMinimize,		// 标题栏按钮
+		BorderStyle bs		= bsSingle,						// 边框风格		
 		LPCWSTR caption		= L"",							// 标题
 		HICON icon			= NULL)							// 图标
 	{
@@ -1959,7 +1952,7 @@ public:
 	/*
 		窗口句柄
 	*/
-	HWND Handle()
+	HWND GetHandle()
 	{
 		return mHwnd;
 	}
@@ -1967,7 +1960,7 @@ public:
 	/*
 		显示窗口
 	*/
-	void Show(FmWindowState state = wsNormal)
+	void Show(WindowState state = wsNormal)
 	{
 		SetWindowState(state);
 		BringToFront();
@@ -2050,7 +2043,7 @@ public:
 	/*
 		取整个窗口的区域
 	*/
-	RECT BoundRect()
+	RECT GetBoundRect()
 	{
 		RECT rc;
 		SetRect(&rc, mLeft, mTop, mWidth, mHeight);
@@ -2078,7 +2071,7 @@ public:
 	/*
 		左
 	*/
-	int Left()
+	int GetLeft()
 	{
 		return mLeft;
 	}
@@ -2091,7 +2084,7 @@ public:
 	/*
 		顶
 	*/
-	int Top()
+	int GetTop()
 	{
 		return mTop;
 	}
@@ -2104,7 +2097,7 @@ public:
 	/*
 		宽
 	*/
-	int Width()
+	int GetWidth()
 	{
 		return mWidth;
 	}
@@ -2117,7 +2110,7 @@ public:
 	/*
 		高
 	*/
-	int Height()
+	int GetHeight()
 	{
 		return mHeight;
 	}
@@ -2130,7 +2123,7 @@ public:
 	/*
 		取客户区尺寸
 	*/
-	SIZE ClientSize()
+	SIZE GetClientSize()
 	{
 		LN_ASSERT(mHwnd);
 		RECT rc;
@@ -2146,7 +2139,7 @@ public:
 	*/
 	void SetClientSize(SIZE size)
 	{
-		SIZE sz = ClientSize();
+		SIZE sz = GetClientSize();
 		SetBound(mLeft, mTop, mWidth - sz.cx + size.cx, mHeight - sz.cy + size.cy);
 	}
 
@@ -2223,7 +2216,7 @@ public:
 	/*
 		取按钮风格
 	*/
-	FmBorderIcons BorderIcons()
+	BorderIcons GetBorderIcons()
 	{
 		LN_ASSERT(mHwnd);
 		return StyleToBorderIcons(GetWindowLongW(mHwnd, GWL_STYLE))	;
@@ -2232,7 +2225,7 @@ public:
 	/*
 		设按钮风格
 	*/
-	void SetBorderIcons(FmBorderIcons bis)
+	void SetBorderIcons(BorderIcons bis)
 	{
 		LN_ASSERT(mHwnd);
 		SetWindowLong(mHwnd, GWL_STYLE, 
@@ -2244,7 +2237,7 @@ public:
 	/*
 		边框风格
 	*/
-	FmBorderStyle BorderStyle()
+	BorderStyle GetBorderStyle()
 	{
 		LN_ASSERT(mHwnd);
 		return StyleToBorderStyle(GetWindowLongW(mHwnd, GWL_STYLE));
@@ -2253,7 +2246,7 @@ public:
 	/*
 		设边框风格
 	*/
-	void SetBorderStyle(FmBorderStyle bs)
+	void SetBorderStyle(BorderStyle bs)
 	{
 		LN_ASSERT(mHwnd);
 		SetWindowLongW(mHwnd, GWL_STYLE,
@@ -2265,7 +2258,7 @@ public:
 	/*
 		窗口状态
 	*/
-	FmWindowState WindowState()
+	WindowState GetWindowState()
 	{
 		LN_ASSERT(mHwnd);
 		if (IsIconic(mHwnd))
@@ -2279,7 +2272,7 @@ public:
 	/*
 		设窗口状态
 	*/
-	void SetWindowState(FmWindowState state)
+	void SetWindowState(WindowState state)
 	{
 		LN_ASSERT(mHwnd);
 
@@ -2299,7 +2292,7 @@ public:
 	/*
 		窗口标题
 	*/
-	String Caption()
+	String GetCaption()
 	{
 		LN_ASSERT(mHwnd);
 		return GetWndText(mHwnd);
@@ -2317,17 +2310,17 @@ public:
 	/*
 		取事件
 	*/
-	IWndFrameEvent* GetEvent()
+	WndFrameListener* GetListener()
 	{
-		return mWndEvent;
+		return mWndListener;
 	}
 
 	/*
 		设事件
 	*/
-	void SetEvent(IWndFrameEvent* event)
+	void SetListener(WndFrameListener* listener)
 	{
-		mWndEvent = event;
+		mWndListener = listener;
 	}
 
 protected:
@@ -2369,8 +2362,8 @@ protected:
 		int top,
 		int width,
 		int height,
-		FmBorderIcons bis,
-		FmBorderStyle bs,
+		BorderIcons bis,
+		BorderStyle bs,
 		LPCWSTR caption)
 	{
 		return CreateWindowW(
@@ -2387,7 +2380,7 @@ protected:
 			this) != 0;
 	}
 
-	DWORD BorderIconsToStyle(DWORD oldStyle, FmBorderIcons bis)
+	DWORD BorderIconsToStyle(DWORD oldStyle, BorderIcons bis)
 	{
 		DWORD style = oldStyle;
 		DEL_FLAG(style, WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX);
@@ -2403,7 +2396,7 @@ protected:
 		return style;
 	}
 
-	DWORD BorderStyleToStyle(DWORD oldStyle, FmBorderStyle bs)
+	DWORD BorderStyleToStyle(DWORD oldStyle, BorderStyle bs)
 	{
 		DWORD style = oldStyle;
 		DEL_FLAG(style, WS_THICKFRAME | WS_BORDER | WS_CAPTION | WS_POPUP);
@@ -2417,9 +2410,9 @@ protected:
 		return style;
 	}
 
-	FmBorderIcons StyleToBorderIcons(DWORD style)
+	BorderIcons StyleToBorderIcons(DWORD style)
 	{
-		FmBorderIcons bis = 0;
+		BorderIcons bis = 0;
 		if (HAS_FLAG(style, WS_SYSMENU))
 		{
 			ADD_FLAG(bis, biSysMenu);
@@ -2431,9 +2424,9 @@ protected:
 		return bis;
 	}
 
-	FmBorderStyle StyleToBorderStyle(DWORD style)
+	BorderStyle StyleToBorderStyle(DWORD style)
 	{
-		FmBorderStyle bi = bsNone;
+		BorderStyle bi = bsNone;
 		if (HAS_FLAG(style, WS_CAPTION))
 		{
 			if (HAS_FLAG(style, WS_THICKFRAME))
@@ -2477,57 +2470,57 @@ protected:
 
 	virtual void DoPaint(HDC dc)
 	{
-		if (mWndEvent)
-			mWndEvent->OnPaint(dc);
+		if (mWndListener)
+			mWndListener->OnPaint(dc);
 	}
 
 	virtual BOOL CloseQuery()
 	{
-		if (mWndEvent)
-			return mWndEvent->OnCloseQuery(this);
+		if (mWndListener)
+			return mWndListener->OnCloseQuery(this);
 		return TRUE;
 	}
 
 	virtual void DoClose(CloseMode& mode)
 	{
-		if (mWndEvent)
-			mWndEvent->OnClose(this, mode);
+		if (mWndListener)
+			mWndListener->OnClose(this, mode);
 	}
 
 	virtual void DoShow()
 	{
-		if (mWndEvent)
-			mWndEvent->OnShow(this);
+		if (mWndListener)
+			mWndListener->OnShow(this);
 	}
 
 	virtual void DoHide()
 	{
-		if (mWndEvent)
-			mWndEvent->OnHide(this);
+		if (mWndListener)
+			mWndListener->OnHide(this);
 	}
 
 	virtual void DoCreate()
 	{
-		if (mWndEvent)
-			mWndEvent->OnCreate(this);
+		if (mWndListener)
+			mWndListener->OnCreate(this);
 	}
 
 	virtual void DoDestroy()
 	{
-		if (mWndEvent)
-			mWndEvent->OnDestroy(this);
+		if (mWndListener)
+			mWndListener->OnDestroy(this);
 	}
 
 	virtual void DoSizeChange()
 	{
-		if (mWndEvent)
-			mWndEvent->OnSizeChange(this);
+		if (mWndListener)
+			mWndListener->OnSizeChange(this);
 	}
 
 	virtual void DoPosChange()
 	{
-		if (mWndEvent)
-			mWndEvent->OnPosChange(this);
+		if (mWndListener)
+			mWndListener->OnPosChange(this);
 	}
 
 protected:
@@ -2543,7 +2536,7 @@ protected:
 			LPCREATESTRUCTW pcs = (LPCREATESTRUCTW)lparam;
 
 			LN_ASSERT(pcs->lpCreateParams);
-			WndFrame* wndFrame = (WndFrame*)pcs->lpCreateParams;
+			WindowFrame* wndFrame = (WindowFrame*)pcs->lpCreateParams;
 			wndFrame->mHwnd = hwnd;
 
 			LN_ASSERT(::GetPropW(hwnd, LIN_WNDFRAME_ATOM) == NULL);
@@ -2562,7 +2555,7 @@ protected:
 	*/
 	static LRESULT CALLBACK StdWndProc(HWND hwnd, UINT msg, WPARAM wparam,  LPARAM lparam)
 	{
-		WndFrame* wndFrame = (WndFrame*)GetPropW(hwnd, LIN_WNDFRAME_ATOM);
+		WindowFrame* wndFrame = (WindowFrame*)GetPropW(hwnd, LIN_WNDFRAME_ATOM);
 		LN_ASSERT(wndFrame);
 
 		LRESULT ret = 0;
@@ -2584,7 +2577,7 @@ protected:
 		if (mHwnd == NULL)
 			return FALSE;
 
-		if (mWndEvent && mWndEvent->OnWndProc(this, msg, wparam, lparam, ret))
+		if (mWndListener && mWndListener->OnWndProc(this, msg, wparam, lparam, ret))
 			return TRUE;
 		else if (msg == WM_PAINT)
 		{
@@ -2627,20 +2620,20 @@ protected:
 	int			mTop;
 	int			mWidth;
 	int			mHeight;
-	IWndFrameEvent* mWndEvent;
+	WndFrameListener* mWndListener;
 };
 
 
 /*
 	主窗口类
 */
-class MainFrame: public WndFrame
+class MainFrame: public WindowFrame
 {
 protected:
 	virtual void DoClose(CloseMode& mode)
 	{
 		mode = cmTermApp;
-		WndFrame::DoClose(mode);
+		WindowFrame::DoClose(mode);
 	}
 };
 
@@ -3723,7 +3716,7 @@ private:
 /*
 	资源检查器，子类实现具体的检查机制
 */
-interface IResChecker
+struct ResChecker
 {
 	/*
 		是否可以清理该资源
@@ -3750,7 +3743,7 @@ public:
 		LN_ASSERT(NULL != node);
 
 		// 更新使用时间
-		node->mLastUseTime = getTickCount();
+		node->mLastUseTime = GetTick();
 		if (!mHeadNode)
 		{
 			mHeadNode = node;
@@ -3827,7 +3820,7 @@ public:
 	/*
 		取检查器
 	*/
-	IResChecker* ResChecker()
+	ResChecker* GetResChecker()
 	{
 		return mResChecker;
 	}
@@ -3835,7 +3828,7 @@ public:
 	/*
 		设检查器
 	*/
-	void SetResChecker(IResChecker* checker)
+	void SetResChecker(ResChecker* checker)
 	{
 		mResChecker = checker;
 	}
@@ -3863,7 +3856,7 @@ protected:
 private:
 	ResNode*		mHeadNode;				// 首结点
 	ResNode*		mTrailNode;				// 尾结点
-	IResChecker*	mResChecker;			// 资源检查器
+	ResChecker*	mResChecker;			// 资源检查器
 };
 
 }
