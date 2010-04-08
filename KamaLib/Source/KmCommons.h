@@ -82,6 +82,24 @@ inline POINT MakePoint(int x, int y)
 	return pt;
 }
 
+/*
+	字符串转整形
+*/
+inline int StrToInt(LPCWSTR str)
+{
+	return _wtoi(str);
+}
+
+/*
+	整形转字符串
+*/
+inline kstring IntToStr(int n)
+{
+	kstring str;
+	str.Format(L"%d", n);
+	return str;
+}
+
 //------------------------------------------------------------------------------
 // 数学函数支持
 
