@@ -3,12 +3,12 @@
 
 #include "stdafx.h"
 #include "CtrlDemo.h"
-#include "KmDxViews.h"
-#include "KmDxRender.h"
-#include "KmDxCtrls.h"
-using namespace kama;
+#include "LnDxViews.h"
+#include "LnDxRender.h"
+#include "LnDxCtrls.h"
+using namespace lin;
 
-class KTestApp: public KDxApp
+class TestApp: public DxApplication
 {
 public:
 
@@ -22,94 +22,94 @@ public:
 		mMainFrame.Show();
 
 		// 渲染器
-		mRender.SetSize(mMainFrame.Width(), mMainFrame.Height());
-		mRender.SetWindow(mMainFrame.Handle());
+		mRender.SetSize(mMainFrame.GetWidth(), mMainFrame.GetHeight());
+		mRender.SetWindow(mMainFrame.GetHandle());
 		mRender.SetBkColor(D3DCOLOR_RGB(255, 255, 255));
 		//Render.SetVerticalSync(FALSE);
 		mRender.Initialize();
 
 		// 视图屏幕
-		mScreen = NEW_SCREEN(KDxScreen);
-		mScreen->SetHostWnd(mMainFrame.Handle());
+		mScreen = NEW_SCREEN(DxScreen);
+		mScreen->SetHostWnd(mMainFrame.GetHandle());
 		mScreen->SetRender(&mRender);
 		mScreen->SetMsgLooper(this);
 		// 有问题
 		//mScreen->SetClip(TRUE);
 
 		// 窗口
-		KDxSimpleForm* form = NEW_WINDOW(KDxSimpleForm, mScreen);
+		DxSimpleForm* form = NEW_WINDOW(DxSimpleForm, mScreen);
 		form->SetPos(10, 10);
 		form->SetSize(600, 500);
 		form->Show();
 
 		// 按钮
-		KDxButton* btn = NEW_CONTROL(KDxButton, form, mScreen);
+		DxButton* btn = NEW_CONTROL(DxButton, form, mScreen);
 		btn->SetCaption(L"我是按钮");
 		btn->SetPos(10, 10);
 		//btn->SetEnable(FALSE);
 
-		btn = NEW_CONTROL(KDxButton, form, mScreen);
+		btn = NEW_CONTROL(DxButton, form, mScreen);
 		btn->SetCaption(L"我是按钮2");
 		btn->SetPos(10, 40);
-		btn->Font()->SetColor(D3DCOLOR_RGB(254, 0, 266));
-		btn->Font()->SetHeight(13);
+		btn->GetFont()->SetColor(D3DCOLOR_RGB(254, 0, 266));
+		btn->GetFont()->SetHeight(13);
 
-		KDxLabel* label = NEW_CONTROL(KDxLabel, form, mScreen);
+		DxLabel* label = NEW_CONTROL(DxLabel, form, mScreen);
 		label->SetAutoSize(FALSE);
 		label->SetPos(10, 100);
 		label->SetSize(120, 14);
 		//label->SetTextAlign(taRight);
 		label->SetCaption(L"我是标签, 黑黑!");
 
-		KDxPanel* panel = NEW_CONTROL(KDxPanel, form, mScreen);
+		DxPanel* panel = NEW_CONTROL(DxPanel, form, mScreen);
 		panel->SetBound(120, 10,  450, 400);
 		panel->SetFocusable(TRUE);
 		panel->SetDrawFrame(TRUE);
 		panel->SetTransparent(FALSE);
 
-		btn = NEW_CONTROL(KDxButton, panel, mScreen);
+		btn = NEW_CONTROL(DxButton, panel, mScreen);
 		btn->SetCaption(L"我是按钮3");
 		btn->SetPos(10, 10);
 		btn->SetEnable(FALSE);
 
-		btn = NEW_CONTROL(KDxButton, panel, mScreen);
+		btn = NEW_CONTROL(DxButton, panel, mScreen);
 		btn->SetCaption(L"我是按钮4");
 		btn->SetPos(10, 40);
 
 
-		KDxCheckBox* cbox = NEW_CONTROL(KDxCheckBox, panel, mScreen);
+		DxCheckBox* cbox = NEW_CONTROL(DxCheckBox, panel, mScreen);
 		cbox->SetPos(10, 70);
 		cbox->SetCaption(L"我是复选框啊");
 		cbox->SetChecked(TRUE);
 
-		KDxRadioBox* rbox = NEW_CONTROL(KDxRadioBox, panel, mScreen);
+		DxRadioBox* rbox = NEW_CONTROL(DxRadioBox, panel, mScreen);
 		rbox->SetPos(10, 95);
 		rbox->SetCaption(L"我是单选框1");
 		rbox->SetGroup(1);
 
-		rbox = NEW_CONTROL(KDxRadioBox, panel, mScreen);
+		rbox = NEW_CONTROL(DxRadioBox, panel, mScreen);
 		rbox->SetPos(10, 120);
 		rbox->SetCaption(L"我是单选框2");
 		rbox->SetGroup(1);
 
-		KDxScrollBar* sbar = NEW_CONTROL(KDxScrollBar, panel, mScreen);
+		DxScrollBar* sbar = NEW_CONTROL(DxScrollBar, panel, mScreen);
 		sbar->SetPos(10, 150);
 		sbar->SetSize(150, 17);
 		sbar->SetEnable(FALSE);
 
-		KDxListBox* lbox = NEW_CONTROL(KDxListBox, panel, mScreen);
+		DxListBox* lbox = NEW_CONTROL(DxListBox, panel, mScreen);
 		lbox->SetPos(10, 200);
 		for (int i = 0; i < 100; i++)
 		{
-			kstring str;
+			String str;
 			str.Format(L"我是列表项啊%d", i);
 			lbox->AddString(str);
 		}
 
-		KDxEdit* edit = NEW_CONTROL(KDxEdit, panel, mScreen);
+		DxEdit* edit = NEW_CONTROL(DxEdit, panel, mScreen);
 		edit->SetPos(210, 10);
 
-		KDxApp::Initialize();
+		DxApplication::Initialize();
 	}
 	virtual void Finalize()
 	{
@@ -120,7 +120,7 @@ public:
 		// 渲染器
 		mRender.Finalize();
 
-		KDxApp::Finalize();
+		DxApplication::Finalize();
 	}
 protected:
 	virtual void UpdateFrame(DWORD tick)
@@ -135,14 +135,14 @@ protected:
 		}
 		mRender.EndPaint();
 	}
-	virtual KDxMainFrame* MainFrame()
+	virtual DxMainFrame* GetMainFrame()
 	{
 		return &mMainFrame;
 	}
 private:
-	KDxMainFrame	mMainFrame;
-	KDxRender		mRender;
-	KDxScreen*		mScreen;
+	DxMainFrame	mMainFrame;
+	DxRender		mRender;
+	DxScreen*		mScreen;
 };
 
 int APIENTRY _tWinMain(HINSTANCE hInstance,
@@ -150,7 +150,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
                      LPTSTR    lpCmdLine,
                      int       nCmdShow)
 {
-	KTestApp app;
+	TestApp app;
 	app.Initialize();
 	app.Run();
 	app.Finalize();

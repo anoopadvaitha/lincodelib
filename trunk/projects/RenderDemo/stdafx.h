@@ -17,6 +17,6 @@
 #define USE_LOG
 //#define USE_D3DXFONT
 
-#include "KmBase.h"
+#include "LnBase.h"
 
 // TODO: 在此处引用程序要求的附加头文件

@@ -7,5 +7,5 @@
 
 #include <iostream>
 #include <tchar.h>
-#include "KmBase.h"
+#include "LnBase.h"
 

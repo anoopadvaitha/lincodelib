@@ -16,7 +16,7 @@
 	DxTexture: 纹理包装类。
 	DxText: 文本输出辅助类。
 	DxMainFrame: 主窗口类
-	DxApp: 主程序类，提供消息循环，及FPS计算。
+	DxApplication: 主程序类，提供消息循环，及FPS计算。
 
 *******************************************************************************/
 #ifndef __LIN_DXRENDER_H__
@@ -116,7 +116,7 @@ enum DxDeviceNotifyType
 /*
 	渲染器通知接口
 */
-interface IDxDeviceNotify
+struct DxDeviceListener
 {
 	/*
 		设备通知
@@ -145,7 +145,7 @@ typedef DWORD DxFontStyle;
 struct DxFontData
 {
 	int				height;
-	DxFontStyle	style;
+	DxFontStyle		style;
 	WCHAR			name[LF_FACESIZE];
 };
 
@@ -190,12 +190,12 @@ public:
 		DoFontChanged();
 	}
 
-	DWORD Code() const
+	DWORD GetCode() const
 	{
 		return mCode;
 	}
 
-	int Height() const
+	int GetHeight() const
 	{
 		return mData.height;
 	}
@@ -205,7 +205,7 @@ public:
 		SetFontOptions(height, mData.style, mData.name);
 	}
 
-	int Style() const
+	int GetStyle() const
 	{
 		return mData.style;
 	}
@@ -235,7 +235,7 @@ public:
 		return HAS_FLAG(mData.style, fsStrikeOut);
 	}
 
-	String Name()
+	String GetName()
 	{
 		return String(mData.name);
 	}
@@ -415,7 +415,7 @@ private:
 class DxRender
 {
 	typedef std::vector<D3DDISPLAYMODE> DxDispModeVector;
-	typedef std::vector<IDxDeviceNotify*> DxNotifyVector;
+	typedef std::vector<DxDeviceListener*> DxNotifyVector;
 	typedef std::list<RECT> DxClipList;
 public:
 	//------------------------------------------------------------------------------
@@ -465,12 +465,12 @@ public:
 	/*
 		增加通知接口
 	*/
-	void AddNotify(IDxDeviceNotify* notify);
+	void AddNotify(DxDeviceListener* notify);
 
 	/*
 		删除通知接口
 	*/
-	void DelNotify(IDxDeviceNotify* notify);
+	void DelNotify(DxDeviceListener* notify);
 
 	/*
 		通知
@@ -483,7 +483,7 @@ public:
 	/*
 		Direct接口
 	*/
-	IDirect3D9* Direct3D9()
+	IDirect3D9* GetDirect3D9()
 	{
 		return mDirect3D9;
 	}
@@ -491,7 +491,7 @@ public:
 	/*
 		设备接口
 	*/
-	IDirect3DDevice9* Device9()
+	IDirect3DDevice9* GetDevice9()
 	{
 		return mDevice9;
 	}
@@ -520,7 +520,7 @@ public:
 	/*
 		取关联的窗口
 	*/
-	HWND Window()
+	HWND GetWindow()
 	{
 		return mHwnd;
 	}
@@ -542,7 +542,7 @@ public:
 	/*
 		取宽
 	*/
-	int Width()
+	int GetWidth()
 	{
 		return mWidth;
 	}
@@ -550,7 +550,7 @@ public:
 	/*
 		取高
 	*/
-	int Height()
+	int GetHeight()
 	{
 		return mHeight;
 	}
@@ -571,7 +571,7 @@ public:
 	/*
 		取位深
 	*/
-	DxBitDepth BitDepth()
+	DxBitDepth GetBitDepth()
 	{
 		return mBitDepth;
 	}
@@ -693,12 +693,12 @@ public:
 	/*
 		取背景色
 	*/
-	D3DCOLOR BkColor()
+	D3DCOLOR GetBkColor()
 	{
 		return mBkColor;
 	}
 
-	int PaintOffsetX()
+	int GetPaintOffsetX()
 	{
 		return mPaintOffsetX;
 	}
@@ -708,7 +708,7 @@ public:
 		mPaintOffsetX = x;
 	}
 
-	int PaintOffsetY()
+	int GetPaintOffsetY()
 	{
 		return mPaintOffsetY;
 	}
@@ -723,27 +723,27 @@ public:
 	/*
 		取得当前的显示模式
 	*/
-	BOOL CurDisplayMode(D3DDISPLAYMODE& mode);
+	BOOL GetCurDisplayMode(D3DDISPLAYMODE& mode);
 
 	/*
 		取得当前的显示格式
 	*/
-	D3DFORMAT CurDisplayFormat();
+	D3DFORMAT GetCurDisplayFormat();
 
 	/*
 		显示模式的数量
 	*/
-	int DisplayModeCount();
+	int GetDisplayModeCount();
 
 	/*
 		取得某个显示模式
 	*/
-	BOOL DisplayMode(int idx, D3DDISPLAYMODE& mode); 
+	BOOL GetDisplayMode(int idx, D3DDISPLAYMODE& mode); 
 
 	/*
 		取得某个显示格式
 	*/
-	D3DFORMAT DisplayFormat(int idx);
+	D3DFORMAT GetDisplayFormat(int idx);
 
 	/*
 		检查这个显示模式是否可用, 当RefreshRate为0时,表示忽略刷新率
@@ -756,7 +756,7 @@ public:
 	/*
 		检查纹理格式是否可用
 	*/
-	BOOL TexFormatAvailable(D3DFORMAT format);
+	BOOL IsTexFormatAvailable(D3DFORMAT format);
 
 
 	//------------------------------------------------------------------------------
@@ -1006,27 +1006,27 @@ public:
 
 	}
 		
-	int TexWidth()
+	int GetTexWidth()
 	{
 		return mTexWidth;
 	}
 	
-	int TexHeight()
+	int GetTexHeight()
 	{
 		return mTexHeight;
 	}
 
-	int ImgWidth()
+	int GetImgWidth()
 	{
 		return mImgWidth;
 	}
 
-	int ImgHeight()
+	int GetImgHeight()
 	{
 		return mImgHeight;
 	}
 
-	D3DFORMAT Format()
+	D3DFORMAT GetFormat()
 	{
 		return mFormat;
 	}
@@ -1034,7 +1034,7 @@ public:
 	/*
 		检查纹理格式是否可用
 	*/
-	BOOL TexFormatAvailable(DxRender* render, D3DFORMAT format);
+	BOOL IsTexFormatAvailable(DxRender* render, D3DFORMAT format);
 
 
 	/*
@@ -1078,7 +1078,7 @@ public:
 	/*
 		取接口
 	*/
-	IDirect3DTexture9* D3DTexture();
+	IDirect3DTexture9* GetD3DTexture();
 	
 protected:
 	void InitProp(IDirect3DTexture9* tex, int width, int height);
@@ -1115,11 +1115,11 @@ private:
 /*
 	Dx应用程序类，该类提供适合于Dx的消息循环方式，并提供FPS等信息
 */
-class DxApp: public MsgLooper
+class DxApplication: public MsgLooper
 {
 public:
-	DxApp(): mFPSCount(0), mFPS(0), mFrameTime(10), mRunAlways(FALSE) {}
-	virtual ~DxApp() {}
+	DxApplication(): mFPSCount(0), mFPS(0), mFrameTime(10), mRunAlways(FALSE) {}
+	virtual ~DxApplication() {}
 
 	/*
 		初始化，在这里初始化主窗口类和渲染器
@@ -1158,7 +1158,7 @@ protected:
 	/*
 		子类必须返回主窗口类
 	*/
-	virtual DxMainFrame* MainFrame() = 0;
+	virtual DxMainFrame* GetMainFrame() = 0;
 
 protected:
 	DWORD			mLastTick;				// 上一帧时间
@@ -1196,7 +1196,7 @@ inline BOOL DxRender::ResetDevice()
 	return TRUE;
 }
 
-inline BOOL DxRender::CurDisplayMode(D3DDISPLAYMODE& mode)
+inline BOOL DxRender::GetCurDisplayMode(D3DDISPLAYMODE& mode)
 {
 	if(SUCCEEDED(mDirect3D9->GetAdapterDisplayMode(D3DADAPTER_DEFAULT, &mode)))
 		return TRUE;
@@ -1204,22 +1204,22 @@ inline BOOL DxRender::CurDisplayMode(D3DDISPLAYMODE& mode)
 		return FALSE;
 }
 
-inline D3DFORMAT DxRender::CurDisplayFormat()
+inline D3DFORMAT DxRender::GetCurDisplayFormat()
 {
 	D3DDISPLAYMODE mode;
-	if (CurDisplayMode(mode))
+	if (GetCurDisplayMode(mode))
 		return mode.Format;
 	else
 		return D3DFMT_UNKNOWN;
 }
 
-inline int DxRender::DisplayModeCount()
+inline int DxRender::GetDisplayModeCount()
 {
 	InitDisplayMode();
 	return (int)mDispModeVector.size();
 }
 
-inline BOOL DxRender::DisplayMode(int idx, D3DDISPLAYMODE& mode)
+inline BOOL DxRender::GetDisplayMode(int idx, D3DDISPLAYMODE& mode)
 {
 	InitDisplayMode();
 	if (mIsDispModeInited && (0 <= idx) && (idx < (int)mDispModeVector.size()))
@@ -1230,10 +1230,10 @@ inline BOOL DxRender::DisplayMode(int idx, D3DDISPLAYMODE& mode)
 	return FALSE;
 }
 
-inline D3DFORMAT DxRender::DisplayFormat(int idx)
+inline D3DFORMAT DxRender::GetDisplayFormat(int idx)
 {
 	D3DDISPLAYMODE mode;
-	if (DisplayMode(idx, mode))
+	if (GetDisplayMode(idx, mode))
 		return mode.Format;
 	else
 		return D3DFMT_UNKNOWN;
@@ -2055,7 +2055,7 @@ inline void DxRender::Draw(int x, int y, DxTexture* tex,
 		{
 			mCurTexture = tex;
 			if (mCurTexture)
-				mDevice9->SetTexture(0, mCurTexture->D3DTexture());
+				mDevice9->SetTexture(0, mCurTexture->GetD3DTexture());
 			else
 				mDevice9->SetTexture(0, NULL);
 		}
@@ -2063,10 +2063,10 @@ inline void DxRender::Draw(int x, int y, DxTexture* tex,
 	
 	FLOAT left = x;
 	FLOAT top = y;
-	FLOAT right = left + tex->ImgWidth();
-	FLOAT bottom = top + tex->ImgHeight();
-	FLOAT u = (FLOAT)tex->ImgWidth() / (FLOAT)tex->TexWidth();
-	FLOAT v = (FLOAT)tex->ImgHeight() / (float)tex->TexHeight();
+	FLOAT right = left + tex->GetImgWidth();
+	FLOAT bottom = top + tex->GetImgHeight();
+	FLOAT u = (FLOAT)tex->GetImgWidth() / (FLOAT)tex->GetTexWidth();
+	FLOAT v = (FLOAT)tex->GetImgHeight() / (float)tex->GetTexHeight();
 	AddVertex((FLOAT)(left + mPaintOffsetX), (FLOAT)(top + mPaintOffsetY),		color, 0, 0, 0.5f);
 	AddVertex((FLOAT)(right + mPaintOffsetX), (FLOAT)(bottom + mPaintOffsetY),	color, u, v, 0.5f);
 	AddVertex((FLOAT)(left + mPaintOffsetX), (FLOAT)(bottom + mPaintOffsetY),	color, 0, v, 0.5f);
@@ -2094,7 +2094,7 @@ inline void DxRender::StretchDraw(int x, int y, int w, int h, DxTexture* tex,
 		{
 			mCurTexture = tex;
 			if (mCurTexture)
-				mDevice9->SetTexture(0, mCurTexture->D3DTexture());
+				mDevice9->SetTexture(0, mCurTexture->GetD3DTexture());
 			else
 				mDevice9->SetTexture(0, NULL);
 		}
@@ -2104,8 +2104,8 @@ inline void DxRender::StretchDraw(int x, int y, int w, int h, DxTexture* tex,
 	FLOAT top = y;
 	FLOAT right = left + w;
 	FLOAT bottom = top + h;
-	FLOAT u = (FLOAT)tex->ImgWidth() / (FLOAT)tex->TexWidth();
-	FLOAT v = (FLOAT)tex->ImgHeight() / (float)tex->TexHeight();
+	FLOAT u = (FLOAT)tex->GetImgWidth() / (FLOAT)tex->GetTexWidth();
+	FLOAT v = (FLOAT)tex->GetImgHeight() / (float)tex->GetTexHeight();
 	AddVertex((FLOAT)(left + mPaintOffsetX), (FLOAT)(top + mPaintOffsetY),		color, 0, 0, 0.5f);
 	AddVertex((FLOAT)(right + mPaintOffsetX), (FLOAT)(bottom + mPaintOffsetY),	color, u, v, 0.5f);
 	AddVertex((FLOAT)(left + mPaintOffsetX), (FLOAT)(bottom + mPaintOffsetY),	color, 0, v, 0.5f);
@@ -2115,7 +2115,7 @@ inline void DxRender::StretchDraw(int x, int y, int w, int h, DxTexture* tex,
 	mPrimCount += 2;
 }
 
-inline BOOL DxRender::TexFormatAvailable(D3DFORMAT format)
+inline BOOL DxRender::IsTexFormatAvailable(D3DFORMAT format)
 {
 	HRESULT hr = mDirect3D9->CheckDeviceFormat(
 		D3DADAPTER_DEFAULT, 
@@ -2128,14 +2128,14 @@ inline BOOL DxRender::TexFormatAvailable(D3DFORMAT format)
 
 }
 
-inline void DxRender::AddNotify(IDxDeviceNotify* notify)
+inline void DxRender::AddNotify(DxDeviceListener* notify)
 {
 	DxNotifyVector::iterator itr = std::find(mNotifyVector.begin(), mNotifyVector.end(), notify);
 	if (itr == mNotifyVector.end())
 		mNotifyVector.push_back(notify);
 }
 
-inline void DxRender::DelNotify(IDxDeviceNotify* notify)
+inline void DxRender::DelNotify(DxDeviceListener* notify)
 {
 	DxNotifyVector::iterator itr = std::find(mNotifyVector.begin(), mNotifyVector.end(), notify);
 	if (itr != mNotifyVector.end())
@@ -2145,7 +2145,7 @@ inline void DxRender::DelNotify(IDxDeviceNotify* notify)
 inline void DxRender::DoNotify(DxDeviceNotifyType type)
 {
 	DxNotifyVector::iterator itr = mNotifyVector.begin();
-	IDxDeviceNotify* notify;
+	DxDeviceListener* notify;
 	while (itr != mNotifyVector.end())
 	{
 		notify = *itr;
@@ -2262,7 +2262,7 @@ inline void DxText::Finalize()
 
 inline void DxText::SetDefFont(const DxFont& font)
 {
-	if (!font.IsEmpty() && (font.Code() != mDefFont.Code()))
+	if (!font.IsEmpty() && (font.GetCode() != mDefFont.GetCode()))
 	{
 		mDefFont = font;
 		mDefGdiFont = GetGdiFont(mDefFont);
@@ -2285,7 +2285,7 @@ inline void DxText::CacheGdiFont(DWORD code, HFONT font)
 		DxGdiFontCache::iterator itr;
 		for (itr = mFontCache.begin(); itr != mFontCache.end(); ++itr)
 		{
-			if ((itr->first != code) && (itr->first != mDefFont.Code()) && (itr->first != mCstFont.Code()))
+			if ((itr->first != code) && (itr->first != mDefFont.GetCode()) && (itr->first != mCstFont.GetCode()))
 				break;
 		}
 		
@@ -2300,13 +2300,13 @@ inline void DxText::CacheGdiFont(DWORD code, HFONT font)
 inline HFONT DxText::GetGdiFont(DxFont& font)
 {
 	// 先从缓存中查找, 找不到再创建
-	DxGdiFontCache::iterator itr = mFontCache.find(font.Code());
+	DxGdiFontCache::iterator itr = mFontCache.find(font.GetCode());
 	if (itr != mFontCache.end())
 		return itr->second;
 	else 
 	{
 		HFONT gdiFont = font.CreateGdiFont();
-		CacheGdiFont(font.Code(), gdiFont);
+		CacheGdiFont(font.GetCode(), gdiFont);
 		return gdiFont;
 	}
 }
@@ -2392,7 +2392,7 @@ inline SIZE DxText::TextSize(LPCWSTR text, int textLen /* = -1 */,
 	// 字体选择
 	DxFont* curFont;
 	HFONT curGdiFont;
-	if (!font || (font->Code() == mDefFont.Code()))
+	if (!font || (font->GetCode() == mDefFont.GetCode()))
 	{
 		// 用默认字体
 		curFont = &mDefFont;
@@ -2401,7 +2401,7 @@ inline SIZE DxText::TextSize(LPCWSTR text, int textLen /* = -1 */,
 	else
 	{
 		// 用自定义字体
-		if (font->Code() != mCstFont.Code())
+		if (font->GetCode() != mCstFont.GetCode())
 		{
 			mCstFont = *font;
 			mCstGdiFont = GetGdiFont(mCstFont);
@@ -2417,15 +2417,15 @@ inline SIZE DxText::TextSize(LPCWSTR text, int textLen /* = -1 */,
 	if (itr != mTexCache.end())
 	{
 		tex = itr->second;
-		sz.cx = tex->ImgWidth();
-		sz.cy = tex->ImgHeight();
+		sz.cx = tex->GetImgWidth();
+		sz.cy = tex->GetImgHeight();
 	}
 	else
 	{
 		if (CanSizeOptimize(curFont))
 		{
 			// 对特殊字体进行优化
-			sz.cy = abs(curFont->Height());
+			sz.cy = abs(curFont->GetHeight());
 			sz.cx = 0;
 			int w = (sz.cy % 2) ? sz.cy + 1 : sz.cy;
 			int hw = w / 2;
@@ -2478,7 +2478,7 @@ inline DxTexture* DxText::GetTexture(DxFont* font, LPCWSTR text, int textLen)
 	// 字体选择
 	DxFont* curFont;
 	HFONT curGdiFont;
-	if (!font || (font->Code() == mDefFont.Code()))
+	if (!font || (font->GetCode() == mDefFont.GetCode()))
 	{
 		// 用默认字体
 		curFont = &mDefFont;
@@ -2487,7 +2487,7 @@ inline DxTexture* DxText::GetTexture(DxFont* font, LPCWSTR text, int textLen)
 	else
 	{
 		// 用自定义字体
-		if (font->Code() != mCstFont.Code())
+		if (font->GetCode() != mCstFont.GetCode())
 		{
 			mCstFont = *font;
 			mCstGdiFont = GetGdiFont(mCstFont);
@@ -2577,7 +2577,7 @@ inline DxTexture* DxText::GetTexture(DxFont* font, LPCWSTR text, int textLen)
 
 inline void DxText::CacheTex(DWORD code, DxTexture* tex)
 {
-	mTexMemSize += tex->TexWidth() * tex->TexHeight() * 16;
+	mTexMemSize += tex->GetTexWidth() * tex->GetTexHeight() * 16;
 	mTexCache.insert(std::make_pair(code, tex));
 
 	LN_TRACE(L"Text Texture Num: %d;  Text Texture Memory: %d", mTexCache.size(), mTexMemSize);
@@ -2592,7 +2592,7 @@ inline void DxText::CacheTex(DWORD code, DxTexture* tex)
 
 		if (itr != mTexCache.end())
 		{
-			mTexMemSize -= itr->second->TexWidth() * itr->second->TexHeight() * 16;
+			mTexMemSize -= itr->second->GetTexWidth() * itr->second->GetTexHeight() * 16;
 			delete itr->second;
 			mTexCache.erase(itr);
 			
@@ -2604,7 +2604,7 @@ DWORD DxText::GetTextCode(DxFont* font, LPCWSTR text, int textLen)
 {
 	DWORD code[2];
 	code[0] = GetHashCode((BYTE*)text, textLen * sizeof(WCHAR));
-	code[1] = font->Code();
+	code[1] = font->GetCode();
 
 	return GetHashCode((BYTE*)code, 8);
 }
@@ -2637,14 +2637,14 @@ inline void DxTexture::UnLock()
 	mTexture->UnlockRect(0);
 }
 
-inline IDirect3DTexture9* DxTexture::D3DTexture()
+inline IDirect3DTexture9* DxTexture::GetD3DTexture()
 {
 	return mTexture;
 }
 
-inline BOOL DxTexture::TexFormatAvailable(DxRender* render, D3DFORMAT format)
+inline BOOL DxTexture::IsTexFormatAvailable(DxRender* render, D3DFORMAT format)
 {
-	return render->TexFormatAvailable(format);
+	return render->IsTexFormatAvailable(format);
 }
 
 inline void DxTexture::InitProp(IDirect3DTexture9* tex, int width, int height)
@@ -2675,11 +2675,11 @@ inline BOOL DxTexture::CreateTexture(DxRender* render, int width, int height, D3
 {
 	LN_ASSERT((render != NULL) && render->IsInited());
 
-	if (!TexFormatAvailable(render, format))
+	if (!IsTexFormatAvailable(render, format))
 		return FALSE;
 
 	mTexture.Release();
-	HRESULT hr = render->Device9()->CreateTexture(
+	HRESULT hr = render->GetDevice9()->CreateTexture(
 		width, height, 
 		1, 0, format,
 		D3DPOOL_MANAGED,
@@ -2701,7 +2701,7 @@ inline BOOL DxTexture::LoadFromFile(DxRender* render, LPCWSTR imgFile,
 
 	D3DXIMAGE_INFO info;
 	HRESULT hr = D3DXCreateTextureFromFileExW(
-		render->Device9(), imgFile,
+		render->GetDevice9(), imgFile,
 		D3DX_DEFAULT, D3DX_DEFAULT, 
 		1, 0, format, D3DPOOL_MANAGED, 
 		D3DX_FILTER_NONE, D3DX_DEFAULT, 
@@ -2720,7 +2720,7 @@ inline BOOL DxTexture::LoadFromData(DxRender* render, void* imgData, DWORD size,
 	LN_ASSERT((render != NULL) && render->IsInited());
 	D3DXIMAGE_INFO info;
 	HRESULT hr = D3DXCreateTextureFromFileInMemoryEx(
-		render->Device9(), imgData, size,
+		render->GetDevice9(), imgData, size,
 		D3DX_DEFAULT, D3DX_DEFAULT, 
 		1, 0, format, D3DPOOL_MANAGED, 
 		D3DX_FILTER_NONE, D3DX_DEFAULT, 
@@ -2738,7 +2738,7 @@ inline BOOL DxTexture::LoadFromRes(DxRender* render, LPCWSTR res, HMODULE hres,
 	LN_ASSERT((render != NULL) && render->IsInited());
 	D3DXIMAGE_INFO info;
 	HRESULT hr = D3DXCreateTextureFromResourceExW(
-		render->Device9(), hres, res,
+		render->GetDevice9(), hres, res,
 		D3DX_DEFAULT, D3DX_DEFAULT, 
 		1, 0, format, D3DPOOL_MANAGED, 
 		D3DX_FILTER_NONE, D3DX_DEFAULT, 
@@ -2751,23 +2751,23 @@ inline BOOL DxTexture::LoadFromRes(DxRender* render, LPCWSTR res, HMODULE hres,
 }
 
 //------------------------------------------------------------------------------
-// DxApp
+// DxApplication
 
-inline void DxApp::Initialize()
+inline void DxApplication::Initialize()
 {
 	mLastTick = GetTickCount();
 	mLastSecTick = mLastTick;
 	timeBeginPeriod(1);
 }
 
-inline void DxApp::Finalize()
+inline void DxApplication::Finalize()
 {
 	timeEndPeriod(1);
 }
 
-inline void DxApp::Idle()
+inline void DxApplication::Idle()
 {
-	DxMainFrame* mainFrame = MainFrame();
+	DxMainFrame* mainFrame = GetMainFrame();
 	if (!mainFrame || (!mainFrame->IsActive() && !mRunAlways))
 	{
 		Sleep(1);

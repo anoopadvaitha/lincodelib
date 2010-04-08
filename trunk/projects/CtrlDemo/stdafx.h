@@ -15,4 +15,4 @@
 #include <tchar.h>
 
 // TODO: 在此处引用程序要求的附加头文件
-#include "KmBase.h"
+#include "LnBase.h"
