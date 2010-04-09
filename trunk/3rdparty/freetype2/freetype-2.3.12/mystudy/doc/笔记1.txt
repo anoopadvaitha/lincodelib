@@ -1,0 +1,22 @@
+*.  一个Font Family可以有多个Font Face，比如 Palatino Regular 和 Palatino Italic
+    是两个不同的Font Face，但属于同一个Font Family；一个字体文件可以包含1到多个
+    Font Face。
+
+*.  一个字体文件包含一套字形(glyphs), 每一个字形的存储形式可以是位图，矢量或其他
+    形式。每一个字形都有一个索引(glyphs index)，通过这个索引可以从字体文件中取到
+    字形数据。
+    一个字体文件可以包含一或多个表，称为字符映射表(character map或charmap)；
+    charmap用于将字符编码映射到字形索引，而一个字符有不同的编码形式，比如UTF-8和
+    GB2312，因此字体文件包含多个映射表，分别处理不同编码形式到字形索引的映射。
+
+*.  每一个字形数据会关联一系列度量，用于描述字形在渲染时的位置和布局。
+
+*.  DPI: 每英寸多少点（这里的点指的是像素）；字体的尺寸单位也用点来描述，但这里的
+    点指的是 1/72 英寸，因此下面的公式可以计算字体的像素尺寸：
+        pixel_size = point_size * dpi / 82
+
+*.  EM square 可以认为是字符绘制于里面的一个匾，或者说方块。
+
+*.  字体度量
+    <img://mystudy/doc/font metrics 1.png>
+    <img://mystudy/doc/font metrics 2.png>
