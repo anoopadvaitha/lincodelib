@@ -1,10 +1,10 @@
 /*******************************************************************************
   Filename:		LnString.h
-  Author:		lingo
-  Email:		lingoooooooooo@gmail.com
+  Author:		colin
+  Email:		linzhenqun@gmail.com
   Date:			2009/12/15
 
-  Brief:    	这是lincode代码库的一部分，由lingo创建并维护!
+  Brief:    	这是lincode代码库的一部分，由colin创建并维护!
  -------------------------------------------------------------------------------
   Description:
 	字符串类，基于WTL的实现，主要作了如下的修改:
@@ -963,7 +963,7 @@ public:
 					break;
 				case 'f':
 					{
-						// TODO(lingo 2009/12/16): 不够健壮，但大多数情况不会有问题
+						// TODO(colin 2009/12/16): 不够健壮，但大多数情况不会有问题
 						double f = va_arg(argList, double);
 						WCHAR strTemp[512];
 						swprintf(strTemp, L"%*.*f", nWidth, nPrecision + 14, f);

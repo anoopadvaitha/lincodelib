@@ -3,9 +3,9 @@
 
 #include "stdafx.h"
 #include "demo1.h"
-// KamaLib Include
-#include "KmCommons.h"
-using namespace kama;
+// LinCode Include
+#include "LnCommons.h"
+using namespace lin;
 // FreeType Include
 #include "ft2build.h"
 #include FT_FREETYPE_H
@@ -32,54 +32,35 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	FT_Error err = FT_Init_FreeType(&ftLib);
 	if (err)
 	{
-		KASSERT(!L"init FreeType failed");
+		LN_ASSERT(!L"init FreeType failed");
 		return 0;
 	}
 
 	// New FreeType Face
-	err = FT_New_Face(ftLib, "C:\\WINDOWS\\Fonts\\TIMES.TTF", 0, &ftFace);
+	err = FT_New_Face(ftLib, "c:\\WINDOWS\\Fonts\\times.ttf", 0, &ftFace);
 	if (err)
 	{
-		KASSERT(!L"new FreeType face failed");
+		LN_ASSERT(!L"new FreeType face failed");
 		FT_Done_FreeType(ftLib);
 		return 0;
 	}
 
 	//  print face data
-	kstring str = L"family name: "; 
+	String str = L"family name: "; 
 	str += ftFace->family_name;
-	KLOG(str);
+	LN_LOG(str);
 	str = L"style name: ";
 	str += ftFace->style_name;
-	KLOG(str);
-	KLOG(L"glyphs num: %d", ftFace->num_glyphs);
-	KLOG(L"face num: %d", ftFace->num_faces);
+	LN_LOG(str);
+	LN_LOG(L"glyphs num: %d", ftFace->num_glyphs);
+	LN_LOG(L"face num: %d", ftFace->num_faces);
 
 	//  set face size
 	err = FT_Set_Pixel_Sizes(ftFace, 0, 30);
-	KASSERT(err == 0);
+	LN_ASSERT(err == 0);
 
-	// get glyph index
-	UINT glyphIdx = FT_Get_Char_Index(ftFace, 'A');
-	if (glyphIdx == 0)
-	{
-		KASSERT(!L"can't find glyph index");
-	}
-
-	// load glyph
-	err = FT_Load_Glyph(ftFace, glyphIdx, FT_LOAD_DEFAULT);
-	if (err)
-	{
-		KASSERT(L"load glyph failed");
-	}
-
-	//  render glyph to bitmap
-	err = FT_Render_Glyph(ftFace->glyph, FT_RENDER_MODE_NORMAL);
-	if (err)
-	{
-		KASSERT(L"gen bitmap failed");
-	}
-	
+	if (ftFace->charmap->encoding == FT_ENCODING_UNICODE)
+		LN_LOG(L"Unicode");
 
 	MSG msg;
 	HACCEL hAccelTable;
@@ -137,6 +118,56 @@ void DrawFont(HDC hdc)
 			COLORREF clr = RGB(255 - v, 255 - v, 255 - v);
 			SetPixel(hdc, x + i, y + j, clr);
 		}
+}
+
+void DrawChar(HDC hdc, FT_Bitmap* bmp, int x, int y)
+{
+	for (int i = 0; i < bmp->width; ++i)
+		for (int j = 0; j < bmp->rows; ++j)
+		{
+
+			BYTE v = bmp->buffer[j * bmp->pitch + i];
+			if (v == 0)
+				continue;
+			COLORREF clr = RGB(255 - v, 255 - v, 255 - v);
+			SetPixel(hdc, x + i, y + j, clr);
+		}
+}
+
+void DrawSimpleText(HDC hdc, int penX, int penY, LPCWSTR text)
+{
+	FT_Error err = 0;
+	FT_GlyphSlot glyph = ftFace->glyph;
+	FT_Long useKerning = FT_HAS_KERNING(ftFace);
+	int prevIndex = 0;
+	int curIndex = 0;
+	while (*text)
+	{
+		WCHAR ch = * text;
+		++text;
+		// 取字形索引
+		curIndex = FT_Get_Char_Index(ftFace, ch);
+		if (!curIndex)
+			continue;
+		
+		// 应用字距
+		if (useKerning && prevIndex)
+		{
+			FT_Vector kerning;
+			err = FT_Get_Kerning(ftFace, prevIndex, curIndex, FT_KERNING_DEFAULT, &kerning);
+			if (!err)
+				penX += kerning.x >> 6;
+		}
+
+		err = FT_Load_Glyph(ftFace, curIndex, FT_LOAD_RENDER);
+		if (err)
+			continue;
+
+		// 绘制字符
+		DrawChar(hdc, &glyph->bitmap, penX + glyph->bitmap_left, penY - glyph->bitmap_top);
+		penX += glyph->advance.x >> 6;
+		prevIndex = curIndex;
+	}
 }
 
 
@@ -238,7 +269,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_PAINT:
 		hdc = BeginPaint(hWnd, &ps);
 		
-		DrawFont(hdc);
+		DrawSimpleText(hdc, 10, 40, L"AV VA World,NowYou T.LAA");
 
 		EndPaint(hWnd, &ps);
 		break;

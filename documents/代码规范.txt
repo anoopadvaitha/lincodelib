@@ -1,7 +1,7 @@
 代码规范
 ==========================
-作者：lingo 2009-12-10
-邮件：lingoooooooooo@gmail.com
+作者：colin 2009-12-10
+邮件：linzhenqun@gmail.com
 
 
 ===============================================================================
@@ -27,11 +27,11 @@
 1.  H文件，以Views.h为例：
     /***********************************************************
       Filename:	Views.h
-      Author:	lingo
-      Email:	lingoooooooooo@gmail.com
+      Author:	colin
+      Email:	linzhenqun@gmail.com
       Date:		2009/12/14
 
-      Brief:    这是lincode代码库的一部分，由lingo创建并维护！
+      Brief:    这是lincode代码库的一部分，由colin创建并维护！
     ***********************************************************/
     #ifdef  __LIN_VIEWS_H__
     #define __LIN_VIEWS_H__
@@ -126,6 +126,6 @@
 
 4.  变量注释，在变量名后面用 // 注释
 
-5.  TODO注释：// TODO(lingo 2009-12-15): 还未实现。。。。。。
+5.  TODO注释：// TODO(colin 2009-12-15): 还未实现。。。。。。
 
 6.  代码注释，单行和多行都用 //， 注释行与前面空一行。

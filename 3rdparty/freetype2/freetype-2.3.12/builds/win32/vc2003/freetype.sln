@@ -3,9 +3,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "freetype", "freetype.vcproj
 	ProjectSection(ProjectDependencies) = postProject
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "demo1", "..\..\..\mydemo\demo1\demo1.vcproj", "{94AE2162-E23D-4200-9B5B-1DBAE9029F87}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "demo1", "..\..\..\mystudy\demo\demo1\demo1.vcproj", "{94AE2162-E23D-4200-9B5B-1DBAE9029F87}"
 	ProjectSection(ProjectDependencies) = postProject
-		{1D39EE6D-A028-490A-A3B8-7AC9B4F26AC1} = {1D39EE6D-A028-490A-A3B8-7AC9B4F26AC1}
 	EndProjectSection
 EndProject
 Global
