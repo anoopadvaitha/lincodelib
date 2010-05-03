@@ -1,10 +1,10 @@
 /*******************************************************************************
   Filename:		LnCommons.h
-  Author:		lingo
-  Email:		lingoooooooooo@gmail.com
+  Author:		colin
+  Email:		linzhenqun@gmail.com
   Date:			2009/12/14
 
-  Brief:    	这是lincode代码库的一部分，由lingo创建并维护!
+  Brief:    	这是lincode代码库的一部分，由colin创建并维护!
  -------------------------------------------------------------------------------
   Description:	公共代码，每一种类型都用//-------分隔，可以通过它查找。
 	
@@ -1522,7 +1522,7 @@ inline String GetSpecialFolder(int folder, BOOL isCreate = FALSE)
 
 /*
 	取命令行列表，建议取得的列表作为全局对象，可以多次使用
-	TODO(lingo 2009/12/15): 建壮性不够，待重构
+	TODO(colin 2009/12/15): 建壮性不够，待重构
 */
 inline BOOL GetCmdLines(Strings& cmdLines)
 {

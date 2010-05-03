@@ -1,10 +1,10 @@
 /*******************************************************************************
   Filename:		LnDxCtrls.h
-  Author:		lingo
-  Email:		lingoooooooooo@gmail.com
+  Author:		colin
+  Email:		linzhenqun@gmail.com
   Date:			2009/12/22
 
-  Brief:    	这是lincode代码库的一部分，由lingo创建并维护!
+  Brief:    	这是lincode代码库的一部分，由colin创建并维护!
  -------------------------------------------------------------------------------
   Description:
 				Dx控件类库，控件的外观不具有可定制性，你可以基于这套控件，去实现

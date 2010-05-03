@@ -1,10 +1,10 @@
 /*******************************************************************************
   Filename:		LnDxRender.h
-  Author:		lingo
-  Email:		lingoooooooooo@gmail.com
+  Author:		colin
+  Email:		linzhenqun@gmail.com
   Date:			2009/12/22
 
-  Brief:    	这是lincode代码库的一部分，由lingo创建并维护!
+  Brief:    	这是lincode代码库的一部分，由colin创建并维护!
  -------------------------------------------------------------------------------
   Description:
 	DirectX 2D渲染引擎，封装D3D9，提供简洁的渲染接口 
@@ -845,7 +845,7 @@ public:
 	void StretchDraw(int x, int y, int w, int h, DxTexture* tex, 
 		DxBlendMode blendMode = bmNone, D3DCOLOR color = 0xFFFFFFFF);
 
-	// TODO(lingo-2010/01/04): 旋转，画一部分，Mask纹理，待实现
+	// TODO(colin-2010/01/04): 旋转，画一部分，Mask纹理，待实现
 
 	//------------------------------------------------------------------------------
 	// 字体与文本
@@ -1740,7 +1740,7 @@ inline void DxRender::SetBlendMode(DxBlendMode blendMode)
 	if (mCurBlendMode == blendMode)
 		return;
 
-	// TODO(lingo-2010/01/04): 好好试验一下效果
+	// TODO(colin-2010/01/04): 好好试验一下效果
 	mCurBlendMode = blendMode;
 	mDevice9->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
 	switch (mCurBlendMode)
